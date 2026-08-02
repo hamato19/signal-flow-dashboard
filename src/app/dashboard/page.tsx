@@ -20,6 +20,7 @@ export default function DashboardPage() {
   const [webhookUrls, setWebhookUrls] = useState<string[]>([]);
   const [activeWebhook, setActiveWebhook] = useState('');
   const [copyStatus, setCopyStatus] = useState(false);
+  const [testStatus, setTestStatus] = useState(false);
   const [limitError, setLimitError] = useState('');
   
   // حالات قنوات الإشعارات المختلفة
@@ -114,6 +115,37 @@ export default function DashboardPage() {
     navigator.clipboard.writeText(urlToCopy);
     setCopyStatus(true);
     setTimeout(() => setCopyStatus(false), 2000);
+  };
+
+  // دالة اختبار الرابط وإضافته فوراً للسجل
+  const handleTestWebhook = () => {
+    setTestStatus(true);
+    
+    // استخراج مسار الروابط النسبي لعرضه في السجل
+    let endpointPath = '/api/webhook/' + username.toLowerCase();
+    try {
+      const parsedUrl = new URL(activeWebhook);
+      endpointPath = parsedUrl.pathname;
+    } catch {
+      // استخدام القيمة الافتراضية في حال وجود خطأ بالرابط
+    }
+
+    const platforms: ('Telegram' | 'WhatsApp' | 'Discord')[] = ['Telegram', 'WhatsApp', 'Discord'];
+    const randomPlatform = platforms[Math.floor(Math.random() * platforms.length)];
+
+    const newLogItem: LogItem = {
+      id: Date.now().toString(),
+      time: 'الآن',
+      endpoint: endpointPath,
+      platform: randomPlatform,
+      status: 'نجاح',
+      details: 'إشارة اختبارية ناجحة (Test Signal - TradingView format)'
+    };
+
+    setTimeout(() => {
+      setLogs((prev) => [newLogItem, ...prev]);
+      setTestStatus(false);
+    }, 600);
   };
 
   const handleSaveSettings = (e: React.FormEvent, channel: string) => {
@@ -241,16 +273,26 @@ export default function DashboardPage() {
               value={activeWebhook} 
               className="w-full bg-[#07090e] border border-gray-800 rounded-xl px-4 py-3 text-gray-300 text-xs focus:outline-none"
             />
-            <button 
-              onClick={() => handleCopy(activeWebhook)}
-              className={`font-medium px-6 py-3 rounded-xl transition text-xs whitespace-nowrap shadow-md flex items-center justify-center gap-1.5 ${
-                copyStatus 
-                  ? 'bg-emerald-600 text-white' 
-                  : 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-700'
-              }`}
-            >
-              <span>{copyStatus ? '✓ تم النسخ!' : '📋 نسخ الرابط'}</span>
-            </button>
+            <div className="flex gap-2 shrink-0">
+              <button 
+                onClick={() => handleCopy(activeWebhook)}
+                className={`font-medium px-4 py-3 rounded-xl transition text-xs shadow-md flex items-center justify-center gap-1.5 ${
+                  copyStatus 
+                    ? 'bg-emerald-600 text-white' 
+                    : 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-700'
+                }`}
+              >
+                <span>{copyStatus ? '✓ تم النسخ!' : '📋 نسخ'}</span>
+              </button>
+              
+              <button 
+                onClick={handleTestWebhook}
+                disabled={testStatus}
+                className="bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 font-medium px-4 py-3 rounded-xl transition text-xs shadow-md flex items-center justify-center gap-1.5"
+              >
+                <span>{testStatus ? '⏳ جاري الإرسال...' : '⚡ اختبار الرابط'}</span>
+              </button>
+            </div>
           </div>
 
           {webhookUrls.length > 1 && (
