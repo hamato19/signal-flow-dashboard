@@ -1,41 +1,47 @@
 import { NextResponse } from 'next/server';
 
-// قاعدة بيانات مؤقتة تفصل إشارات كل مستخدم لوحده
+// قاعدة بيانات مؤقتة لتخزين آخر الإشارات لكل مستخدم (اختياري للاختبار السريع)
 const userWebhooks: Record<string, any[]> = {};
 
 export async function POST(
   request: Request,
-  { params }: { params: { token: string } }
+  { params }: { params: { slug: string } }
 ) {
   try {
-    const { token } = await params;
+    const { slug } = await params;
     const body = await request.json();
 
-    if (!userWebhooks[token]) {
-      userWebhooks[token] = [];
+    // تخزين الإشارة في الذاكرة المؤقتة مؤقتاً
+    if (!userWebhooks[slug]) {
+      userWebhooks[slug] = [];
     }
+    userWebhooks[slug].unshift({
+      time: new Date().toLocaleTimeString(),
+      body,
+    });
 
-    const newLog = {
-      id: Date.now(),
-      eventType: body.title || body.event || 'إشارة جديدة',
-      raw: body,
-      time: new Date().toLocaleTimeString()
-    };
+    console.log(`Webhook received for slug: ${slug}`, body);
 
-    userWebhooks[token].unshift(newLog);
-    if (userWebhooks[token].length > 50) userWebhooks[token].pop();
-
-    return NextResponse.json({ status: 'success', token, receivedData: newLog }, { status: 200 });
+    return NextResponse.json(
+      { success: true, message: 'Webhook received successfully', slug, data: body },
+      { status: 200 }
+    );
   } catch (error) {
-    return NextResponse.json({ status: 'error', error: String(error) }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: 'Invalid JSON or server error' },
+      { status: 400 }
+    );
   }
 }
 
+// ميزة اضافية: يمكنك جلب الإشارات المستلمة عبر متصفحك مباشرة بطلب GET للتأكد
 export async function GET(
   request: Request,
-  { params }: { params: { token: string } }
+  { params }: { params: { slug: string } }
 ) {
-  const { token } = await params;
-  const logs = userWebhooks[token] || [];
-  return NextResponse.json({ token, logs }, { status: 200 });
+  const { slug } = await params;
+  return NextResponse.json({
+    slug,
+    logs: userWebhooks[slug] || []
+  });
 }
