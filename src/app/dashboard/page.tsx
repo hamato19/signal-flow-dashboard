@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation';
 export default function DashboardPage() {
   const router = useRouter();
   const [username, setUsername] = useState('');
-  const [webhookUrl, setWebhookUrl] = useState('');
+  const [currentPlan, setCurrentPlan] = useState('free');
+  
+  // إدارة الروابط المולّدة والحدود
+  const [webhookUrls, setWebhookUrls] = useState<string[]>([]);
+  const [activeWebhook, setActiveWebhook] = useState('');
+  const [copyStatus, setCopyStatus] = useState(false);
+  const [limitError, setLimitError] = useState('');
   
   // حالات قنوات الإشعارات المختلفة
   const [telegramToken, setTelegramToken] = useState('');
@@ -19,21 +25,53 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'telegram' | 'whatsapp' | 'discord'>('telegram');
   const [statusMessage, setStatusMessage] = useState('');
 
+  // تحديد حدود الروابط لكل باقة
+  const getPlanLimit = (plan: string) => {
+    switch (plan) {
+      case 'free': return 5;
+      case '30': return 30;
+      case '100': return 100;
+      case 'unlimited': return Infinity;
+      default: return 5;
+    }
+  };
+
+  const getPlanName = (plan: string) => {
+    switch (plan) {
+      case 'free': return 'الباقة التجريبية (5 روابط)';
+      case '30': return 'الباقة المرنة (30 رابط)';
+      case '100': return 'باقة المحترفين (100 رابط)';
+      case 'unlimited': return 'الباقة المفتوحة (غير محدود)';
+      default: return 'الباقة التجريبية';
+    }
+  };
+
   useEffect(() => {
     const user = localStorage.getItem('signal_user');
-    // إذا لم يكن هناك مستخدم مسجل، قم بإعادته فوراً لصفحة الدخول لمنع الدخول غير المرخص
+    const plan = localStorage.getItem('signal_plan') || 'free';
+    
     if (!user) {
       router.push('/');
       return;
     }
     
     setUsername(user);
+    setCurrentPlan(plan);
     
-    if (typeof window !== 'undefined') {
-      setWebhookUrl(`${window.location.origin}/api/webhook/${user.toLowerCase()}`);
+    // استرجاع أو إنشائي أول رابط أساسي
+    const savedUrls = localStorage.getItem(`webhook_list_${user}`);
+    if (savedUrls) {
+      const parsed = JSON.parse(savedUrls);
+      setWebhookUrls(parsed);
+      setActiveWebhook(parsed[0]);
+    } else {
+      const initialUrl = `${window.location.origin}/api/webhook/${user.toLowerCase()}`;
+      setWebhookUrls([initialUrl]);
+      setActiveWebhook(initialUrl);
+      localStorage.setItem(`webhook_list_${user}`, JSON.stringify([initialUrl]));
     }
 
-    // استرجاع الإعدادات المحفوظة
+    // استرجاع إعدادات القنوات
     setTelegramToken(localStorage.getItem('telegram_token') || '');
     setTelegramChatId(localStorage.getItem('telegram_chat_id') || '');
     setWhatsappPhone(localStorage.getItem('whatsapp_phone') || '');
@@ -41,9 +79,30 @@ export default function DashboardPage() {
     setDiscordWebhook(localStorage.getItem('discord_webhook') || '');
   }, [router]);
 
+  // دالة توليد رابط ويب هوك جديد مع التحقق من حدود الباقة
   const generateNewWebhook = () => {
+    setLimitError('');
+    const limit = getPlanLimit(currentPlan);
+
+    if (webhookUrls.length >= limit) {
+      setLimitError(`لقد وصلت إلى الحد الأقصى للروابط المسموحة في باقتك الحالية (${limit} روابط).`);
+      return;
+    }
+
     const randomSuffix = Math.random().toString(36).substring(7);
-    setWebhookUrl(`${window.location.origin}/api/webhook/${username.toLowerCase()}-${randomSuffix}`);
+    const newUrl = `${window.location.origin}/api/webhook/${username.toLowerCase()}-${randomSuffix}`;
+    
+    const updatedUrls = [newUrl, ...webhookUrls];
+    setWebhookUrls(updatedUrls);
+    setActiveWebhook(newUrl);
+    localStorage.setItem(`webhook_list_${username}`, JSON.stringify(updatedUrls));
+  };
+
+  // دالة نسخ الرابط مع مؤشر تفاعلي
+  const handleCopy = (urlToCopy: string) => {
+    navigator.clipboard.writeText(urlToCopy);
+    setCopyStatus(true);
+    setTimeout(() => setCopyStatus(false), 2000);
   };
 
   const handleSaveSettings = (e: React.FormEvent, channel: string) => {
@@ -62,11 +121,13 @@ export default function DashboardPage() {
     setTimeout(() => setStatusMessage(''), 3000);
   };
 
-  // دالة إنهاء الجلسة وتسجيل الخروج لمنع التداخل
   const handleLogout = () => {
     localStorage.removeItem('signal_user');
+    localStorage.removeItem('signal_plan');
     router.push('/');
   };
+
+  const maxLimit = getPlanLimit(currentPlan);
 
   return (
     <main className="min-h-screen bg-[#07090e] text-white p-4 md:p-8 font-sans">
@@ -75,11 +136,14 @@ export default function DashboardPage() {
         {/* الهيدر العلوي */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-[#101726] border border-gray-800/80 p-6 rounded-2xl shadow-xl gap-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="bg-blue-600/20 text-blue-400 text-xs font-semibold px-2.5 py-1 rounded-md border border-blue-500/30">نظام نشط</span>
+              <span className="bg-purple-600/20 text-purple-300 text-xs font-semibold px-2.5 py-1 rounded-md border border-purple-500/30">
+                {getPlanName(currentPlan)}
+              </span>
               <h1 className="text-xl md:text-2xl font-bold tracking-tight">لوحة التحكم الذكية</h1>
             </div>
-            <p className="text-gray-400 text-sm mt-1">مرحباً بك مجدداً، إدارة إشارات التداول وتوجيهها للمنصات المختلفة</p>
+            <p className="text-gray-400 text-sm mt-1">مرحباً بك يا <span className="text-white font-semibold">{username}</span>، إدارة إشارات التداول وتوجيهها</p>
           </div>
           
           <div className="flex items-center gap-3">
@@ -91,13 +155,12 @@ export default function DashboardPage() {
               {username ? username.slice(0, 2).toUpperCase() : 'US'}
             </div>
             
-            {/* زر تسجيل الخروج لإنهاء الجلسة */}
             <button
               onClick={handleLogout}
               title="تسجيل الخروج"
               className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 hover:text-red-300 px-3.5 py-2 rounded-xl text-xs font-medium transition flex items-center gap-1.5"
             >
-              <span>🚪</span> تسجيل خروج
+              <span>🚪</span> خروج
             </button>
           </div>
         </div>
@@ -106,10 +169,10 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-[#101726] border border-gray-800/80 p-5 rounded-2xl shadow-lg relative overflow-hidden">
             <div className="absolute top-0 right-0 w-1.5 h-full bg-blue-500"></div>
-            <p className="text-gray-400 text-xs font-medium mb-1">إجمالي الوهابيكس (اليوم)</p>
+            <p className="text-gray-400 text-xs font-medium mb-1">الروابط المستخدمة / الحد الأقصى</p>
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-2xl font-bold tracking-tight">3,421</span>
-              <span className="text-emerald-400 text-xs font-semibold">+14% عن أمس</span>
+              <span className="text-2xl font-bold tracking-tight">{webhookUrls.length} / {maxLimit === Infinity ? '∞' : maxLimit}</span>
+              <span className="text-blue-400 text-xs font-semibold">روابط نشطة</span>
             </div>
           </div>
 
@@ -132,29 +195,74 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* قسم رابط الاستقبال الأساسي (Webhook URL) */}
+        {/* قسم إدارة وعرض روابط الويب هوك (Webhook URLs) مع زر النسخ والتوليد */}
         <div className="bg-[#101726] border border-gray-800/80 p-6 rounded-2xl shadow-lg space-y-4">
-          <div>
-            <h2 className="text-base font-bold flex items-center gap-2">
-              <span>🔗</span> رابط الاستقبال الأساسي (Webhook URL)
-            </h2>
-            <p className="text-gray-400 text-xs mt-1">استخدم هذا الرابط في منصات التداول (مثل TradingView) لاستقبال الإشارات</p>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+            <div>
+              <h2 className="text-base font-bold flex items-center gap-2">
+                <span>🔗</span> روابط الاستقبال (Webhook URLs)
+              </h2>
+              <p className="text-gray-400 text-xs mt-1">انسخ الرابط واستخدمه في منصات التداول (مثل TradingView)</p>
+            </div>
+            
+            <button 
+              onClick={generateNewWebhook}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 text-white font-medium px-4 py-2.5 rounded-xl transition text-xs shadow-md flex items-center gap-1.5 whitespace-nowrap"
+            >
+              <span>➕</span> توليد رابط جديد
+            </button>
           </div>
 
+          {limitError && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs p-3 rounded-xl">
+              {limitError}
+            </div>
+          )}
+
+          {/* حقل عرض الرابط النشط مع زر النسخ */}
           <div className="flex flex-col md:flex-row gap-3">
             <input 
               type="text" 
               readOnly 
-              value={webhookUrl} 
+              value={activeWebhook} 
               className="w-full bg-[#07090e] border border-gray-800 rounded-xl px-4 py-3 text-gray-300 text-xs focus:outline-none"
             />
             <button 
-              onClick={generateNewWebhook}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 text-white font-medium px-5 py-3 rounded-xl transition text-xs whitespace-nowrap shadow-md"
+              onClick={() => handleCopy(activeWebhook)}
+              className={`font-medium px-6 py-3 rounded-xl transition text-xs whitespace-nowrap shadow-md flex items-center justify-center gap-1.5 ${
+                copyStatus 
+                  ? 'bg-emerald-600 text-white' 
+                  : 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-700'
+              }`}
             >
-              توليد رابط جديد +
+              <span>{copyStatus ? '✓ تم النسخ!' : '📋 نسخ الرابط'}</span>
             </button>
           </div>
+
+          {/* قائمة الروابط المולّدة السابقة إن وجدت */}
+          {webhookUrls.length > 1 && (
+            <div className="pt-3 border-t border-gray-800/80 space-y-2">
+              <p className="text-xs text-gray-400 font-medium">سجل الروابط المולّدة (اضغط للتفعيل):</p>
+              <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
+                {webhookUrls.map((url, idx) => (
+                  <div 
+                    key={idx}
+                    onClick={() => setActiveWebhook(url)}
+                    className={`p-2.5 rounded-xl text-xs cursor-pointer flex justify-between items-center transition ${
+                      activeWebhook === url 
+                        ? 'bg-blue-600/10 border border-blue-500/40 text-blue-300 font-mono' 
+                        : 'bg-[#07090e]/60 border border-gray-800/60 text-gray-400 hover:text-gray-200 font-mono'
+                    }`}
+                  >
+                    <span className="truncate">{url}</span>
+                    <span className="text-[10px] bg-gray-800 px-2 py-0.5 rounded text-gray-300 ml-2 shrink-0">
+                      {activeWebhook === url ? 'الرابط النشط' : 'تبديل'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* مركز ربط قنوات الإشعارات (تليجرام، واتساب، ديسكورد) */}
@@ -190,7 +298,7 @@ export default function DashboardPage() {
 
           {/* محتوى تبويب تليجرام */}
           {activeTab === 'telegram' && (
-            <form onSubmit={(e) => handleSaveSettings(e, 'telegram')} className="space-y-4 animate-fade-in">
+            <form onSubmit={(e) => handleSaveSettings(e, 'telegram')} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-gray-300 mb-1.5">توكن البوت (Bot Token)</label>
@@ -224,7 +332,7 @@ export default function DashboardPage() {
 
           {/* محتوى تبويب واتساب */}
           {activeTab === 'whatsapp' && (
-            <form onSubmit={(e) => handleSaveSettings(e, 'whatsapp')} className="space-y-4 animate-fade-in">
+            <form onSubmit={(e) => handleSaveSettings(e, 'whatsapp')} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-gray-300 mb-1.5">رقم الهاتف (مع رمز الدولة)</label>
@@ -258,7 +366,7 @@ export default function DashboardPage() {
 
           {/* محتوى تبويب ديسكورد */}
           {activeTab === 'discord' && (
-            <form onSubmit={(e) => handleSaveSettings(e, 'discord')} className="space-y-4 animate-fade-in">
+            <form onSubmit={(e) => handleSaveSettings(e, 'discord')} className="space-y-4">
               <div>
                 <label className="block text-xs text-gray-300 mb-1.5">رابط ويب هوك سيرفر ديسكورد (Discord Webhook URL)</label>
                 <input 
