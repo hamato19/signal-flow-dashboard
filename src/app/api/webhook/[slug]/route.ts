@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
-// سجل عام للعمليات ليظهر في لوحة التحكم
-export const globalLogs: any[] = [];
+// إنشاء اتصال بـ Supabase باستخدام صلاحيات السيرفر
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+);
 
 export async function POST(
   request: Request,
@@ -11,28 +15,39 @@ export async function POST(
     const { slug } = await context.params;
     const body = await request.json();
 
-    // استخراج تفاصيل الإشارة (مثل العملة والسعر والاتجاه)
+    // 1. جلب إعدادات المستخدم من جدول user_settings بناءً على الـ slug
+    const { data: userSettings, error: dbError } = await supabase
+      .from('user_settings')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (dbError || !userSettings) {
+      return NextResponse.json(
+        { success: false, error: 'رابط الويب هوك غير مسجل أو غير مفعول' },
+        { status: 404 }
+      );
+    }
+
+    const { telegram_token, telegram_chat_id, username } = userSettings;
     const ticker = body.ticker || body.symbol || 'العملة';
     const action = body.action || body.side || 'إشارة';
     const price = body.price ? `السعر: ${body.price}` : '';
     const signalDetails = `${action.toUpperCase()} - ${ticker} ${price}`;
 
-    // يمكنك هنا جلب إعدادات تليجرام (يفضل تخزينها في قاعدة بيانات أو متغيرات بيئية، أو جلبها بحسب رغبتك)
-    // كمثال افتراضي، سنقوم بمحاولة الإرسال إذا توفر توكن البوت
-    const telegramToken = process.env.TELEGRAM_TOKEN || ''; 
-    const telegramChatId = process.env.TELEGRAM_CHAT_ID || '';
+    let status = 'نجاح';
+    let logDetails = '';
 
-    let status: 'نجاح' | 'فشل' = 'نجاح';
-    let logDetails = `إشارة واردة: ${signalDetails}`;
-
-    if (telegramToken && telegramChatId) {
+    // 2. التحقق من توفر بيانات تليجرام وإرسال الرسالة
+    if (telegram_token && telegram_chat_id) {
       try {
-        const telegramMsg = `🚨 إشارة جديدة:\nالعملة: ${ticker}\nالاجراء: ${action}\nالسعر: ${body.price || 'غير متوفر'}`;
-        const tgResponse = await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+        const telegramMsg = `🚨 إشارة جديدة (${username || slug}):\nالعملة: ${ticker}\nالاجراء: ${action}\nالسعر: ${body.price || 'غير متوفر'}`;
+        
+        const tgResponse = await fetch(`https://api.telegram.org/bot${telegram_token}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            chat_id: telegramChatId,
+            chat_id: telegram_chat_id,
             text: telegramMsg,
           }),
         });
@@ -49,22 +64,19 @@ export async function POST(
         logDetails = `خطأ في الاتصال بتليجرام: ${err.message}`;
       }
     } else {
-      // في حال لم يتم ضبط بوت تليجرام بعد، يتم تسجيل استلام الإشارة بنجاح في الويب هوك
-      status = 'نجاح';
-      logDetails = `تم استلام الإشارة بنجاح (تليجرام غير مفعّل) | ${signalDetails}`;
+      status = 'فشل';
+      logDetails = `لم يتم إعداد توكن تليجرام لهذا المستخدم في لوحة التحكم`;
     }
 
-    // إضافة العملية إلى سجل العمليات (Logs)
-    const newLog = {
-      id: Date.now().toString(),
-      time: 'الآن',
-      endpoint: `/api/webhook/${slug}`,
-      platform: 'Telegram',
-      status: status,
-      details: logDetails
-    };
-
-    globalLogs.unshift(newLog);
+    // 3. حفظ السجل مباشرة في قاعدة بيانات Supabase (جدول webhook_logs)
+    await supabase.from('webhook_logs').insert([
+      {
+        slug: slug,
+        platform: 'Telegram',
+        status: status,
+        details: logDetails,
+      }
+    ]);
 
     return NextResponse.json(
       { success: status === 'نجاح', message: logDetails, slug, data: body },
@@ -72,17 +84,6 @@ export async function POST(
     );
 
   } catch (error: any) {
-    // تسجيل حالة الفشل إذا حدث خطأ في استقبال الـ JSON أو السيرفر
-    const errorLog = {
-      id: Date.now().toString(),
-      time: 'الآن',
-      endpoint: `/api/webhook/unknown`,
-      platform: 'Telegram',
-      status: 'فشل' as const,
-      details: `خطأ في معالجة الطلب: ${error.message}`
-    };
-    globalLogs.unshift(errorLog);
-
     return NextResponse.json(
       { success: false, error: 'Invalid JSON or server error' },
       { status: 400 }
@@ -90,9 +91,23 @@ export async function POST(
   }
 }
 
-// جلب السجلات لعرضها في لوحة التحكم
-export async function GET() {
-  return NextResponse.json({
-    logs: globalLogs
-  });
+// 4. جلب السجلات الخاصة بالـ slug لعرضها في لوحة التحكم
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ slug: string }> }
+) {
+  const { slug } = await context.params;
+  
+  const { data: logs, error } = await supabase
+    .from('webhook_logs')
+    .select('*')
+    .eq('slug', slug)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    return NextResponse.json({ logs: [] }, { status: 500 });
+  }
+
+  return NextResponse.json({ logs });
 }
