@@ -1,24 +1,41 @@
 import { NextResponse } from 'next/server';
 
+// قاعدة بيانات مؤقتة تفصل إشارات كل مستخدم لوحده
+const userWebhooks: Record<string, any[]> = {};
+
 export async function POST(
   request: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: { token: string } }
 ) {
   try {
-    const slug = params.slug; // يمثل اسم المستخدم أو المعرف الفريد مثل mohammed-zjzzc6
+    const { token } = await params;
     const body = await request.json();
 
-    // يمكنك هنا معالجة البيانات الواردة (مثل إرسالها إلى تيليجرام أو واتساب أو تخزينها)
-    console.log(`Webhook received for user/slug: ${slug}`, body);
+    if (!userWebhooks[token]) {
+      userWebhooks[token] = [];
+    }
 
-    return NextResponse.json(
-      { success: true, message: 'Webhook received successfully', data: body },
-      { status: 200 }
-    );
+    const newLog = {
+      id: Date.now(),
+      eventType: body.title || body.event || 'إشارة جديدة',
+      raw: body,
+      time: new Date().toLocaleTimeString()
+    };
+
+    userWebhooks[token].unshift(newLog);
+    if (userWebhooks[token].length > 50) userWebhooks[token].pop();
+
+    return NextResponse.json({ status: 'success', token, receivedData: newLog }, { status: 200 });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: 'Invalid JSON or server error' },
-      { status: 400 }
-    );
+    return NextResponse.json({ status: 'error', error: String(error) }, { status: 500 });
   }
+}
+
+export async function GET(
+  request: Request,
+  { params }: { params: { token: string } }
+) {
+  const { token } = await params;
+  const logs = userWebhooks[token] || [];
+  return NextResponse.json({ token, logs }, { status: 200 });
 }
