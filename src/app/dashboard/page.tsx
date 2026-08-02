@@ -1,41 +1,71 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [username, setUsername] = useState('');
   const [webhookUrl, setWebhookUrl] = useState('');
   
-  // حالات خاصة بربط قناة تلجرام
+  // حالات قنوات الإشعارات المختلفة
   const [telegramToken, setTelegramToken] = useState('');
   const [telegramChatId, setTelegramChatId] = useState('');
-  const [isTelegramSaved, setIsTelegramSaved] = useState(false);
+  
+  const [whatsappPhone, setWhatsappPhone] = useState('');
+  const [whatsappApiKey, setWhatsappApiKey] = useState('');
+  
+  const [discordWebhook, setDiscordWebhook] = useState('');
+  
+  const [activeTab, setActiveTab] = useState<'telegram' | 'whatsapp' | 'discord'>('telegram');
+  const [statusMessage, setStatusMessage] = useState('');
 
   useEffect(() => {
-    const user = localStorage.getItem('signal_user') || 'Mohammed';
+    const user = localStorage.getItem('signal_user');
+    // إذا لم يكن هناك مستخدم مسجل، قم بإعادته فوراً لصفحة الدخول لمنع الدخول غير المرخص
+    if (!user) {
+      router.push('/');
+      return;
+    }
+    
     setUsername(user);
     
     if (typeof window !== 'undefined') {
       setWebhookUrl(`${window.location.origin}/api/webhook/${user.toLowerCase()}`);
     }
 
-    // استرجاع إعدادات تلجرام المحفوظة مسبقاً إن وجدت
-    const savedToken = localStorage.getItem('telegram_token') || '';
-    const savedChatId = localStorage.getItem('telegram_chat_id') || '';
-    if (savedToken) setTelegramToken(savedToken);
-    if (savedChatId) setTelegramChatId(savedChatId);
-  }, []);
+    // استرجاع الإعدادات المحفوظة
+    setTelegramToken(localStorage.getItem('telegram_token') || '');
+    setTelegramChatId(localStorage.getItem('telegram_chat_id') || '');
+    setWhatsappPhone(localStorage.getItem('whatsapp_phone') || '');
+    setWhatsappApiKey(localStorage.getItem('whatsapp_apikey') || '');
+    setDiscordWebhook(localStorage.getItem('discord_webhook') || '');
+  }, [router]);
 
   const generateNewWebhook = () => {
     const randomSuffix = Math.random().toString(36).substring(7);
     setWebhookUrl(`${window.location.origin}/api/webhook/${username.toLowerCase()}-${randomSuffix}`);
   };
 
-  const handleSaveTelegram = (e: React.FormEvent) => {
+  const handleSaveSettings = (e: React.FormEvent, channel: string) => {
     e.preventDefault();
-    localStorage.setItem('telegram_token', telegramToken);
-    localStorage.setItem('telegram_chat_id', telegramChatId);
-    setIsTelegramSaved(true);
-    setTimeout(() => setIsTelegramSaved(false), 3000);
+    if (channel === 'telegram') {
+      localStorage.setItem('telegram_token', telegramToken);
+      localStorage.setItem('telegram_chat_id', telegramChatId);
+    } else if (channel === 'whatsapp') {
+      localStorage.setItem('whatsapp_phone', whatsappPhone);
+      localStorage.setItem('whatsapp_apikey', whatsappApiKey);
+    } else if (channel === 'discord') {
+      localStorage.setItem('discord_webhook', discordWebhook);
+    }
+
+    setStatusMessage(`تم حفظ إعدادات ${channel === 'telegram' ? 'تليجرام' : channel === 'whatsapp' ? 'واتساب' : 'ديسكورد'} بنجاح!`);
+    setTimeout(() => setStatusMessage(''), 3000);
+  };
+
+  // دالة إنهاء الجلسة وتسجيل الخروج لمنع التداخل
+  const handleLogout = () => {
+    localStorage.removeItem('signal_user');
+    router.push('/');
   };
 
   return (
@@ -49,7 +79,7 @@ export default function DashboardPage() {
               <span className="bg-blue-600/20 text-blue-400 text-xs font-semibold px-2.5 py-1 rounded-md border border-blue-500/30">نظام نشط</span>
               <h1 className="text-xl md:text-2xl font-bold tracking-tight">لوحة التحكم الذكية</h1>
             </div>
-            <p className="text-gray-400 text-sm mt-1">مرحباً بك مجدداً، نظرة عامة على أداء نظام الوهابيكس وإشارات التداول</p>
+            <p className="text-gray-400 text-sm mt-1">مرحباً بك مجدداً، إدارة إشارات التداول وتوجيهها للمنصات المختلفة</p>
           </div>
           
           <div className="flex items-center gap-3">
@@ -58,8 +88,17 @@ export default function DashboardPage() {
               متصل بالخدمة
             </span>
             <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20">
-              {username.slice(0, 2).toUpperCase()}
+              {username ? username.slice(0, 2).toUpperCase() : 'US'}
             </div>
+            
+            {/* زر تسجيل الخروج لإنهاء الجلسة */}
+            <button
+              onClick={handleLogout}
+              title="تسجيل الخروج"
+              className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 hover:text-red-300 px-3.5 py-2 rounded-xl text-xs font-medium transition flex items-center gap-1.5"
+            >
+              <span>🚪</span> تسجيل خروج
+            </button>
           </div>
         </div>
 
@@ -93,13 +132,13 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* قسم رابط الاستقبال (Webhook URL) */}
+        {/* قسم رابط الاستقبال الأساسي (Webhook URL) */}
         <div className="bg-[#101726] border border-gray-800/80 p-6 rounded-2xl shadow-lg space-y-4">
           <div>
             <h2 className="text-base font-bold flex items-center gap-2">
-              <span>🔗</span> رابط الاستقبال الخاص بك (Webhook URL)
+              <span>🔗</span> رابط الاستقبال الأساسي (Webhook URL)
             </h2>
-            <p className="text-gray-400 text-xs mt-1">استخدم هذا الرابط في منصات التداول أو المتاجر لإرسال التنبيهات الفورية</p>
+            <p className="text-gray-400 text-xs mt-1">استخدم هذا الرابط في منصات التداول (مثل TradingView) لاستقبال الإشارات</p>
           </div>
 
           <div className="flex flex-col md:flex-row gap-3">
@@ -118,54 +157,127 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* قسم ربط قناة تليجرام الجديد */}
-        <div className="bg-[#101726] border border-gray-800/80 p-6 rounded-2xl shadow-lg space-y-4">
+        {/* مركز ربط قنوات الإشعارات (تليجرام، واتساب، ديسكورد) */}
+        <div className="bg-[#101726] border border-gray-800/80 p-6 rounded-2xl shadow-lg space-y-6">
           <div>
             <h2 className="text-base font-bold flex items-center gap-2">
-              <span>🤖</span> ربط قناة تليجرام للإشعارات الفورية
+              <span>🚀</span> قنوات توجيه وإرسال الإشارات
             </h2>
-            <p className="text-gray-400 text-xs mt-1">قم بإدخال بيانات بوت تليجرام ومعرف القناة ليصلك كل تنبيه جديد مباشرة على القناة</p>
+            <p className="text-gray-400 text-xs mt-1">اختر المنصة التي تريد توجيه التنبيهات الفورية إليها تلقائياً فور استلام الإشارة</p>
           </div>
 
-          <form onSubmit={handleSaveTelegram} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-gray-300 mb-1.5">توكن البوت (Bot Token)</label>
-                <input 
-                  type="password" 
-                  value={telegramToken}
-                  onChange={(e) => setTelegramToken(e.target.value)}
-                  placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
-                  className="w-full bg-[#07090e] border border-gray-800 rounded-xl px-4 py-3 text-white text-xs focus:outline-none focus:border-blue-500"
-                />
+          {/* تبويبات التنقل بين المنصات */}
+          <div className="flex flex-wrap gap-2 border-b border-gray-800 pb-4">
+            <button
+              onClick={() => setActiveTab('telegram')}
+              className={`px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 ${activeTab === 'telegram' ? 'bg-blue-600 text-white shadow-lg' : 'bg-[#07090e] text-gray-400 hover:text-white border border-gray-800'}`}
+            >
+              <span>🤖</span> تليجرام (Telegram)
+            </button>
+            <button
+              onClick={() => setActiveTab('whatsapp')}
+              className={`px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 ${activeTab === 'whatsapp' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-[#07090e] text-gray-400 hover:text-white border border-gray-800'}`}
+            >
+              <span>💬</span> واتساب (WhatsApp)
+            </button>
+            <button
+              onClick={() => setActiveTab('discord')}
+              className={`px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 ${activeTab === 'discord' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-[#07090e] text-gray-400 hover:text-white border border-gray-800'}`}
+            >
+              <span>🎧</span> ديسكورد (Discord)
+            </button>
+          </div>
+
+          {/* محتوى تبويب تليجرام */}
+          {activeTab === 'telegram' && (
+            <form onSubmit={(e) => handleSaveSettings(e, 'telegram')} className="space-y-4 animate-fade-in">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-300 mb-1.5">توكن البوت (Bot Token)</label>
+                  <input 
+                    type="password" 
+                    value={telegramToken}
+                    onChange={(e) => setTelegramToken(e.target.value)}
+                    placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+                    className="w-full bg-[#07090e] border border-gray-800 rounded-xl px-4 py-3 text-white text-xs focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-300 mb-1.5">معرف القناة أو المستخدم (Chat ID)</label>
+                  <input 
+                    type="text" 
+                    value={telegramChatId}
+                    onChange={(e) => setTelegramChatId(e.target.value)}
+                    placeholder="@MyChannel یا -100xxxxxxxxx"
+                    className="w-full bg-[#07090e] border border-gray-800 rounded-xl px-4 py-3 text-white text-xs focus:outline-none focus:border-blue-500"
+                  />
+                </div>
               </div>
+              <div className="flex items-center justify-between pt-2">
+                {statusMessage ? <span className="text-emerald-400 text-xs font-semibold">{statusMessage}</span> : <span></span>}
+                <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-2.5 rounded-xl transition text-xs shadow-md ml-auto">
+                  حفظ إعدادات تليجرام
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* محتوى تبويب واتساب */}
+          {activeTab === 'whatsapp' && (
+            <form onSubmit={(e) => handleSaveSettings(e, 'whatsapp')} className="space-y-4 animate-fade-in">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-300 mb-1.5">رقم الهاتف (مع رمز الدولة)</label>
+                  <input 
+                    type="text" 
+                    value={whatsappPhone}
+                    onChange={(e) => setWhatsappPhone(e.target.value)}
+                    placeholder="+966500000000"
+                    className="w-full bg-[#07090e] border border-gray-800 rounded-xl px-4 py-3 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-300 mb-1.5">مفتاح API الخاص بالخدمة (Instance/Token)</label>
+                  <input 
+                    type="password" 
+                    value={whatsappApiKey}
+                    onChange={(e) => setWhatsappApiKey(e.target.value)}
+                    placeholder="التوكن الخاص ببرمجة الواتساب"
+                    className="w-full bg-[#07090e] border border-gray-800 rounded-xl px-4 py-3 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                {statusMessage ? <span className="text-emerald-400 text-xs font-semibold">{statusMessage}</span> : <span></span>}
+                <button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-6 py-2.5 rounded-xl transition text-xs shadow-md ml-auto">
+                  حفظ إعدادات واتساب
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* محتوى تبويب ديسكورد */}
+          {activeTab === 'discord' && (
+            <form onSubmit={(e) => handleSaveSettings(e, 'discord')} className="space-y-4 animate-fade-in">
               <div>
-                <label className="block text-xs text-gray-300 mb-1.5">معرف القناة أو المستخدم (Chat ID)</label>
+                <label className="block text-xs text-gray-300 mb-1.5">رابط ويب هوك سيرفر ديسكورد (Discord Webhook URL)</label>
                 <input 
                   type="text" 
-                  value={telegramChatId}
-                  onChange={(e) => setTelegramChatId(e.target.value)}
-                  placeholder="@MyChannel یا -100xxxxxxxxx"
-                  className="w-full bg-[#07090e] border border-gray-800 rounded-xl px-4 py-3 text-white text-xs focus:outline-none focus:border-blue-500"
+                  value={discordWebhook}
+                  onChange={(e) => setDiscordWebhook(e.target.value)}
+                  placeholder="https://discord.com/api/webhooks/..."
+                  className="w-full bg-[#07090e] border border-gray-800 rounded-xl px-4 py-3 text-white text-xs focus:outline-none focus:border-indigo-500"
                 />
               </div>
-            </div>
+              <div className="flex items-center justify-between pt-2">
+                {statusMessage ? <span className="text-emerald-400 text-xs font-semibold">{statusMessage}</span> : <span></span>}
+                <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl transition text-xs shadow-md ml-auto">
+                  حفظ إعدادات ديسكورد
+                </button>
+              </div>
+            </form>
+          )}
 
-            <div className="flex items-center justify-between pt-2">
-              {isTelegramSaved ? (
-                <span className="text-emerald-400 text-xs font-semibold animate-fade-in">
-                  ✓ تم حفظ إعدادات تليجرام بنجاح!
-                </span>
-              ) : <span></span>}
-              
-              <button 
-                type="submit"
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-6 py-2.5 rounded-xl transition text-xs shadow-md ml-auto"
-              >
-                حفظ إعدادات تليجرام
-              </button>
-            </div>
-          </form>
         </div>
 
       </div>
