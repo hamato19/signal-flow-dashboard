@@ -2,6 +2,15 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+interface LogItem {
+  id: string;
+  time: string;
+  endpoint: string;
+  platform: 'Telegram' | 'WhatsApp' | 'Discord';
+  status: 'نجاح' | 'فشل';
+  details: string;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [username, setUsername] = useState('');
@@ -25,7 +34,13 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'telegram' | 'whatsapp' | 'discord'>('telegram');
   const [statusMessage, setStatusMessage] = useState('');
 
-  // تحديد حدود الروابط لكل باقة
+  // سجل العمليات (Logs)
+  const [logs, setLogs] = useState<LogItem[]>([
+    { id: '1', time: 'منذ دقيقتين', endpoint: '/api/webhook/fahad', platform: 'Telegram', status: 'نجاح', details: 'إشارة شراء BTCUSDT - صفقات ناجحة' },
+    { id: '2', time: 'منذ 15 دقيقة', endpoint: '/api/webhook/fahad', platform: 'Discord', status: 'نجاح', details: 'تنبيه اختراق مقاومة ETHUSDT' },
+    { id: '3', time: 'منذ ساعة', endpoint: '/api/webhook/fahad-x1', platform: 'WhatsApp', status: 'فشل', details: 'خطأ في المصادقة (Invalid API Key)' },
+  ]);
+
   const getPlanLimit = (plan: string) => {
     switch (plan) {
       case 'free': return 5;
@@ -58,7 +73,6 @@ export default function DashboardPage() {
     setUsername(user);
     setCurrentPlan(plan);
     
-    // استرجاع أو إنشائي أول رابط أساسي
     const savedUrls = localStorage.getItem(`webhook_list_${user}`);
     if (savedUrls) {
       const parsed = JSON.parse(savedUrls);
@@ -71,7 +85,6 @@ export default function DashboardPage() {
       localStorage.setItem(`webhook_list_${user}`, JSON.stringify([initialUrl]));
     }
 
-    // استرجاع إعدادات القنوات
     setTelegramToken(localStorage.getItem('telegram_token') || '');
     setTelegramChatId(localStorage.getItem('telegram_chat_id') || '');
     setWhatsappPhone(localStorage.getItem('whatsapp_phone') || '');
@@ -79,7 +92,6 @@ export default function DashboardPage() {
     setDiscordWebhook(localStorage.getItem('discord_webhook') || '');
   }, [router]);
 
-  // دالة توليد رابط ويب هوك جديد مع التحقق من حدود الباقة
   const generateNewWebhook = () => {
     setLimitError('');
     const limit = getPlanLimit(currentPlan);
@@ -98,7 +110,6 @@ export default function DashboardPage() {
     localStorage.setItem(`webhook_list_${username}`, JSON.stringify(updatedUrls));
   };
 
-  // دالة نسخ الرابط مع مؤشر تفاعلي
   const handleCopy = (urlToCopy: string) => {
     navigator.clipboard.writeText(urlToCopy);
     setCopyStatus(true);
@@ -125,6 +136,10 @@ export default function DashboardPage() {
     localStorage.removeItem('signal_user');
     localStorage.removeItem('signal_plan');
     router.push('/');
+  };
+
+  const clearLogs = () => {
+    setLogs([]);
   };
 
   const maxLimit = getPlanLimit(currentPlan);
@@ -195,7 +210,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* قسم إدارة وعرض روابط الويب هوك (Webhook URLs) مع زر النسخ والتوليد */}
+        {/* قسم إدارة وعرض روابط الويب هوك */}
         <div className="bg-[#101726] border border-gray-800/80 p-6 rounded-2xl shadow-lg space-y-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
             <div>
@@ -219,7 +234,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* حقل عرض الرابط النشط مع زر النسخ */}
           <div className="flex flex-col md:flex-row gap-3">
             <input 
               type="text" 
@@ -239,7 +253,6 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* قائمة الروابط المולّدة السابقة إن وجدت */}
           {webhookUrls.length > 1 && (
             <div className="pt-3 border-t border-gray-800/80 space-y-2">
               <p className="text-xs text-gray-400 font-medium">سجل الروابط المולّدة (اضغط للتفعيل):</p>
@@ -274,7 +287,6 @@ export default function DashboardPage() {
             <p className="text-gray-400 text-xs mt-1">اختر المنصة التي تريد توجيه التنبيهات الفورية إليها تلقائياً فور استلام الإشارة</p>
           </div>
 
-          {/* تبويبات التنقل بين المنصات */}
           <div className="flex flex-wrap gap-2 border-b border-gray-800 pb-4">
             <button
               onClick={() => setActiveTab('telegram')}
@@ -296,7 +308,6 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* محتوى تبويب تليجرام */}
           {activeTab === 'telegram' && (
             <form onSubmit={(e) => handleSaveSettings(e, 'telegram')} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -330,7 +341,6 @@ export default function DashboardPage() {
             </form>
           )}
 
-          {/* محتوى تبويب واتساب */}
           {activeTab === 'whatsapp' && (
             <form onSubmit={(e) => handleSaveSettings(e, 'whatsapp')} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -364,7 +374,6 @@ export default function DashboardPage() {
             </form>
           )}
 
-          {/* محتوى تبويب ديسكورد */}
           {activeTab === 'discord' && (
             <form onSubmit={(e) => handleSaveSettings(e, 'discord')} className="space-y-4">
               <div>
@@ -386,6 +395,67 @@ export default function DashboardPage() {
             </form>
           )}
 
+        </div>
+
+        {/* قسم سجل العمليات (Webhook Activity Logs) في الأسفل */}
+        <div className="bg-[#101726] border border-gray-800/80 p-6 rounded-2xl shadow-lg space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-base font-bold flex items-center gap-2">
+                <span>📋</span> سجل العمليات والطلبات الواردة (Webhook Logs)
+              </h2>
+              <p className="text-gray-400 text-xs mt-1">متابعة حالة استلام الإشارات وتوجيهها للمنصات لحظياً</p>
+            </div>
+            {logs.length > 0 && (
+              <button 
+                onClick={clearLogs}
+                className="text-gray-400 hover:text-red-400 text-xs transition border border-gray-800 hover:border-red-500/30 px-3 py-1.5 rounded-xl bg-[#07090e]"
+              >
+                مسح السجل
+              </button>
+            )}
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-right text-xs">
+              <thead>
+                <tr className="border-b border-gray-800 text-gray-400">
+                  <th className="pb-3 font-medium">الوقت</th>
+                  <th className="pb-3 font-medium">الرابط المستهدف</th>
+                  <th className="pb-3 font-medium">المنصة</th>
+                  <th className="pb-3 font-medium">الحالة</th>
+                  <th className="pb-3 font-medium">التفاصيل</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800/60 font-mono">
+                {logs.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-6 text-gray-500 font-sans">
+                      لا توجد سجلات حالية.
+                    </td>
+                  </tr>
+                ) : (
+                  logs.map((log) => (
+                    <tr key={log.id} className="hover:bg-[#07090e]/40 transition">
+                      <td className="py-3 text-gray-400 whitespace-nowrap">{log.time}</td>
+                      <td className="py-3 text-blue-400 max-w-[150px] truncate">{log.endpoint}</td>
+                      <td className="py-3 text-gray-300 font-sans">{log.platform}</td>
+                      <td className="py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-sans font-semibold ${
+                          log.status === 'نجاح' 
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
+                            : 'bg-red-500/10 text-red-400 border border-red-500/30'
+                        }`}>
+                          {log.status}
+                        </span>
+                      </td>
+                      <td className="py-3 text-gray-300 font-sans">{log.details}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>
