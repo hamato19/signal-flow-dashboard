@@ -172,7 +172,8 @@ Signal</h1>
         
         <div className="flex justify-between items-center mb-8 bg-gray-900/60 p-4 rounded-2xl border border-gray-800">
           <div>
-            <h1 className="text-xl font-bold">لوحة تحكم الوسيط الشامل</h1>
+            <h1 className="text-xl font-bold">لوحة تحكم  Hook
+Signal</h1>
             <p className="text-xs text-blue-400 mt-0.5">المعرف: <span className="font-mono text-gray-300">{slug}</span></p>
           </div>
           <button 
