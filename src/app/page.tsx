@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
+import { createBrowserClient } from '@supabase/ssr';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -9,7 +9,11 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   
-  const supabase = createClient();
+  // إنشاء عميل Supabase مباشرة لمنع أخطاء مسارات الملفات أثناء البناء
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  );
 
   const plans = [
     { id: 'free', name: 'الباقة التجريبية', links: '5 روابط مجاناً', price: '0 ر.س', color: 'border-gray-700/60 bg-gray-900/40' },
@@ -31,7 +35,7 @@ export default function LoginPage() {
     }, 600);
   };
 
-  // الدخول السريع المباشر عبر Google (عبر Supabase Auth)
+  // الدخول السريع المباشر عبر Google
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     localStorage.setItem('signal_plan', selectedPlan);
@@ -50,10 +54,10 @@ export default function LoginPage() {
     }
   };
 
-  // طرق سريعة بديلة وخفيفة (دخول فوري بدون تعقيد)
-  const handleQuickAccess = (type: string) => {
+  // الدخول السريع البديل (تجربة فورية)
+  const handleQuickAccess = () => {
     setIsLoading(true);
-    localStorage.setItem('signal_user', type === 'guest' ? 'زائر سريعة' : 'مستخدم سريع');
+    localStorage.setItem('signal_user', 'زائر سريع');
     localStorage.setItem('signal_plan', selectedPlan);
     
     setTimeout(() => {
@@ -107,10 +111,10 @@ export default function LoginPage() {
               <span>متابعة باستخدام Google</span>
             </button>
 
-            {/* زر الدخول السريع للزوار / التجربة الفورية */}
+            {/* زر الدخول السريع للزوار */}
             <button
               type="button"
-              onClick={() => handleQuickAccess('guest')}
+              onClick={handleQuickAccess}
               disabled={isLoading}
               className="flex items-center justify-center gap-2 bg-[#131b2e] border border-gray-800 hover:border-indigo-500/50 hover:bg-[#1a243d] py-3 px-4 rounded-xl text-xs font-medium transition active:scale-[0.98] disabled:opacity-50 shadow-sm text-indigo-300"
             >
