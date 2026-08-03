@@ -4,13 +4,6 @@ import { useRouter } from 'next/navigation';
 export default function LandingPage() {
   const router = useRouter();
 
-  const features = [
-    { icon: '⚡', title: 'إرسال فوري ولحظي', desc: 'استقبال وتوجيه إشارات التداول والويب هوك في أجزاء من الثانية دون تأخير.' },
-    { icon: '💬', title: 'تعدد القنوات المتاحة', desc: 'ربط متزامن مع تيليجرام، ديسكورد، وواتساب بروابط مخصصة لكل مستخدم.' },
-    { icon: '🛡️', title: 'استقلالية وأمان تام', desc: 'كل مستخدم يمتلك معرف (Slug) ورابط ويب هوك خاص به مع حماية كاملة من التعارض.' },
-    { icon: '📊', title: 'لوحة تحكم مرنة', desc: 'إدارة وتعديل إعدادات البوتات وحفظها مباشرة في قاعدة بيانات سحابية مستقرة.' }
-  ];
-
   const handleStartFree = () => {
     router.push('/dashboard');
   };
@@ -65,22 +58,45 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* مميزات النظام */}
-      <section className="relative z-10 max-w-6xl mx-auto px-6 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">لماذا تختار نظامنا؟</h2>
-          <p className="text-gray-400 text-xs sm:text-sm mt-2">مميزات هندسية صُممت لتناسب المتداولين والمطورين المحترفين</p>
+      {/* قسم المنصات المدعومة (أيقونات متجاورة) */}
+      <section className="relative z-10 max-w-5xl mx-auto px-6 py-16">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">المنصات المدعومة للربط بشكل كامل</h2>
+          <p className="text-gray-400 text-xs sm:text-sm">قم بربط قنواتك ومنصاتك المفضلة بضغطة زر واحدة بكل سهولة ومرونة</p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feat, idx) => (
-            <div key={idx} className="bg-gray-900/50 border border-gray-800/80 p-6 rounded-2xl backdrop-blur space-y-3 hover:border-gray-700 transition">
-              <div className="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-xl">
-                {feat.icon}
-              </div>
-              <h3 className="font-semibold text-sm text-white">{feat.title}</h3>
-              <p className="text-gray-400 text-xs leading-relaxed">{feat.desc}</p>
-            </div>
-          ))}
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+          
+          <div className="bg-gray-900/60 border border-gray-800/80 p-5 rounded-2xl flex flex-col items-center justify-center gap-3 backdrop-blur hover:border-blue-500/50 hover:bg-blue-600/10 transition group">
+            <span className="text-3xl group-hover:scale-110 transition duration-300">📢</span>
+            <span className="text-xs font-semibold text-gray-300">Telegram</span>
+          </div>
+
+          <div className="bg-gray-900/60 border border-gray-800/80 p-5 rounded-2xl flex flex-col items-center justify-center gap-3 backdrop-blur hover:border-green-500/50 hover:bg-green-600/10 transition group">
+            <span className="text-3xl group-hover:scale-110 transition duration-300">💬</span>
+            <span className="text-xs font-semibold text-gray-300">WhatsApp</span>
+          </div>
+
+          <div className="bg-gray-900/60 border border-gray-800/80 p-5 rounded-2xl flex flex-col items-center justify-center gap-3 backdrop-blur hover:border-indigo-500/50 hover:bg-indigo-600/10 transition group">
+            <span className="text-3xl group-hover:scale-110 transition duration-300">🤖</span>
+            <span className="text-xs font-semibold text-gray-300">Discord</span>
+          </div>
+
+          <div className="bg-gray-900/60 border border-gray-800/80 p-5 rounded-2xl flex flex-col items-center justify-center gap-3 backdrop-blur hover:border-purple-500/50 hover:bg-purple-600/10 transition group">
+            <span className="text-3xl group-hover:scale-110 transition duration-300">💼</span>
+            <span className="text-xs font-semibold text-gray-300">Slack</span>
+          </div>
+
+          <div className="bg-gray-900/60 border border-gray-800/80 p-5 rounded-2xl flex flex-col items-center justify-center gap-3 backdrop-blur hover:border-blue-600/50 hover:bg-blue-700/10 transition group">
+            <span className="text-3xl group-hover:scale-110 transition duration-300">👥</span>
+            <span className="text-xs font-semibold text-gray-300">Teams</span>
+          </div>
+
+          <div className="bg-gray-900/60 border border-gray-800/80 p-5 rounded-2xl flex flex-col items-center justify-center gap-3 backdrop-blur hover:border-amber-500/50 hover:bg-amber-600/10 transition group">
+            <span className="text-3xl group-hover:scale-110 transition duration-300">⚡</span>
+            <span className="text-xs font-semibold text-gray-300">Custom Webhook</span>
+          </div>
+
         </div>
       </section>
 
