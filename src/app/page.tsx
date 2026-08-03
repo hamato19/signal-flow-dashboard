@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -15,6 +15,42 @@ export default function LoginPage() {
     { id: 'unlimited', name: 'الباقة المفتوحة', links: 'روابط غير محدودة', price: '250 ر.س', color: 'border-purple-500/50 bg-purple-600/10' },
   ];
 
+  // تفعيل سكريبت جوجل الرسمي عند تحميل الصفحة
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    // دالة الاستجابة عند نجاح تسجيل دخول جوجل
+    (window as any).handleCredentialResponse = (response: any) => {
+      try {
+        // فك تشفير الـ JWT Token البسيط المستلم من جوجل للحصول على البريد والاسم
+        const base64Url = response.credential.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        
+        const googleUser = JSON.parse(jsonPayload);
+        
+        localStorage.setItem('signal_user', googleUser.name || googleUser.email);
+        localStorage.setItem('signal_plan', selectedPlan);
+        localStorage.setItem('signal_email', googleUser.email);
+        
+        router.push('/dashboard');
+      } catch (error) {
+        console.error('Google login decode error:', error);
+        setIsLoading(false);
+      }
+    };
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, [selectedPlan, router]);
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) return;
@@ -28,18 +64,43 @@ export default function LoginPage() {
     }, 600);
   };
 
-  // تسجيل الدخول السريع عبر Google (محاكاة سلسة بدون Supabase)
-  const handleGoogleLogin = async () => {
+  // تشغيل نافذة جوجل الرسمية عند الضغط على الزر
+  const handleGoogleClick = () => {
     setIsLoading(true);
-    localStorage.setItem('signal_plan', selectedPlan);
-
-    setTimeout(() => {
-      localStorage.setItem('signal_user', 'مستخدم جوجل');
-      router.push('/dashboard');
-    }, 600);
+    try {
+      if ((window as any).google) {
+        const client = (window as any).google.accounts.oauth2.initTokenClient({
+          client_id: '874339007266-k9ajl932htm0n4lr1pr2vlqp5t48gkck.apps.googleusercontent.com',
+          scope: 'email profile',
+          callback: (tokenResponse: any) => {
+            if (tokenResponse && tokenResponse.access_token) {
+              // جلب معلومات المستخدم من قوقل باستخدام الـ Access Token
+              fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+              })
+                .then(res => res.json())
+                .then(data => {
+                  localStorage.setItem('signal_user', data.name || data.email);
+                  localStorage.setItem('signal_plan', selectedPlan);
+                  localStorage.setItem('signal_email', data.email);
+                  router.push('/dashboard');
+                })
+                .catch(() => setIsLoading(false));
+            } else {
+              setIsLoading(false);
+            }
+          },
+        });
+        client.requestAccessToken();
+      } else {
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setIsLoading(false);
+    }
   };
 
-  // الدخول السريع الفوري للزوار
   const handleQuickAccess = () => {
     setIsLoading(true);
     localStorage.setItem('signal_user', 'زائر سريع');
@@ -78,7 +139,7 @@ export default function LoginPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <button
               type="button"
-              onClick={handleGoogleLogin}
+              onClick={handleGoogleClick}
               disabled={isLoading}
               className="flex items-center justify-center gap-2 bg-[#131b2e] border border-gray-800 hover:border-blue-500/50 hover:bg-[#1a243d] py-3 px-4 rounded-xl text-xs font-medium transition active:scale-[0.98] disabled:opacity-50 shadow-sm"
             >
@@ -88,7 +149,7 @@ export default function LoginPage() {
                 <path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.5-.38-2.24s.13-1.52.38-2.24V6.6H1.18C.43 8.13 0 9.87 0 12s.43 3.87 1.18 5.4l4.09-3.16z"/>
                 <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.23 0 3.15 2.68 1.18 6.6l4.09 3.15c.95-2.85 3.6-4.96 6.73-4.96z"/>
               </svg>
-              <span>متابعة باستخدام Google</span>
+              <span>متابعة باستخدام Google الحقيقي</span>
             </button>
 
             <button
@@ -159,7 +220,7 @@ export default function LoginPage() {
           <button 
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:opacity-95 active:scale-[0.99] text-white font-medium py-3.5 rounded-xl transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:opacity-95 active:scale-[0.99] text-white font-medium py.3.5 rounded-xl transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 text-sm disabled:opacity-50 py-3.5"
           >
             {isLoading ? (
               <>
