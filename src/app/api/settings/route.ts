@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   }
 }
 
-// 2. حفظ أو تحديث البيانات عند الضغط على زر حفظ (POST)
+// 2. حفظ أو تحديث البيانات مع التحقق من عدم تعارض الـ Slug (POST)
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -39,7 +39,8 @@ export async function POST(request: Request) {
       telegram_chat_id, 
       whatsapp_token, 
       whatsapp_phone_id, 
-      discord_webhook 
+      discord_webhook,
+      original_slug // (اختياري) تمريره إذا كان المستخدم يقوم بتعديل إعداداته الحالية
     } = body;
 
     if (!slug) {
@@ -48,7 +49,17 @@ export async function POST(request: Request) {
 
     const client = await pool.connect();
     try {
-      const existing = await client.query('SELECT id FROM user_settings WHERE slug = $1', [slug]);
+      // التحقق مما إذا كان الـ Slug الجديد مستخدماً مسبقاً من قِبل شخص آخر
+      const checkSlug = await client.query('SELECT slug FROM user_settings WHERE slug = $1', [slug]);
+      
+      if (checkSlug.rows.length > 0 && original_slug !== slug) {
+        return NextResponse.json(
+          { success: false, error: 'اسم المستخدم (Slug) مستخدم بالفعل من قبل شخص آخر، يرجى اختيار اسم غيره.' }, 
+          { status: 400 }
+        );
+      }
+
+      const existing = await client.query('SELECT slug FROM user_settings WHERE slug = $1', [slug]);
 
       if (existing.rows.length > 0) {
         await client.query(
@@ -96,4 +107,3 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
-
