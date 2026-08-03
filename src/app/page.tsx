@@ -21,7 +21,7 @@ export default function LandingPage() {
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 border border-blue-400/20">
             <span className="text-xl">⚡</span>
           </div>
-          <span className="font-bold text-lg tracking-tight">نظام إشارات التداول الآلي</span>
+          <span className="font-bold text-lg tracking-tight">نظام ويب هوك الآلي</span>
         </div>
         <button
           onClick={handleStartFree}
