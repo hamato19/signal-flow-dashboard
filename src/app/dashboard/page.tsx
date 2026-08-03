@@ -8,6 +8,7 @@ export default function Dashboard() {
   const [telegramToken, setTelegramToken] = useState('');
   const [telegramChatId, setTelegramChatId] = useState('');
   const [discordWebhook, setDiscordWebhook] = useState('');
+  const [channelId, setChannelId] = useState('');
 
   // جلب البيانات تلقائياً عند تحديث الصفحة
   useEffect(() => {
@@ -20,6 +21,7 @@ export default function Dashboard() {
           setTelegramToken(data.settings.telegram_token || '');
           setTelegramChatId(data.settings.telegram_chat_id || '');
           setDiscordWebhook(data.settings.discord_webhook || '');
+          setChannelId(data.settings.channel_id || '');
         }
       } catch (err) {
         console.error("خطأ في جلب البيانات", err);
@@ -40,13 +42,14 @@ export default function Dashboard() {
         telegram_token: telegramToken,
         telegram_chat_id: telegramChatId,
         discord_webhook: discordWebhook,
+        channel_id: channelId,
       }),
     });
     const data = await res.json();
     if (data.success) {
       alert('تم حفظ البيانات بنجاح');
     } else {
-      alert('خطأ: ' + data.error);
+      alert('خطأ: ' + (data.error || 'حدث خطأ غير معروف'));
     }
   };
 
@@ -60,6 +63,7 @@ export default function Dashboard() {
       setTelegramToken('');
       setTelegramChatId('');
       setDiscordWebhook('');
+      setChannelId('');
       alert('تم الحذف بنجاح');
     }
   };
@@ -106,6 +110,17 @@ export default function Dashboard() {
               type="text" 
               value={telegramChatId} 
               onChange={(e) => setTelegramChatId(e.target.value)} 
+              className="w-full p-2 bg-gray-900 border border-gray-700 rounded text-white" 
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">معرف القناة المرتبطة (Channel ID):</label>
+            <input 
+              type="text" 
+              value={channelId} 
+              onChange={(e) => setChannelId(e.target.value)} 
+              placeholder="-100xxxxxxxxxx"
               className="w-full p-2 bg-gray-900 border border-gray-700 rounded text-white" 
             />
           </div>
