@@ -138,7 +138,8 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white p-6 flex flex-col items-center justify-center">
         <div className="w-full max-w-md bg-gray-900/80 backdrop-blur border border-gray-800 p-8 rounded-2xl shadow-2xl">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">منصة الوسيط الشامل</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">منصة  Hook
+Signal</h1>
             <p className="text-sm text-gray-400 mt-2">أدخل اسم المستخدم (Slug) الخاص بك للوصول أو إنشاء لوحة التحكم</p>
           </div>
           <form onSubmit={handleLogin} className="space-y-4">
