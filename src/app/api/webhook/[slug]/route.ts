@@ -1,11 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-// إنشاء اتصال بـ Supabase باستخدام صلاحيات السيرفر
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+import { query } from '@/utils/neonDB'; // استصال قاعدة بيانات Neon
 
 export async function POST(
   request: Request,
@@ -15,14 +9,15 @@ export async function POST(
     const { slug } = await context.params;
     const body = await request.json();
 
-    // 1. جلب إعدادات المستخدم من جدول user_settings بناءً على الـ slug
-    const { data: userSettings, error: dbError } = await supabase
-      .from('user_settings')
-      .select('*')
-      .eq('slug', slug)
-      .single();
+    // 1. جلب إعدادات المستخدم من جدول user_settings باستخدام Neon
+    const userRows = await query(
+      'SELECT telegram_token, telegram_chat_id, username FROM user_settings WHERE slug = $1',
+      [slug]
+    );
 
-    if (dbError || !userSettings) {
+    const userSettings = userRows[0];
+
+    if (!userSettings) {
       return NextResponse.json(
         { success: false, error: 'رابط الويب هوك غير مسجل أو غير مفعول' },
         { status: 404 }
@@ -68,15 +63,11 @@ export async function POST(
       logDetails = `لم يتم إعداد توكن تليجرام لهذا المستخدم في لوحة التحكم`;
     }
 
-    // 3. حفظ السجل مباشرة في قاعدة بيانات Supabase (جدول webhook_logs)
-    await supabase.from('webhook_logs').insert([
-      {
-        slug: slug,
-        platform: 'Telegram',
-        status: status,
-        details: logDetails,
-      }
-    ]);
+    // 3. حفظ السجل مباشرة في قاعدة بيانات Neon (جدول webhook_logs)
+    await query(
+      'INSERT INTO webhook_logs (slug, platform, status, details, created_at) VALUES ($1, $2, $3, $4, NOW())',
+      [slug, 'Telegram', status, logDetails]
+    );
 
     return NextResponse.json(
       { success: status === 'نجاح', message: logDetails, slug, data: body },
@@ -91,23 +82,21 @@ export async function POST(
   }
 }
 
-// 4. جلب السجلات الخاصة بالـ slug لعرضها في لوحة التحكم
+// 4. جلب السجلات الخاصة بالـ slug لعرضها في لوحة التحكم عبر Neon
 export async function GET(
   request: Request,
   context: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = await context.params;
-  
-  const { data: logs, error } = await supabase
-    .from('webhook_logs')
-    .select('*')
-    .eq('slug', slug)
-    .order('created_at', { ascending: false })
-    .limit(50);
+  try {
+    const { slug } = await context.params;
+    
+    const logs = await query(
+      'SELECT * FROM webhook_logs WHERE slug = $1 ORDER BY created_at DESC LIMIT 50',
+      [slug]
+    );
 
-  if (error) {
+    return NextResponse.json({ logs });
+  } catch (error) {
     return NextResponse.json({ logs: [] }, { status: 500 });
   }
-
-  return NextResponse.json({ logs });
 }
