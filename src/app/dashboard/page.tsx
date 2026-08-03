@@ -2,25 +2,40 @@
 import { useEffect, useState } from 'react';
 
 export default function Dashboard() {
-  const slug = "mohammed-mohammed-ytai4j";
-  
+  // الـ Slug الحالي للمستخدم (يتم جلبه من التخزين المحلي أو تركها فارغة لتسجيل الدخول)
+  const [slug, setSlug] = useState('');
+  const [inputSlug, setInputSlug] = useState(''); // حقل إدخال الـ Slug أثناء تسجيل الدخول
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   const [username, setUsername] = useState('');
   const [telegramToken, setTelegramToken] = useState('');
   const [telegramChatId, setTelegramChatId] = useState('');
   const [discordWebhook, setDiscordWebhook] = useState('');
   const [channelId, setChannelId] = useState('');
+  const [whatsappToken, setWhatsappToken] = useState('');
+  const [whatsappPhoneId, setWhatsappPhoneId] = useState('');
   const [webhookUrl, setWebhookUrl] = useState('');
 
-  // توليد رابط الويب هوك تلقائياً بناءً على النطاق الحالي
+  // التحقق من وجود جلسة مخزنة مسبقاً عند فتح الصفحة
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    const savedSlug = localStorage.getItem('user_slug');
+    if (savedSlug) {
+      setSlug(savedSlug);
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  // توليد رابط الويب هوك تلقائياً بناءً على الـ Slug الخاص بالمستخدم
+  useEffect(() => {
+    if (slug && typeof window !== 'undefined') {
       const baseUrl = window.location.origin;
-      setWebhookUrl(`${baseUrl}/api/webhook?slug=${slug}`);
+      setWebhookUrl(`${baseUrl}/api/webhook/${slug}`);
     }
   }, [slug]);
 
-  // جلب البيانات تلقائياً عند تحديث الصفحة
+  // جلب البيانات تلقائياً عند تسجيل الدخول أو تحديث الصفحة
   useEffect(() => {
+    if (!slug) return;
     async function loadSettings() {
       try {
         const res = await fetch(`/api/settings?slug=${slug}`);
@@ -31,6 +46,8 @@ export default function Dashboard() {
           setTelegramChatId(data.settings.telegram_chat_id || '');
           setDiscordWebhook(data.settings.discord_webhook || '');
           setChannelId(data.settings.channel_id || '');
+          setWhatsappToken(data.settings.whatsapp_token || '');
+          setWhatsappPhoneId(data.settings.whatsapp_phone_id || '');
         }
       } catch (err) {
         console.error("خطأ في جلب البيانات", err);
@@ -38,6 +55,35 @@ export default function Dashboard() {
     }
     loadSettings();
   }, [slug]);
+
+  // تسجيل الدخول أو إنشاء حساب جديد بالـ Slug
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanSlug = inputSlug.trim().toLowerCase().replace(/\s+/g, '-');
+    if (!cleanSlug) {
+      alert('الرجاء إدخال اسم مستخدم (Slug) صحيح');
+      return;
+    }
+    localStorage.setItem('user_slug', cleanSlug);
+    setSlug(cleanSlug);
+    setIsLoggedIn(true);
+  };
+
+  // تسجيل الخروج
+  const handleLogout = () => {
+    localStorage.removeItem('user_slug');
+    setSlug('');
+    setIsLoggedIn(false);
+    setInputSlug('');
+    // إعادة تعيين الحقول
+    setUsername('');
+    setTelegramToken('');
+    setTelegramChatId('');
+    setDiscordWebhook('');
+    setChannelId('');
+    setWhatsappToken('');
+    setWhatsappPhoneId('');
+  };
 
   // حفظ الإعدادات
   const handleSave = async (e: React.FormEvent) => {
@@ -52,11 +98,13 @@ export default function Dashboard() {
         telegram_chat_id: telegramChatId,
         discord_webhook: discordWebhook,
         channel_id: channelId,
+        whatsapp_token: whatsappToken,
+        whatsapp_phone_id: whatsappPhoneId,
       }),
     });
     const data = await res.json();
     if (data.success) {
-      alert('تم حفظ البيانات بنجاح');
+      alert('✨ تم حفظ الإعدادات بنجاح في قاعدة البيانات');
     } else {
       alert('خطأ: ' + (data.error || 'حدث خطأ غير معروف'));
     }
@@ -64,125 +112,191 @@ export default function Dashboard() {
 
   // حذف السجل
   const handleDelete = async () => {
-    if (!confirm('هل أنت متأكد من الحذف؟')) return;
+    if (!confirm('هل أنت متأكد من حذف هذا الحساب نهائياً؟')) return;
     const res = await fetch(`/api/settings?slug=${slug}`, { method: 'DELETE' });
     const data = await res.json();
     if (data.success) {
-      setUsername('');
-      setTelegramToken('');
-      setTelegramChatId('');
-      setDiscordWebhook('');
-      setChannelId('');
-      alert('تم الحذف بنجاح');
+      alert('تم حذف الحساب بنجاح');
+      handleLogout();
     }
   };
 
   // نسخ رابط الويب هوك
   const copyWebhook = () => {
     navigator.clipboard.writeText(webhookUrl);
-    alert('تم نسخ رابط الويب هوك بنجاح!');
+    alert('📋 تم نسخ رابط الويب هوك بنجاح!');
   };
 
+  // 1. شاشة تسجيل الدخول / اختيار الـ Slug إذا لم يكن مسجلاً
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white p-6 flex flex-col items-center justify-center">
+        <div className="w-full max-w-md bg-gray-900/80 backdrop-blur border border-gray-800 p-8 rounded-2xl shadow-2xl">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">نظام إشارات التداول</h1>
+            <p className="text-sm text-gray-400 mt-2">أدخل اسم المستخدم (Slug) الخاص بك للوصول أو إنشاء لوحة التحكم</p>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">اسم المستخدم (Slug):</label>
+              <input 
+                type="text" 
+                value={inputSlug} 
+                onChange={(e) => setInputSlug(e.target.value)} 
+                placeholder="например: my-custom-signal"
+                required
+                className="w-full p-3 bg-black/50 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-blue-500 transition text-sm" 
+              />
+            </div>
+            <button 
+              type="submit" 
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition shadow-lg shadow-blue-600/20"
+            >
+              دخول / إنشاء لوحة التحكم
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. لوحة التحكم الرئيسية بعد تسجيل الدخول
   return (
-    <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center">
-      <div className="w-full max-w-lg">
-        <h1 className="text-2xl font-bold text-center mb-6">لوحة تحكم إشارات الويب هوك</h1>
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white p-6 flex flex-col items-center">
+      <div className="w-full max-w-2xl">
         
-        {/* قسم عرض وتوليد رابط الويب هوك */}
-        <div className="mb-6 p-4 bg-gray-900 border border-gray-700 rounded-lg">
-          <label className="block text-sm mb-2 text-blue-400 font-semibold">🔗 رابط الويب هوك الخاص بك:</label>
+        {/* رأس الصفحة مع زر تسجيل الخروج */}
+        <div className="flex justify-between items-center mb-8 bg-gray-900/60 p-4 rounded-2xl border border-gray-800">
+          <div>
+            <h1 className="text-xl font-bold">لوحة التحكم</h1>
+            <p className="text-xs text-blue-400 mt-0.5">المعرف: <span className="font-mono text-gray-300">{slug}</span></p>
+          </div>
+          <button 
+            onClick={handleLogout} 
+            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-4 py-2 rounded-xl text-xs font-medium transition"
+          >
+            تسجيل الخروج
+          </button>
+        </div>
+        
+        {/* قسم رابط الويب هوك */}
+        <div className="mb-6 p-5 bg-gray-900/80 border border-gray-800 rounded-2xl shadow-xl">
+          <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-blue-400">🔗 رابط الويب هوك الخاص بك (لإرساله إلى المنصات):</label>
           <div className="flex gap-2">
             <input 
               type="text" 
               value={webhookUrl} 
               readOnly 
-              className="w-full p-2 bg-black border border-gray-700 rounded text-gray-300 text-sm" 
+              className="w-full p-2.5 bg-black/60 border border-gray-700 rounded-xl text-gray-300 text-xs font-mono select-all" 
             />
             <button 
               type="button" 
               onClick={copyWebhook} 
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition whitespace-nowrap"
+              className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-xs font-medium transition whitespace-nowrap shadow-md shadow-blue-600/20"
             >
-              نسخ
+              نسخ الرابط
             </button>
           </div>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-4">
-          <div>
-            <label className="block text-sm mb-1">اسم المستخدم (Slug):</label>
-            <input 
-              type="text" 
-              value={slug} 
-              disabled 
-              className="w-full p-2 bg-gray-900 border border-gray-700 rounded text-gray-400" 
-            />
+        {/* نموذج الإعدادات */}
+        <form onSubmit={handleSave} className="space-y-4 bg-gray-900/50 border border-gray-800 p-6 rounded-2xl shadow-xl">
+          <h2 className="text-sm font-semibold text-gray-300 border-b border-gray-800 pb-3 mb-4">⚙️ إعدادات البوتات وقنوات التنبيه</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">الاسم الظاهري:</label>
+              <input 
+                type="text" 
+                value={username} 
+                onChange={(e) => setUsername(e.target.value)} 
+                placeholder="اسمك أو اسم قناتك"
+                className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition" 
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">معرف القناة المرتبطة (Channel ID):</label>
+              <input 
+                type="text" 
+                value={channelId} 
+                onChange={(e) => setChannelId(e.target.value)} 
+                placeholder="-100xxxxxxxxxx"
+                className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm mb-1">الاسم الظاهري:</label>
-            <input 
-              type="text" 
-              value={username} 
-              onChange={(e) => setUsername(e.target.value)} 
-              className="w-full p-2 bg-gray-900 border border-gray-700 rounded text-white" 
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm mb-1">Telegram Bot Token:</label>
+            <label className="block text-xs text-gray-400 mb-1">Telegram Bot Token:</label>
             <input 
               type="text" 
               value={telegramToken} 
               onChange={(e) => setTelegramToken(e.target.value)} 
-              className="w-full p-2 bg-gray-900 border border-gray-700 rounded text-white" 
+              placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+              className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
             />
           </div>
 
           <div>
-            <label className="block text-sm mb-1">Telegram Chat ID:</label>
+            <label className="block text-xs text-gray-400 mb-1">Telegram Chat ID:</label>
             <input 
               type="text" 
               value={telegramChatId} 
               onChange={(e) => setTelegramChatId(e.target.value)} 
-              className="w-full p-2 bg-gray-900 border border-gray-700 rounded text-white" 
+              placeholder="معرف الشات الشخصي أو المجموعة"
+              className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
             />
           </div>
 
-          <div>
-            <label className="block text-sm mb-1">معرف القناة المرتبطة (Channel ID):</label>
-            <input 
-              type="text" 
-              value={channelId} 
-              onChange={(e) => setChannelId(e.target.value)} 
-              placeholder="-100xxxxxxxxxx"
-              className="w-full p-2 bg-gray-900 border border-gray-700 rounded text-white" 
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">WhatsApp Token (اختياري):</label>
+              <input 
+                type="text" 
+                value={whatsappToken} 
+                onChange={(e) => setWhatsappToken(e.target.value)} 
+                placeholder="توكن ميتا للواتساب"
+                className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">WhatsApp Phone ID (اختياري):</label>
+              <input 
+                type="text" 
+                value={whatsappPhoneId} 
+                onChange={(e) => setWhatsappPhoneId(e.target.value)} 
+                placeholder="معرف رقم الهاتف"
+                className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm mb-1">Discord Webhook URL:</label>
+            <label className="block text-xs text-gray-400 mb-1">Discord Webhook URL:</label>
             <input 
               type="text" 
               value={discordWebhook} 
               onChange={(e) => setDiscordWebhook(e.target.value)} 
-              className="w-full p-2 bg-gray-900 border border-gray-700 rounded text-white" 
+              placeholder="https://discord.com/api/webhooks/..."
+              className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
             />
           </div>
 
-          <div className="flex gap-4 pt-4">
+          <div className="flex gap-4 pt-4 border-t border-gray-800">
             <button 
               type="submit" 
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-medium transition"
+              className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition shadow-lg shadow-blue-600/20 text-sm"
             >
               حفظ في قاعدة البيانات
             </button>
             <button 
               type="button" 
               onClick={handleDelete} 
-              className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded font-medium transition"
+              className="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 px-6 py-3 rounded-xl font-medium transition text-sm"
             >
-              حذف السجل
+              حذف الحساب
             </button>
           </div>
         </form>
