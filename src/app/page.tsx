@@ -1,6 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import Image from 'next/image';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -79,7 +80,7 @@ export default function LandingPage() {
           <p className="text-gray-400 text-xs sm:text-sm">قم بربط قنواتك ومنصاتك المفضلة بضغطة زر واحدة بكل سهولة ومرونة</p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-16">
           <div className="bg-gray-900/60 border border-gray-800/80 p-5 rounded-2xl flex flex-col items-center justify-center gap-3 backdrop-blur hover:border-sky-500/50 hover:bg-sky-500/10 transition group">
             <svg className="w-8 h-8 text-sky-400 group-hover:scale-110 transition duration-300" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m5.26 6.78-1.92 9.06c-.14.65-.52.81-1.05.5l-2.91-2.14-1.4 1.35c-.16.16-.29.3-.59.3l.21-2.97 5.4-4.88c.23-.21-.05-.33-.35-.12l-6.67 4.2-2.88-.9c-.63-.2-.64-.63.13-.93l11.25-4.34c.52-.2 1.01.12.83.84z"/>
@@ -122,6 +123,27 @@ export default function LandingPage() {
             <span className="text-xs font-semibold text-gray-300">Custom Webhook</span>
           </div>
         </div>
+
+        {/* لقطة شاشة لوحة التحكم المدمجة */}
+        <div className="max-w-4xl mx-auto rounded-2xl border border-gray-800 bg-gray-950/80 p-2 sm:p-4 shadow-2xl shadow-blue-600/20 backdrop-blur">
+          <div className="flex items-center justify-between px-3 py-2 mb-2 border-b border-gray-800/60">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
+              <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+              <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
+            </div>
+            <span className="text-[11px] text-gray-400 font-mono">signal-flow-dashboard / dashboard</span>
+          </div>
+          <div className="relative rounded-xl overflow-hidden border border-gray-800 aspect-video w-full bg-gray-900 flex items-center justify-center">
+            <Image 
+              src="/1785785304232.jpeg" 
+              alt="لوحة تحكم المنظومة" 
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
+        </div>
       </section>
 
       {/* التذييل */}
@@ -134,13 +156,13 @@ export default function LandingPage() {
       {/* ========================================== */}
       <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-3 items-end">
         
-        {/* قائمة الخيارات التي تظهر عند الضغط على الزر الرئيسي (اختياري، أو إظهار الأزرار مباشرة) */}
+        {/* قائمة الخيارات التي تظهر عند الضغط على الزر الرئيسي */}
         {isChatOpen && (
           <div className="flex flex-col gap-2.5 mb-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
             
             {/* زر واتساب */}
             <a
-              href="https://wa.me/966500000000" // استبدل برقم هاتفك مع الرمز الدولي
+              href="https://wa.me/966500000000"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-full shadow-lg shadow-emerald-600/30 text-xs font-semibold transition group"
@@ -155,7 +177,7 @@ export default function LandingPage() {
 
             {/* زر تليجرام */}
             <a
-              href="https://t.me/YourUsername" // استبدل بمعرف تليجرام الخاص بك
+              href="https://t.me/YourUsername"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2.5 bg-sky-600 hover:bg-sky-500 text-white px-4 py-2.5 rounded-full shadow-lg shadow-sky-600/30 text-xs font-semibold transition group"
@@ -197,4 +219,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
