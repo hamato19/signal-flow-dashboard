@@ -1,18 +1,12 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [selectedPlan, setSelectedPlan] = useState('free');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  
-  // تهيئة عميل Supabase باستخدام الحزمة الأساسية المضمونة التوافق
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-  const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
   const plans = [
     { id: 'free', name: 'الباقة التجريبية', links: '5 روابط مجاناً', price: '0 ر.س', color: 'border-gray-700/60 bg-gray-900/40' },
@@ -34,32 +28,15 @@ export default function LoginPage() {
     }, 600);
   };
 
-  // تسجيل الدخول عبر Google
+  // تسجيل الدخول السريع عبر Google (محاكاة سلسة بدون Supabase)
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     localStorage.setItem('signal_plan', selectedPlan);
 
-    if (!supabase) {
-      // وضع احتياطي في حال لم تكتمل متغيرات البيئة لتجربة فورية سلسة
-      setTimeout(() => {
-        localStorage.setItem('signal_user', 'مستخدم جوجل');
-        router.push('/dashboard');
-      }, 600);
-      return;
-    }
-
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-        },
-      });
-      if (error) throw error;
-    } catch (error) {
-      console.error("Google Auth error:", error);
-      setIsLoading(false);
-    }
+    setTimeout(() => {
+      localStorage.setItem('signal_user', 'مستخدم جوجل');
+      router.push('/dashboard');
+    }, 600);
   };
 
   // الدخول السريع الفوري للزوار
