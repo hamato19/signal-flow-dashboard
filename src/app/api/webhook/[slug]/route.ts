@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Pool } from '@neondatabase/serverless';
 
-// إنشاء اتصال مباشر بقاعدة بيانات Neon
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 async function query(text: string, params?: any[]) {
@@ -14,102 +13,64 @@ async function query(text: string, params?: any[]) {
   }
 }
 
-export async function POST(
-  request: Request,
-  context: { params: Promise<{ slug: string }> }
-) {
+// حفظ أو تحديث إعدادات المستخدم
+export async function POST(request: Request) {
   try {
-    const { slug } = await context.params;
     const body = await request.json();
+    const { slug, username, telegram_token, telegram_chat_id } = body;
 
-    // 1. جلب إعدادات المستخدم من جدول user_settings باستخدام Neon
-    const userRows = await query(
-      'SELECT telegram_token, telegram_chat_id, username FROM user_settings WHERE slug = $1',
-      [slug]
-    );
+    if (!slug) {
+      return NextResponse.json({ success: false, error: 'الرأس (slug) مطلوب' }, { status: 400 });
+    }
 
-    const userSettings = userRows[0];
+    // التحقق هل المستخدم موجود مسبقاً أم لا
+    const existing = await query('SELECT id FROM user_settings WHERE slug = $1', [slug]);
 
-    if (!userSettings) {
-      return NextResponse.json(
-        { success: false, error: 'رابط الويب هوك غير مسجل أو غير مفعول' },
-        { status: 404 }
+    if (existing.length > 0) {
+      // تحديث الإعدادات
+      await query(
+        `UPDATE user_settings 
+         SET username = $1, telegram_token = $2, telegram_chat_id = $3 
+         WHERE slug = $4`,
+        [username, telegram_token, telegram_chat_id, slug]
+      );
+    } else {
+      // إدخال جديد
+      await query(
+        `INSERT INTO user_settings (slug, username, telegram_token, telegram_chat_id) 
+         VALUES ($1, $2, $3, $4)`,
+        [slug, username, telegram_token, telegram_chat_id]
       );
     }
 
-    const { telegram_token, telegram_chat_id, username } = userSettings;
-    const ticker = body.ticker || body.symbol || 'العملة';
-    const action = body.action || body.side || 'إشارة';
-    const price = body.price ? `السعر: ${body.price}` : '';
-    const signalDetails = `${action.toUpperCase()} - ${ticker} ${price}`;
-
-    let status = 'نجاح';
-    let logDetails = '';
-
-    // 2. التحقق من توفر بيانات تليجرام وإرسال الرسالة
-    if (telegram_token && telegram_chat_id) {
-      try {
-        const telegramMsg = `🚨 إشارة جديدة (${username || slug}):\nالعملة: ${ticker}\nالاجراء: ${action}\nالسعر: ${body.price || 'غير متوفر'}`;
-        
-        const tgResponse = await fetch(`https://api.telegram.org/bot${telegram_token}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: telegram_chat_id,
-            text: telegramMsg,
-          }),
-        });
-
-        const tgResult = await tgResponse.json();
-        if (!tgResult.ok) {
-          status = 'فشل';
-          logDetails = `فشل الإرسال لتليجرام: ${tgResult.description || 'خطأ غير معروف'}`;
-        } else {
-          logDetails = `تم التوجيه بنجاح إلى تليجرام | ${signalDetails}`;
-        }
-      } catch (err: any) {
-        status = 'فشل';
-        logDetails = `خطأ في الاتصال بتليجرام: ${err.message}`;
-      }
-    } else {
-      status = 'فشل';
-      logDetails = `لم يتم إعداد توكن تليجرام لهذا المستخدم في لوحة التحكم`;
-    }
-
-    // 3. حفظ السجل مباشرة في قاعدة بيانات Neon (جدول webhook_logs)
-    await query(
-      'INSERT INTO webhook_logs (slug, platform, status, details, created_at) VALUES ($1, $2, $3, $4, NOW())',
-      [slug, 'Telegram', status, logDetails]
-    );
-
-    return NextResponse.json(
-      { success: status === 'نجاح', message: logDetails, slug, data: body },
-      { status: status === 'نجاح' ? 200 : 500 }
-    );
-
+    return NextResponse.json({ success: true, message: 'تم حفظ الإعدادات بنجاح' });
   } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: 'Invalid JSON or server error' },
-      { status: 400 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
-// 4. جلب السجلات الخاصة بالـ slug لعرضها في لوحة التحكم عبر Neon
-export async function GET(
-  request: Request,
-  context: { params: Promise<{ slug: string }> }
-) {
+// جلب إعدادات المستخدم بناءً على الـ slug
+export async function GET(request: Request) {
   try {
-    const { slug } = await context.params;
-    
-    const logs = await query(
-      'SELECT * FROM webhook_logs WHERE slug = $1 ORDER BY created_at DESC LIMIT 50',
-      [slug]
-    );
+    const { searchParams } = new URL(request.url);
+    const slug = searchParams.get('slug');
 
-    return NextResponse.json({ logs });
-  } catch (error) {
-    return NextResponse.json({ logs: [] }, { status: 500 });
+    if (!slug) {
+      return NextResponse.json({ success: false, error: 'الرأس (slug) مطلوب' }, { status: 400 });
+    }
+
+    const rows = await query('SELECT * FROM user_settings WHERE slug = $1', [slug]);
+
+    if (rows.length === 0) {
+      return conformanceJson404(); // أو إرجاع كائن فارغ
+    }
+
+    return NextResponse.json({ success: true, settings: rows[0] });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
+}
+
+function conformanceJson404() {
+  return NextResponse.json({ success: true, settings: null });
 }
