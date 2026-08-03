@@ -74,20 +74,38 @@ export default function DashboardPage() {
     setUsername(user);
     setCurrentPlan(plan);
     
+    // إنشاء الـ slug الخاص بالمستخدم
+    const slug = user.trim().toLowerCase().replace(/\s+/g, '-');
+    const initialUrl = `${window.location.origin}/api/webhook/${slug}`;
+
+    // جلب الإعدادات من قاعدة بيانات Neon عبر الـ API
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`/api/settings?slug=${slug}`);
+        const data = await res.json();
+        
+        if (data.success && data.settings) {
+          setTelegramToken(data.settings.telegram_token || '');
+          setTelegramChatId(data.settings.telegram_chat_id || '');
+        }
+      } catch (err) {
+        console.error('Error fetching settings from DB:', err);
+      }
+    };
+
+    fetchSettings();
+    
     const savedUrls = localStorage.getItem(`webhook_list_${user}`);
     if (savedUrls) {
       const parsed = JSON.parse(savedUrls);
       setWebhookUrls(parsed);
       setActiveWebhook(parsed[0]);
     } else {
-      const initialUrl = `${window.location.origin}/api/webhook/${user.toLowerCase()}`;
       setWebhookUrls([initialUrl]);
       setActiveWebhook(initialUrl);
       localStorage.setItem(`webhook_list_${user}`, JSON.stringify([initialUrl]));
     }
 
-    setTelegramToken(localStorage.getItem('telegram_token') || '');
-    setTelegramChatId(localStorage.getItem('telegram_chat_id') || '');
     setWhatsappPhone(localStorage.getItem('whatsapp_phone') || '');
     setWhatsappApiKey(localStorage.getItem('whatsapp_apikey') || '');
     setDiscordWebhook(localStorage.getItem('discord_webhook') || '');
@@ -103,7 +121,8 @@ export default function DashboardPage() {
     }
 
     const randomSuffix = Math.random().toString(36).substring(7);
-    const newUrl = `${window.location.origin}/api/webhook/${username.toLowerCase()}-${randomSuffix}`;
+    const slug = username.trim().toLowerCase().replace(/\s+/g, '-');
+    const newUrl = `${window.location.origin}/api/webhook/${slug}-${randomSuffix}`;
     
     const updatedUrls = [newUrl, ...webhookUrls];
     setWebhookUrls(updatedUrls);
@@ -117,18 +136,14 @@ export default function DashboardPage() {
     setTimeout(() => setCopyStatus(false), 2000);
   };
 
-  // دالة اختبار الرابط وإضافته فوراً للسجل
   const handleTestWebhook = () => {
     setTestStatus(true);
     
-    // استخراج مسار الروابط النسبي لعرضه في السجل
-    let endpointPath = '/api/webhook/' + username.toLowerCase();
+    let endpointPath = '/api/webhook/' + username.toLowerCase().replace(/\s+/g, '-');
     try {
       const parsedUrl = new URL(activeWebhook);
       endpointPath = parsedUrl.pathname;
-    } catch {
-      // استخدام القيمة الافتراضية في حال وجود خطأ بالرابط
-    }
+    } catch {}
 
     const platforms: ('Telegram' | 'WhatsApp' | 'Discord')[] = ['Telegram', 'WhatsApp', 'Discord'];
     const randomPlatform = platforms[Math.floor(Math.random() * platforms.length)];
@@ -148,7 +163,7 @@ export default function DashboardPage() {
     }, 600);
   };
 
-  const handleSaveSettings = (e: React.FormEvent, channel: string) => {
+  const handleSaveSettings = async (e: React.FormEvent, channel: string) => {
     e.preventDefault();
     if (channel === 'telegram') {
       localStorage.setItem('telegram_token', telegramToken);
@@ -160,7 +175,24 @@ export default function DashboardPage() {
       localStorage.setItem('discord_webhook', discordWebhook);
     }
 
-    setStatusMessage(`تم حفظ إعدادات ${channel === 'telegram' ? 'تليجرام' : channel === 'whatsapp' ? 'واتساب' : 'ديسكورد'} بنجاح!`);
+    // مزامنة الحفظ مباشرة مع قاعدة بيانات Neon
+    const slug = username.trim().toLowerCase().replace(/\s+/g, '-');
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: slug,
+          username: username,
+          telegram_token: telegramToken,
+          telegram_chat_id: telegramChatId,
+        }),
+      });
+    } catch (err) {
+      console.error('Error saving to DB:', err);
+    }
+
+    setStatusMessage(`تم حفظ إعدادات ${channel === 'telegram' ? 'تليجرام' : channel === 'whatsapp' ? 'واتساب' : 'ديسكورد'} بنجاح في قاعدة البيانات!`);
     setTimeout(() => setStatusMessage(''), 3000);
   };
 
