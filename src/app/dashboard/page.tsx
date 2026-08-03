@@ -9,6 +9,15 @@ export default function Dashboard() {
   const [telegramChatId, setTelegramChatId] = useState('');
   const [discordWebhook, setDiscordWebhook] = useState('');
   const [channelId, setChannelId] = useState('');
+  const [webhookUrl, setWebhookUrl] = useState('');
+
+  // توليد رابط الويب هوك تلقائياً بناءً على النطاق الحالي
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const baseUrl = window.location.origin;
+      setWebhookUrl(`${baseUrl}/api/webhook?slug=${slug}`);
+    }
+  }, [slug]);
 
   // جلب البيانات تلقائياً عند تحديث الصفحة
   useEffect(() => {
@@ -68,11 +77,37 @@ export default function Dashboard() {
     }
   };
 
+  // نسخ رابط الويب هوك
+  const copyWebhook = () => {
+    navigator.clipboard.writeText(webhookUrl);
+    alert('تم نسخ رابط الويب هوك بنجاح!');
+  };
+
   return (
     <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center">
       <div className="w-full max-w-lg">
         <h1 className="text-2xl font-bold text-center mb-6">لوحة تحكم إشارات الويب هوك</h1>
         
+        {/* قسم عرض وتوليد رابط الويب هوك */}
+        <div className="mb-6 p-4 bg-gray-900 border border-gray-700 rounded-lg">
+          <label className="block text-sm mb-2 text-blue-400 font-semibold">🔗 رابط الويب هوك الخاص بك:</label>
+          <div className="flex gap-2">
+            <input 
+              type="text" 
+              value={webhookUrl} 
+              readOnly 
+              className="w-full p-2 bg-black border border-gray-700 rounded text-gray-300 text-sm" 
+            />
+            <button 
+              type="button" 
+              onClick={copyWebhook} 
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition whitespace-nowrap"
+            >
+              نسخ
+            </button>
+          </div>
+        </div>
+
         <form onSubmit={handleSave} className="space-y-4">
           <div>
             <label className="block text-sm mb-1">اسم المستخدم (Slug):</label>
