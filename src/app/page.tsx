@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -9,11 +9,10 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   
-  // إنشاء عميل Supabase مباشرة لمنع أخطاء مسارات الملفات أثناء البناء
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-  );
+  // تهيئة عميل Supabase باستخدام الحزمة الأساسية المضمونة التوافق
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
   const plans = [
     { id: 'free', name: 'الباقة التجريبية', links: '5 روابط مجاناً', price: '0 ر.س', color: 'border-gray-700/60 bg-gray-900/40' },
@@ -35,10 +34,19 @@ export default function LoginPage() {
     }, 600);
   };
 
-  // الدخول السريع المباشر عبر Google
+  // تسجيل الدخول عبر Google
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     localStorage.setItem('signal_plan', selectedPlan);
+
+    if (!supabase) {
+      // وضع احتياطي في حال لم تكتمل متغيرات البيئة لتجربة فورية سلسة
+      setTimeout(() => {
+        localStorage.setItem('signal_user', 'مستخدم جوجل');
+        router.push('/dashboard');
+      }, 600);
+      return;
+    }
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -54,7 +62,7 @@ export default function LoginPage() {
     }
   };
 
-  // الدخول السريع البديل (تجربة فورية)
+  // الدخول السريع الفوري للزوار
   const handleQuickAccess = () => {
     setIsLoading(true);
     localStorage.setItem('signal_user', 'زائر سريع');
@@ -68,16 +76,13 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#030712] text-white flex items-center justify-center p-3 sm:p-6 relative overflow-hidden font-sans py-8">
       
-      {/* شبكة هندسية خلفية تمنح الطابع التقني والتطبيقي */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f29370a_1px,transparent_1px),linear-gradient(to_bottom,#1f29370a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
 
-      {/* تأثيرات إضاءة محيطية تفاعلية تناسب شاشات الجوال */}
       <div className="absolute -top-24 -left-24 w-72 h-72 bg-blue-600/20 rounded-full blur-[100px] pointer-events-none animate-pulse"></div>
       <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-indigo-600/20 rounded-full blur-[100px] pointer-events-none animate-pulse"></div>
 
       <div className="relative z-10 bg-[#0b101d]/95 backdrop-blur-2xl border border-gray-800/90 p-5 sm:p-8 rounded-[2rem] w-full max-w-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] space-y-5">
         
-        {/* الشعار والعنوان */}
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/25 mb-1 border border-blue-400/20">
             <span className="text-2xl">⚡</span>
@@ -86,7 +91,6 @@ export default function LoginPage() {
           <p className="text-gray-400 text-xs">جرب النظام مجاناً أو اختر باقة الاشتراك المناسبة وسجل دخولك فوراً</p>
         </div>
 
-        {/* أزرار التسجيل السريع والسهل */}
         <div className="space-y-3">
           <div className="relative flex py-1 items-center">
             <div className="flex-grow border-t border-gray-800/80"></div>
@@ -95,7 +99,6 @@ export default function LoginPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {/* زر Google الرئيسي */}
             <button
               type="button"
               onClick={handleGoogleLogin}
@@ -111,7 +114,6 @@ export default function LoginPage() {
               <span>متابعة باستخدام Google</span>
             </button>
 
-            {/* زر الدخول السريع للزوار */}
             <button
               type="button"
               onClick={handleQuickAccess}
@@ -132,7 +134,6 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-4">
           
-          {/* قسم اختيار الباقات */}
           <div className="space-y-2.5">
             <label className="block text-xs font-medium text-gray-300">اختر باقة الاشتراك:</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -163,7 +164,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* حقل اسم المستخدم */}
           <div className="space-y-1.5">
             <label className="block text-xs font-medium text-gray-300">اسم المستخدم أو المعرف</label>
             <div className="relative">
@@ -195,7 +195,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* التذييل */}
         <div className="text-center pt-2 border-t border-gray-800/60">
           <p className="text-[11px] text-gray-500">تمتع بمرونة التوليد الفوري ومراقبة الروابط بكل سهولة وأمان</p>
         </div>
