@@ -1,12 +1,10 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function LoginPage() {
-  const [username, setUsername] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState('free');
-  const [isLoading, setIsLoading] = useState(false);
+export default function LandingPage() {
   const router = useRouter();
+  const [selectedPlan, setSelectedPlan] = useState('100');
 
   const plans = [
     { id: 'free', name: 'الباقة التجريبية', links: '5 روابط مجاناً', price: '0 ر.س', color: 'border-gray-700/60 bg-gray-900/40' },
@@ -15,229 +13,136 @@ export default function LoginPage() {
     { id: 'unlimited', name: 'الباقة المفتوحة', links: 'روابط غير محدودة', price: '250 ر.س', color: 'border-purple-500/50 bg-purple-600/10' },
   ];
 
-  // تفعيل سكريبت جوجل الرسمي عند تحميل الصفحة
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
+  const features = [
+    { icon: '⚡', title: 'إرسال فوري ولحظي', desc: 'استقبال وتوجيه إشارات التداول والويب هوك في أجزاء من الثانية دون تأخير.' },
+    { icon: '🤖', title: 'تعدد القنوات الذكية', desc: 'ربط متزامن مع تيليجرام (Telegram)، ديسكورد (Discord)، وواتساب (WhatsApp).' },
+    { icon: '🛡️', title: 'استقلالية وأمان تام', desc: 'كل مستخدم يمتلك معرف (Slug) ورابط ويب هوك خاص به مع حماية كاملة من التعارض.' },
+    { icon: '📊', title: 'لوحة تحكم مرنة', desc: 'إدارة وتعديل إعدادات البوتات وحفظها مباشرة في قاعدة بيانات سحابية مستقرة.' }
+  ];
 
-    // دالة الاستجابة عند نجاح تسجيل دخول جوجل
-    (window as any).handleCredentialResponse = (response: any) => {
-      try {
-        // فك تشفير الـ JWT Token البسيط المستلم من جوجل للحصول على البريد والاسم
-        const base64Url = response.credential.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        
-        const googleUser = JSON.parse(jsonPayload);
-        
-        localStorage.setItem('signal_user', googleUser.name || googleUser.email);
-        localStorage.setItem('signal_plan', selectedPlan);
-        localStorage.setItem('signal_email', googleUser.email);
-        
-        router.push('/dashboard');
-      } catch (error) {
-        console.error('Google login decode error:', error);
-        setIsLoading(false);
-      }
-    };
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, [selectedPlan, router]);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim()) return;
-    
-    setIsLoading(true);
-    localStorage.setItem('signal_user', username.trim());
+  const handleGetStarted = () => {
+    // تخزين الباقة المختارة والانتقال للوحة التحكم أو صفحة تسجيل الدخول
     localStorage.setItem('signal_plan', selectedPlan);
-    
-    setTimeout(() => {
-      router.push('/dashboard');
-    }, 600);
-  };
-
-  // تشغيل نافذة جوجل الرسمية عند الضغط على الزر
-  const handleGoogleClick = () => {
-    setIsLoading(true);
-    try {
-      if ((window as any).google) {
-        const client = (window as any).google.accounts.oauth2.initTokenClient({
-          client_id: '874339007266-k9ajl932htm0n4lr1pr2vlqp5t48gkck.apps.googleusercontent.com',
-          scope: 'email profile',
-          callback: (tokenResponse: any) => {
-            if (tokenResponse && tokenResponse.access_token) {
-              // جلب معلومات المستخدم من قوقل باستخدام الـ Access Token
-              fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-              })
-                .then(res => res.json())
-                .then(data => {
-                  localStorage.setItem('signal_user', data.name || data.email);
-                  localStorage.setItem('signal_plan', selectedPlan);
-                  localStorage.setItem('signal_email', data.email);
-                  router.push('/dashboard');
-                })
-                .catch(() => setIsLoading(false));
-            } else {
-              setIsLoading(false);
-            }
-          },
-        });
-        client.requestAccessToken();
-      } else {
-        setIsLoading(false);
-      }
-    } catch (err) {
-      console.error(err);
-      setIsLoading(false);
-    }
-  };
-
-  const handleQuickAccess = () => {
-    setIsLoading(true);
-    localStorage.setItem('signal_user', 'زائر سريع');
-    localStorage.setItem('signal_plan', selectedPlan);
-    
-    setTimeout(() => {
-      router.push('/dashboard');
-    }, 500);
+    router.push('/dashboard'); // أو مسار صفحة الدخول/اللوحة الخاصة بك
   };
 
   return (
-    <div className="min-h-screen bg-[#030712] text-white flex items-center justify-center p-3 sm:p-6 relative overflow-hidden font-sans py-8">
+    <div className="min-h-screen bg-[#030712] text-white font-sans selection:bg-blue-600 selection:text-white">
       
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f29370a_1px,transparent_1px),linear-gradient(to_bottom,#1f29370a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
+      {/* خلفية جمالية تفاعلية */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f29370a_1px,transparent_1px),linear-gradient(to_bottom,#1f29370a_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none"></div>
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-blue-600/15 rounded-full blur-[140px] pointer-events-none"></div>
 
-      <div className="absolute -top-24 -left-24 w-72 h-72 bg-blue-600/20 rounded-full blur-[100px] pointer-events-none animate-pulse"></div>
-      <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-indigo-600/20 rounded-full blur-[100px] pointer-events-none animate-pulse"></div>
-
-      <div className="relative z-10 bg-[#0b101d]/95 backdrop-blur-2xl border border-gray-800/90 p-5 sm:p-8 rounded-[2rem] w-full max-w-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] space-y-5">
-        
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/25 mb-1 border border-blue-400/20">
-            <span className="text-2xl">⚡</span>
+      {/* الهيدر العلوي */}
+      <header className="relative z-10 max-w-6xl mx-auto px-6 py-6 flex justify-between items-center border-b border-gray-800/60">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 border border-blue-400/20">
+            <span className="text-xl">⚡</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">نظام إشارات الوهابيكس</h1>
-          <p className="text-gray-400 text-xs">جرب النظام مجاناً أو اختر باقة الاشتراك المناسبة وسجل دخولك فوراً</p>
+          <span className="font-bold text-lg tracking-tight">نظام إشارات الوهابيكس</span>
         </div>
+        <button
+          onClick={handleGetStarted}
+          className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-xs font-medium transition shadow-lg shadow-blue-600/25"
+        >
+          دخول لوحة التحكم 🚀
+        </button>
+      </header>
 
-        <div className="space-y-3">
-          <div className="relative flex py-1 items-center">
-            <div className="flex-grow border-t border-gray-800/80"></div>
-            <span className="flex-shrink mx-3 text-gray-500 text-[11px]">طرق الدخول السريع</span>
-            <div className="flex-grow border-t border-gray-800/80"></div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              onClick={handleGoogleClick}
-              disabled={isLoading}
-              className="flex items-center justify-center gap-2 bg-[#131b2e] border border-gray-800 hover:border-blue-500/50 hover:bg-[#1a243d] py-3 px-4 rounded-xl text-xs font-medium transition active:scale-[0.98] disabled:opacity-50 shadow-sm"
-            >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.13 0-5.78-2.11-6.73-4.96H1.18v3.15C3.15 21.32 7.23 24 12 24z"/>
-                <path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.5-.38-2.24s.13-1.52.38-2.24V6.6H1.18C.43 8.13 0 9.87 0 12s.43 3.87 1.18 5.4l4.09-3.16z"/>
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.23 0 3.15 2.68 1.18 6.6l4.09 3.15c.95-2.85 3.6-4.96 6.73-4.96z"/>
-              </svg>
-              <span>متابعة باستخدام Google الحقيقي</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleQuickAccess}
-              disabled={isLoading}
-              className="flex items-center justify-center gap-2 bg-[#131b2e] border border-gray-800 hover:border-indigo-500/50 hover:bg-[#1a243d] py-3 px-4 rounded-xl text-xs font-medium transition active:scale-[0.98] disabled:opacity-50 shadow-sm text-indigo-300"
-            >
-              <span>⚡</span>
-              <span>دخول سريع كزائر (تجربة فورية)</span>
-            </button>
-          </div>
+      {/* القسم الرئيسي (Hero Section) */}
+      <section className="relative z-10 max-w-5xl mx-auto px-6 pt-16 pb-12 text-center space-y-6">
+        <div className="inline-flex items-center gap-2 bg-blue-950/60 border border-blue-800/50 px-4 py-1.5 rounded-full text-blue-400 text-xs font-medium shadow-inner">
+          <span>✨</span>
+          <span>المنظومة الأقوى لإدارة وتوجيه إشارات الويب هوك</span>
         </div>
-
-        <div className="relative flex py-1 items-center">
-          <div className="flex-grow border-t border-gray-800/80"></div>
-          <span className="flex-shrink mx-3 text-gray-500 text-[11px]">أو الدخول بمعرف المستخدم</span>
-          <div className="flex-grow border-t border-gray-800/80"></div>
-        </div>
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          
-          <div className="space-y-2.5">
-            <label className="block text-xs font-medium text-gray-300">اختر باقة الاشتراك:</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-              {plans.map((plan) => (
-                <div 
-                  key={plan.id}
-                  onClick={() => setSelectedPlan(plan.id)}
-                  className={`cursor-pointer border rounded-2xl p-3 transition relative flex flex-col justify-between ${
-                    selectedPlan === plan.id 
-                      ? `${plan.color} ring-2 ring-blue-500 shadow-md shadow-blue-500/15` 
-                      : 'border-gray-800/80 bg-[#131b2e]/50 hover:border-gray-700'
-                  }`}
-                >
-                  {plan.popular && (
-                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-500 text-[10px] font-bold px-2 py-0.5 rounded-full text-white shadow whitespace-nowrap">
-                      الأكثر طلباً
-                    </span>
-                  )}
-                  <div>
-                    <h3 className="text-xs font-semibold text-gray-300 mb-1">{plan.name}</h3>
-                    <p className="text-sm sm:text-base font-bold text-white mb-1.5">{plan.price}</p>
-                  </div>
-                  <div className="border-t border-gray-800/60 pt-1.5 mt-1">
-                    <span className="text-[10px] text-gray-400 block">{plan.links}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-gray-300">اسم المستخدم أو المعرف</label>
-            <div className="relative">
-              <span className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-500 text-sm">👤</span>
-              <input 
-                type="text" 
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="مثال: fahad"
-                className="w-full bg-[#131b2e] border border-gray-800 rounded-xl px-4 py-3.5 pr-11 text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition shadow-inner"
-                required
-              />
-            </div>
-          </div>
-
-          <button 
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:opacity-95 active:scale-[0.99] text-white font-medium py.3.5 rounded-xl transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 text-sm disabled:opacity-50 py-3.5"
+        <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight">
+          اربط منصات التداول الخاصة بك <br />
+          <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+            بقنوات التواصل اللحظية فوراً
+          </span>
+        </h1>
+        <p className="text-gray-400 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
+          نظام متكامل يتيح لك استقبال تنبيهات TradingView وغيرها، ومعالجتها بدقة وتوجيهها مباشرة إلى بوتات تيليجرام وديسكورد وواتساب الخاصة بك بكفاءة عالية.
+        </p>
+        <div className="flex justify-center gap-4 pt-4">
+          <button
+            onClick={handleGetStarted}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 text-white px-8 py-4 rounded-2xl text-sm font-semibold transition shadow-xl shadow-blue-600/30 active:scale-[0.98]"
           >
-            {isLoading ? (
-              <>
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                <span>جاري إعداد الحساب وفتح اللوحة...</span>
-              </>
-            ) : (
-              <span>دخول للوحة التحكم 🚀</span>
-            )}
+            ابدأ الآن مجاناً 🚀
           </button>
-        </form>
+        </div>
+      </section>
 
-        <div className="text-center pt-2 border-t border-gray-800/60">
-          <p className="text-[11px] text-gray-500">تمتع بمرونة التوليد الفوري ومراقبة الروابط بكل سهولة وأمان</p>
+      {/* مميزات النظام */}
+      <section className="relative z-10 max-w-6xl mx-auto px-6 py-12">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl font-bold tracking-tight">لماذا تختار نظامنا؟</h2>
+          <p className="text-gray-400 text-xs sm:text-sm mt-2">مميزات هندسية صُممت لتناسب المطورين والمتداولين المحترفين</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {features.map((feat, idx) => (
+            <div key={idx} className="bg-gray-900/50 border border-gray-800/80 p-6 rounded-2xl backdrop-blur space-y-3 hover:border-gray-700 transition">
+              <div className="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-xl">
+                {feat.icon}
+              </div>
+              <h3 className="font-semibold text-sm text-white">{feat.title}</h3>
+              <p className="text-gray-400 text-xs leading-relaxed">{feat.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* قسم الباقات والأسعار */}
+      <section className="relative z-10 max-w-5xl mx-auto px-6 py-12">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl font-bold tracking-tight">اختر الباقة المناسبة لاحتياجك</h2>
+          <p className="text-gray-400 text-xs sm:text-sm mt-2">باقات مرنة مصممة لتلبية كافة أحجام المشاريع والتنبيهات</p>
         </div>
 
-      </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {plans.map((plan) => (
+            <div 
+              key={plan.id}
+              onClick={() => setSelectedPlan(plan.id)}
+              className={`cursor-pointer border rounded-2xl p-5 transition relative flex flex-col justify-between ${
+                selectedPlan === plan.id 
+                  ? `${plan.color} ring-2 ring-blue-500 shadow-xl shadow-blue-500/10` 
+                  : 'border-gray-800/80 bg-gray-900/30 hover:border-gray-700'
+              }`}
+            >
+              {plan.popular && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-500 text-[10px] font-bold px-3 py-0.5 rounded-full text-white shadow">
+                  الأكثر طلباً
+                </span>
+              )}
+              <div>
+                <h3 className="text-xs font-semibold text-gray-300 mb-2">{plan.name}</h3>
+                <p className="text-2xl font-bold text-white mb-2">{plan.price}</p>
+              </div>
+              <div className="border-t border-gray-800/80 pt-3 mt-3">
+                <span className="text-xs text-blue-400 font-medium block">{plan.links}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-10 text-center">
+          <button
+            onClick={handleGetStarted}
+            className="bg-white hover:bg-gray-100 text-black px-8 py-4 rounded-2xl text-sm font-bold transition shadow-xl active:scale-[0.98]"
+          >
+            المتابعة بهذه الباقة ودخول اللوحة ⚡
+          </button>
+        </div>
+      </section>
+
+      {/* التذييل (Footer) */}
+      <footer className="relative z-10 border-t border-gray-800/60 mt-16 py-8 text-center text-xs text-gray-500">
+        <p>جميع الحقوق محفوظة © 2026 - نظام إشارات الويب هوك المتطور</p>
+      </footer>
+
     </div>
   );
 }
+
