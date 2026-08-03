@@ -118,6 +118,73 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* قسم شرح طريقة الاستخدام والربط (UI Previews) */}
+      <section className="relative z-10 max-w-5xl mx-auto px-6 py-16">
+        <div className="text-center mb-12">
+          <span className="text-blue-400 text-xs font-bold uppercase tracking-wider bg-blue-950/80 px-3 py-1 rounded-full border border-blue-800/50">خطوات بسيطة وسريعة</span>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mt-3 mb-2">كيف تستخدم النظام وتربط إشاراتك؟</h2>
+          <p className="text-gray-400 text-xs sm:text-sm">من خلال لوحة التحكم الخاصة بك، يمكنك تفعيل الربط الكامل في 3 خطوات عملية</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          {/* الخطوة الأولى */}
+          <div className="bg-gray-900/40 border border-gray-800/80 p-6 rounded-2xl space-y-4 backdrop-blur flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400 flex items-center justify-center font-bold text-base mb-4">
+                01
+              </div>
+              <h3 className="text-base font-bold text-white mb-2">أنشئ مسار الويب هوك (Slug)</h3>
+              <p className="text-gray-400 text-xs leading-relaxed">
+                من لوحة التحكم، انقر على زر إنشاء مسار جديد لتوليد رابط ويب هوك فريد وخاص بك لاستقبال التنبيهات.
+              </p>
+            </div>
+            {/* واجهة تجريبية مبسطة للوحة التحكم */}
+            <div className="bg-black/50 border border-gray-800 p-3 rounded-xl font-mono text-[10px] text-gray-400">
+              <div className="text-blue-400 mb-1 font-semibold">/api/v1/webhook/your-slug</div>
+              <div className="text-emerald-400">Status: Active & Listening...</div>
+            </div>
+          </div>
+
+          {/* الخطوة الثانية */}
+          <div className="bg-gray-900/40 border border-gray-800/80 p-6 rounded-2xl space-y-4 backdrop-blur flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center font-bold text-base mb-4">
+                02
+              </div>
+              <h3 className="text-base font-bold text-white mb-2">اربط منصة التداول (TradingView)</h3>
+              <p className="text-gray-400 text-xs leading-relaxed">
+                انسخ رابط الويب هوك وضعه في إعدادات التنبيه (Alert) داخل منصة TradingView أو أي منصة تحليل أخرى.
+              </p>
+            </div>
+            {/* واجهة تجريبية مبسطة للإعدادات */}
+            <div className="bg-black/50 border border-gray-800 p-3 rounded-xl font-mono text-[10px] text-gray-400 space-y-1">
+              <div className="text-gray-300">Alert Name: EURUSD Buy</div>
+              <div className="text-indigo-400 truncate">Webhook URL: [Paste Link Here]</div>
+            </div>
+          </div>
+
+          {/* الخطوة الثالثة */}
+          <div className="bg-gray-900/40 border border-gray-800/80 p-6 rounded-2xl space-y-4 backdrop-blur flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-400 flex items-center justify-center font-bold text-base mb-4">
+                03
+              </div>
+              <h3 className="text-base font-bold text-white mb-2">استقبل الإشارات لحظياً</h3>
+              <p className="text-gray-400 text-xs leading-relaxed">
+                بمجرد صدور التنبيه، سيقوم النظام بمعالجته وتوجيهه فوراً إلى قناتك على تليجرام أو رسالة واتساب الخاصة بك.
+              </p>
+            </div>
+            {/* واجهة تجريبية مبسطة للإشعار */}
+            <div className="bg-black/50 border border-gray-800 p-3 rounded-xl text-[10px] space-y-1">
+              <div className="text-emerald-400 font-bold">🟢 إشارة تداول جديدة</div>
+              <div className="text-gray-300">BUY EURUSD @ 1.0850</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
       {/* التذييل */}
       <footer className="footer relative z-10 border-t border-gray-800/60 mt-20 py-8 text-center text-xs text-gray-500">
         <p>جميع الحقوق محفوظة © 2026 - نظام إدارة إشارات الويب هوك والقنوات المذكورة</p>
@@ -126,3 +193,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
