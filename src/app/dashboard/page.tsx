@@ -2,11 +2,11 @@
 import { useEffect, useState } from 'react';
 
 export default function Dashboard() {
-  // الـ Slug الحالي للمستخدم (يتم جلبه من التخزين المحلي أو تركها فارغة لتسجيل الدخول)
   const [slug, setSlug] = useState('');
-  const [inputSlug, setInputSlug] = useState(''); // حقل إدخال الـ Slug أثناء تسجيل الدخول
+  const [inputSlug, setInputSlug] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  // الحقول الأساسية
   const [username, setUsername] = useState('');
   const [telegramToken, setTelegramToken] = useState('');
   const [telegramChatId, setTelegramChatId] = useState('');
@@ -16,7 +16,11 @@ export default function Dashboard() {
   const [whatsappPhoneId, setWhatsappPhoneId] = useState('');
   const [webhookUrl, setWebhookUrl] = useState('');
 
-  // التحقق من وجود جلسة مخزنة مسبقاً عند فتح الصفحة
+  // الحقول الجديدة للمنصات الإضافية
+  const [slackWebhook, setSlackWebhook] = useState('');
+  const [teamsWebhook, setTeamsWebhook] = useState('');
+  const [customWebhook, setCustomWebhook] = useState('');
+
   useEffect(() => {
     const savedSlug = localStorage.getItem('user_slug');
     if (savedSlug) {
@@ -25,7 +29,6 @@ export default function Dashboard() {
     }
   }, []);
 
-  // توليد رابط الويب هوك تلقائياً بناءً على الـ Slug الخاص بالمستخدم
   useEffect(() => {
     if (slug && typeof window !== 'undefined') {
       const baseUrl = window.location.origin;
@@ -33,7 +36,6 @@ export default function Dashboard() {
     }
   }, [slug]);
 
-  // جلب البيانات تلقائياً عند تسجيل الدخول أو تحديث الصفحة
   useEffect(() => {
     if (!slug) return;
     async function loadSettings() {
@@ -48,6 +50,10 @@ export default function Dashboard() {
           setChannelId(data.settings.channel_id || '');
           setWhatsappToken(data.settings.whatsapp_token || '');
           setWhatsappPhoneId(data.settings.whatsapp_phone_id || '');
+          // تحميل بيانات المنصات الجديدة إذا وجدت في قاعدة البيانات
+          setSlackWebhook(data.settings.slack_webhook || '');
+          setTeamsWebhook(data.settings.teams_webhook || '');
+          setCustomWebhook(data.settings.custom_webhook || '');
         }
       } catch (err) {
         console.error("خطأ في جلب البيانات", err);
@@ -56,7 +62,6 @@ export default function Dashboard() {
     loadSettings();
   }, [slug]);
 
-  // تسجيل الدخول أو إنشاء حساب جديد بالـ Slug
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanSlug = inputSlug.trim().toLowerCase().replace(/\s+/g, '-');
@@ -69,13 +74,11 @@ export default function Dashboard() {
     setIsLoggedIn(true);
   };
 
-  // تسجيل الخروج
   const handleLogout = () => {
     localStorage.removeItem('user_slug');
     setSlug('');
     setIsLoggedIn(false);
     setInputSlug('');
-    // إعادة تعيين الحقول
     setUsername('');
     setTelegramToken('');
     setTelegramChatId('');
@@ -83,9 +86,11 @@ export default function Dashboard() {
     setChannelId('');
     setWhatsappToken('');
     setWhatsappPhoneId('');
+    setSlackWebhook('');
+    setTeamsWebhook('');
+    setCustomWebhook('');
   };
 
-  // حفظ الإعدادات
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = await fetch('/api/settings', {
@@ -100,17 +105,19 @@ export default function Dashboard() {
         channel_id: channelId,
         whatsapp_token: whatsappToken,
         whatsapp_phone_id: whatsappPhoneId,
+        slack_webhook: slackWebhook,
+        teams_webhook: teamsWebhook,
+        custom_webhook: customWebhook,
       }),
     });
     const data = await res.json();
     if (data.success) {
-      alert('✨ تم حفظ الإعدادات بنجاح في قاعدة البيانات');
+      alert('✨ تم حفظ إعدادات المنصات بنجاح في قاعدة البيانات');
     } else {
       alert('خطأ: ' + (data.error || 'حدث خطأ غير معروف'));
     }
   };
 
-  // حذف السجل
   const handleDelete = async () => {
     if (!confirm('هل أنت متأكد من حذف هذا الحساب نهائياً؟')) return;
     const res = await fetch(`/api/settings?slug=${slug}`, { method: 'DELETE' });
@@ -121,19 +128,17 @@ export default function Dashboard() {
     }
   };
 
-  // نسخ رابط الويب هوك
   const copyWebhook = () => {
     navigator.clipboard.writeText(webhookUrl);
     alert('📋 تم نسخ رابط الويب هوك بنجاح!');
   };
 
-  // 1. شاشة تسجيل الدخول / اختيار الـ Slug إذا لم يكن مسجلاً
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white p-6 flex flex-col items-center justify-center">
         <div className="w-full max-w-md bg-gray-900/80 backdrop-blur border border-gray-800 p-8 rounded-2xl shadow-2xl">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">نظام إشارات التداول</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">منصة الوسيط الشامل</h1>
             <p className="text-sm text-gray-400 mt-2">أدخل اسم المستخدم (Slug) الخاص بك للوصول أو إنشاء لوحة التحكم</p>
           </div>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -143,7 +148,7 @@ export default function Dashboard() {
                 type="text" 
                 value={inputSlug} 
                 onChange={(e) => setInputSlug(e.target.value)} 
-                placeholder="например: my-custom-signal"
+                placeholder="my-custom-signal"
                 required
                 className="w-full p-3 bg-black/50 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-blue-500 transition text-sm" 
               />
@@ -160,15 +165,13 @@ export default function Dashboard() {
     );
   }
 
-  // 2. لوحة التحكم الرئيسية بعد تسجيل الدخول
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white p-6 flex flex-col items-center">
       <div className="w-full max-w-2xl">
         
-        {/* رأس الصفحة مع زر تسجيل الخروج */}
         <div className="flex justify-between items-center mb-8 bg-gray-900/60 p-4 rounded-2xl border border-gray-800">
           <div>
-            <h1 className="text-xl font-bold">لوحة التحكم</h1>
+            <h1 className="text-xl font-bold">لوحة تحكم الوسيط الشامل</h1>
             <p className="text-xs text-blue-400 mt-0.5">المعرف: <span className="font-mono text-gray-300">{slug}</span></p>
           </div>
           <button 
@@ -179,9 +182,8 @@ export default function Dashboard() {
           </button>
         </div>
         
-        {/* قسم رابط الويب هوك */}
         <div className="mb-6 p-5 bg-gray-900/80 border border-gray-800 rounded-2xl shadow-xl">
-          <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-blue-400">🔗 رابط الويب هوك الخاص بك (لإرساله إلى المنصات):</label>
+          <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-blue-400">🔗 رابط الويب هوك الخاص بك:</label>
           <div className="flex gap-2">
             <input 
               type="text" 
@@ -199,9 +201,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* نموذج الإعدادات */}
         <form onSubmit={handleSave} className="space-y-4 bg-gray-900/50 border border-gray-800 p-6 rounded-2xl shadow-xl">
-          <h2 className="text-sm font-semibold text-gray-300 border-b border-gray-800 pb-3 mb-4">⚙️ إعدادات البوتات وقنوات التنبيه</h2>
+          <h2 className="text-sm font-semibold text-gray-300 border-b border-gray-800 pb-3 mb-4">⚙️ إعدادات المنصات وقنوات التنبيه</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -227,31 +228,32 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Telegram Bot Token:</label>
-            <input 
-              type="text" 
-              value={telegramToken} 
-              onChange={(e) => setTelegramToken(e.target.value)} 
-              placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
-              className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Telegram Chat ID:</label>
-            <input 
-              type="text" 
-              value={telegramChatId} 
-              onChange={(e) => setTelegramChatId(e.target.value)} 
-              placeholder="معرف الشات الشخصي أو المجموعة"
-              className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Telegram Bot Token:</label>
+              <input 
+                type="text" 
+                value={telegramToken} 
+                onChange={(e) => setTelegramToken(e.target.value)} 
+                placeholder="123456789:ABC..."
+                className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Telegram Chat ID:</label>
+              <input 
+                type="text" 
+                value={telegramChatId} 
+                onChange={(e) => setTelegramChatId(e.target.value)} 
+                placeholder="معرف الشات أو المجموعة"
+                className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-gray-400 mb-1">WhatsApp Token (اختياري):</label>
+              <label className="block text-xs text-gray-400 mb-1">WhatsApp Token:</label>
               <input 
                 type="text" 
                 value={whatsappToken} 
@@ -260,9 +262,8 @@ export default function Dashboard() {
                 className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
               />
             </div>
-
             <div>
-              <label className="block text-xs text-gray-400 mb-1">WhatsApp Phone ID (اختياري):</label>
+              <label className="block text-xs text-gray-400 mb-1">WhatsApp Phone ID:</label>
               <input 
                 type="text" 
                 value={whatsappPhoneId} 
@@ -284,12 +285,50 @@ export default function Dashboard() {
             />
           </div>
 
+          {/* قسم المنصات الجديدة الإضافية */}
+          <div className="pt-2 border-t border-gray-800 space-y-4">
+            <h3 className="text-xs font-semibold text-blue-400 uppercase tracking-wider">🌐 منصات إضافية لتوسيع الربط</h3>
+            
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Slack Webhook URL:</label>
+              <input 
+                type="text" 
+                value={slackWebhook} 
+                onChange={(e) => setSlackWebhook(e.target.value)} 
+                placeholder="https://hooks.slack.com/services/..."
+                className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Microsoft Teams Webhook URL:</label>
+              <input 
+                type="text" 
+                value={teamsWebhook} 
+                onChange={(e) => setTeamsWebhook(e.target.value)} 
+                placeholder="https://outlook.office.com/webhook/..."
+                className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Custom Webhook (إعادة توجيه لسيرفر خارجي):</label>
+              <input 
+                type="text" 
+                value={customWebhook} 
+                onChange={(e) => setCustomWebhook(e.target.value)} 
+                placeholder="https://your-external-server.com/receiver"
+                className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
+              />
+            </div>
+          </div>
+
           <div className="flex gap-4 pt-4 border-t border-gray-800">
             <button 
               type="submit" 
               className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition shadow-lg shadow-blue-600/20 text-sm"
             >
-              حفظ في قاعدة البيانات
+              حفظ الإعدادات في قاعدة البيانات
             </button>
             <button 
               type="button" 
