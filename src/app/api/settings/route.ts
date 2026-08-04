@@ -59,9 +59,8 @@ export async function POST(request: Request) {
         );
       }
 
-      // إذا كان هناك original_slug ويختلف عن الـ slug الجديد، فهذا يعني أن المستخدم قام بتغيير معرفه، نحتاج لتحديثه أو حذف القديم وإنشاء جديد
+      // إذا كان هناك original_slug ويختلف عن الـ slug الجديد
       if (original_slug && original_slug !== slug) {
-        // حذف السجل القديم وإنشاء الجديد أو تحديثه مباشرة
         await client.query('DELETE FROM user_settings WHERE slug = $1', [original_slug]);
       }
 
@@ -89,7 +88,7 @@ export async function POST(request: Request) {
   }
 }
 
-// 3. مسح السجل نهائياً من قاعدة البيانات (DELETE)
+// 3. مسح السجل نهائياً من قاعدة البيانات (DELETE) - تم تصحيح علامات التنصيص
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -101,7 +100,7 @@ export async function DELETE(request: Request) {
 
     const client = await pool.connect();
     try {
-      await client.query('DELETE FROM user_settings WHERE `slug` = $1', [slug]);
+      await client.query('DELETE FROM user_settings WHERE slug = $1', [slug]);
       return NextResponse.json({ success: true, message: 'تم حذف السجل نهائياً من قاعدة البيانات' });
     } finally {
       client.release();
