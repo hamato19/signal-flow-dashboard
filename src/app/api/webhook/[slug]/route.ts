@@ -13,6 +13,8 @@ export async function POST(
     const { slug } = resolvedParams;
     const body = await request.json();
 
+    console.log(`[Webhook] Receiving request for slug: ${slug}`);
+
     // جلب كافة إعدادات ومعرفات المستخدم من قاعدة البيانات
     const res = await client.query(
       'SELECT * FROM user_settings WHERE slug = $1',
@@ -20,12 +22,20 @@ export async function POST(
     );
 
     if (res.rows.length === 0) {
-      return NextResponse.json({ success: false, error: 'المستخدم غير موجود' }, { status: 404 });
+      console.log(`[Webhook Error] User not found for slug: ${slug}`);
+      return NextResponse.json({ success: false, error: `المستخدم غير موجود بالمعرف: ${slug}` }, { status: 404 });
     }
 
     const settings = res.rows[0];
+    console.log('[Webhook Debug] Settings found:', {
+      hasTelegramToken: !!settings.telegram_token,
+      hasTelegramChatId: !!settings.telegram_chat_id,
+      hasDiscord: !!settings.discord_webhook
+    });
+
     const messageText = body.message || JSON.stringify(body, null, 2);
     let sentAny = false;
+    let lastError = '';
 
     // 1. الإرسال عبر تليجرام إذا كان مفعلًا
     if (settings.telegram_token && settings.telegram_chat_id) {
@@ -39,33 +49,41 @@ export async function POST(
         }),
       });
       const tgData = await tgRes.json();
-      if (tgData.ok) sentAny = true;
+      console.log('[Telegram Response]:', tgData);
+      
+      if (tgData.ok) {
+        sentAny = true;
+      } else {
+        lastError = `Telegram Error: ${tgData.description || 'Unknown error'}`;
+      }
     }
 
     // 2. الإرسال عبر ديسكورد إذا كان رابط الويب هوك موجوداً
     if (settings.discord_webhook) {
-      await fetch(settings.discord_webhook, {
+      const discordRes = await fetch(settings.discord_webhook, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content: `🔔 **إشارة تداول جديدة**\n\`\`\`json\n${messageText}\n\`\`\``,
         }),
       });
-      sentAny = true;
-    }
-
-    // 3. الإرسال عبر واتساب (Meta Cloud API) إذا كانت البيانات متوفرة
-    if (settings.whatsapp_token && settings.whatsapp_phone_id) {
-      // ملاحظة: تتطلب رقم هاتف المستلم وجهة اتصال، يمكنك ضبطها حسب الحاجة
-      sentAny = true;
+      if (discordRes.ok) {
+        sentAny = true;
+      } else {
+        lastError = 'Discord Webhook failed to respond with OK';
+      }
     }
 
     if (!sentAny) {
-      return NextResponse.json({ success: false, error: 'لم يتم العثور على أي وسيلة إرسال نشطة ومجهزة' }, { status: 400 });
+      return NextResponse.json({ 
+        success: false, 
+        error: lastError || 'لم يتم العثور على أي وسيلة إرسال نشطة أو فشل الإرسال عبر الوسائط المتاحة' 
+      }, { status: 400 });
     }
 
     return NextResponse.json({ success: true, message: 'تم معالجة الويب هوك وإرسال الإشارة بنجاح' });
   } catch (error: any) {
+    console.error('[Webhook Exception]:', error.message);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   } finally {
     client.release();
