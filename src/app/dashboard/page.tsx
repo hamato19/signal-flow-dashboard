@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Bell, Webhook, Settings, Database, 
   Terminal, Shield, LogOut, CheckCircle2, AlertTriangle, 
-  Plus, Trash2, Edit, Save, RefreshCw, Code, Copy, Check, Lock, Sparkles, MessageSquare, Send, Globe, ShoppingBag, MessageCircle, Mail, Hash, Building2, TrendingUp, PhoneCall, Smartphone
+  Plus, Trash2, Edit, Save, RefreshCw, Code, Copy, Lock, Sparkles, MessageSquare, Send, Globe, ShoppingBag, MessageCircle, Mail, Hash, Building2, TrendingUp, PhoneCall, Smartphone
 } from 'lucide-react';
 
 export default function ControlPanel() {
@@ -70,7 +70,7 @@ export default function ControlPanel() {
 
   const [webhookUrl, setWebhookUrl] = useState('');
 
-  // محاكاة الاتصال بقاعدة البيانات واسترجاع بيانات المستخدم المستقلة عند تسجيل الدخول
+  // التحقق من الجلسة المخزنة عند التحميل واستدعاء البيانات من قاعدة البيانات
   useEffect(() => {
     const savedSlug = localStorage.getItem('user_slug');
     if (savedSlug) {
@@ -86,39 +86,62 @@ export default function ControlPanel() {
     setWebhookUrl(`https://api.hooksignal.com/v1/webhook/${slug}`);
   }, [slug]);
 
-  // دالة محاكاة جلب بيانات المستخدم المستقلة من قاعدة البيانات (Isolated DB Fetch)
-  const fetchUserData = (userSlug: string) => {
-    const savedData = localStorage.getItem(`hooksignal_db_${userSlug}`);
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        if (parsed.telegramChannels) setTelegramChannels(parsed.telegramChannels);
-        if (parsed.whatsappChannels) setWhatsappChannels(parsed.whatsappChannels);
-        if (parsed.smsChannels) setSmsChannels(parsed.smsChannels);
-        if (parsed.stores) setStores(parsed.stores);
-        if (parsed.tradingIntegrations) setTradingIntegrations(parsed.tradingIntegrations);
-        if (parsed.enterpriseTeams) setEnterpriseTeams(parsed.enterpriseTeams);
-        if (parsed.userPlan) setUserPlan(parsed.userPlan);
-      } catch (e) {
-        console.error('Error parsing user data', e);
+  // دالة جلب بيانات المستخدم من قاعدة البيانات عبر الـ API
+  const fetchUserData = async (userSlug: string) => {
+    try {
+      const res = await fetch(`/api/user-settings?slug=${userSlug}`);
+      const result = await res.json();
+      
+      if (result.success && result.data) {
+        const data = result.data;
+        if (data.telegram_channels) setTelegramChannels(data.telegram_channels);
+        if (data.whatsapp_channels) setWhatsappChannels(data.whatsapp_channels);
+        if (data.sms_channels) setSmsChannels(data.sms_channels);
+        if (data.stores) setStores(data.stores);
+        if (data.trading_integrations) setTradingIntegrations(data.trading_integrations);
+        if (data.enterprise_teams) setEnterpriseTeams(data.enterprise_teams);
+        if (data.user_plan) setUserPlan(data.user_plan);
+        if (data.username) setUsername(data.username);
       }
+    } catch (e) {
+      console.error('Error fetching user data from DB:', e);
+      showNotification('error', 'فشل استرجاع البيانات من قاعدة البيانات');
     }
   };
 
-  // دالة حفظ البيانات الخاصة بالمستخدم الحالي في قاعدة البيانات المحلية/السحابية دون تداخل
-  const saveUserDataToDB = () => {
+  // دالة حفظ البيانات الخاصة بالمستخدم الحالي في قاعدة بيانات Neon عبر الـ API
+  const saveUserDataToDB = async () => {
     if (!slug) return;
-    const userData = {
+    
+    const payload = {
+      slug,
       telegramChannels,
       whatsappChannels,
       smsChannels,
       stores,
       tradingIntegrations,
       enterpriseTeams,
-      userPlan
+      userPlan,
+      username
     };
-    localStorage.setItem(`hooksignal_db_${slug}`, JSON.stringify(userData));
-    showNotification('success', 'تم حفظ وتحديث البيانات في حسابك المستقل بنجاح');
+
+    try {
+      const res = await fetch('/api/user-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const result = await res.json();
+      if (result.success) {
+        showNotification('success', 'تم حفظ وتحديث البيانات في قاعدة بيانات Neon بنجاح');
+      } else {
+        showNotification('error', `فشل الحفظ: ${result.error}`);
+      }
+    } catch (e: any) {
+      console.error('Error saving user data:', e);
+      showNotification('error', 'حدث خطأ أثناء الاتصال بقاعدة البيانات');
+    }
   };
 
   const showNotification = (type: string, message: string) => {
@@ -153,7 +176,6 @@ export default function ControlPanel() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Generic Add/Remove Handlers for Omnichannel & SMS
   const addChannel = (type: string) => {
     if (userPlan === 'free') {
       showNotification('error', 'الخطة المجانية تتيح قناة واحدة فقط لكل نوع. قم بالترقية للباقة الشاملة لإضافة قنوات متعددة بلا حدود!');
@@ -231,7 +253,7 @@ export default function ControlPanel() {
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 font-sans" dir="rtl">
         <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl w-full max-w-md shadow-2xl">
           <div className="text-center mb-8">
-            <div className="bg-blue-600/10 border border-blue-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-400">
+            <div className="bg-blue-600/15 border border-blue-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-400">
               <Webhook className="w-8 h-8" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight">منصة ويب هوك العربية الشاملة</h1>
@@ -266,7 +288,7 @@ export default function ControlPanel() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex font-sans" dir="rtl">
       
       {notification.show && (
-        <div className="fixed top-5 left-5 z-50 bg-slate-900 border border-slate-800 shadow-2xl px-4 py-3 rounded-xl flex items-center gap-3 animate-fade-in z-50">
+        <div className="fixed top-5 left-5 z-50 bg-slate-900 border border-slate-800 shadow-2xl px-4 py-3 rounded-xl flex items-center gap-3 animate-fade-in">
           {notification.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
           {notification.type === 'error' && <AlertTriangle className="w-5 h-5 text-rose-400" />}
           {notification.type === 'info' && <Bell className="w-5 h-5 text-blue-400" />}
@@ -274,12 +296,12 @@ export default function ControlPanel() {
         </div>
       )}
 
-      {/* Sidebar الاحترافي */}
+      {/* الشريط الجانبي */}
       <aside className="w-64 bg-slate-900/50 border-l border-slate-800/80 flex flex-col justify-between hidden md:flex">
         <div>
           <div className="p-6 border-b border-slate-800/80 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="bg-blue-600/10 border border-blue-500/20 p-2 rounded-xl text-blue-400">
+              <div className="bg-blue-600/15 border border-blue-500/20 p-2 rounded-xl text-blue-400">
                 <Webhook className="w-5 h-5" />
               </div>
               <div>
@@ -326,7 +348,7 @@ export default function ControlPanel() {
                   onClick={() => setActiveTab(item.id)}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                     isActive 
-                      ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20' 
+                      ? 'bg-blue-600/15 text-blue-400 border border-blue-500/20' 
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
@@ -341,9 +363,9 @@ export default function ControlPanel() {
         <div className="p-4 border-t border-slate-800/80 space-y-2">
           <button
             onClick={saveUserDataToDB}
-            className="w-full flex items-center justify-center gap-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 py-2 rounded-xl text-xs font-medium transition-colors"
+            className="w-full flex items-center justify-center gap-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 py-2.5 rounded-xl text-xs font-medium transition-colors shadow"
           >
-            <Save className="w-3.5 h-3.5" /> حفظ البيانات في قاعدة البيانات
+            <Save className="w-4 h-4" /> حفظ البيانات بقاعدة البيانات
           </button>
           <button
             onClick={handleLogout}
@@ -369,7 +391,7 @@ export default function ControlPanel() {
             {activeTab === 'logs' && 'سجل المعاملات والطلبات الحي'}
             {activeTab === 'settings' && 'إعدادات الحساب المستقل وقاعدة البيانات'}
           </h1>
-          <span className="text-xs px-2.5 py-1 rounded-full border flex items-center gap-1.5 bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
+          <span className="text-xs px-3 py-1 rounded-full border flex items-center gap-1.5 bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
             <span className="w-2 h-2 rounded-full bg-emerald-400"></span> الحساب المستقل نشط ({slug})
           </span>
         </header>
@@ -408,15 +430,15 @@ export default function ControlPanel() {
             </div>
           )}
 
-          {/* تبويب قنوات الإشعارات الشاملة (Omnichannel Hub) */}
+          {/* تبويب قنوات الإشعارات الشاملة */}
           {activeTab === 'integrations' && (
             <div className="space-y-6">
               
-              {/* 1. Telegram Channels */}
+              {/* Telegram */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="bg-blue-600/10 border border-blue-500/20 p-2.5 rounded-xl text-blue-400">
+                    <div className="bg-blue-600/15 border border-blue-500/20 p-2.5 rounded-xl text-blue-400">
                       <Send className="w-5 h-5" />
                     </div>
                     <div>
@@ -432,7 +454,7 @@ export default function ControlPanel() {
                 <div className="space-y-3 pt-2">
                   {telegramChannels.map((channel, index) => (
                     <div key={channel.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
-                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                         <span className="text-xs font-bold text-blue-400">قناة تلجرام #{index + 1}</span>
                         <button onClick={() => removeChannel('telegram', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
                           <Trash2 className="w-4 h-4" />
@@ -461,11 +483,11 @@ export default function ControlPanel() {
                 </div>
               </div>
 
-              {/* 2. WhatsApp Channels */}
+              {/* WhatsApp */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="bg-emerald-600/10 border border-emerald-500/20 p-2.5 rounded-xl text-emerald-400">
+                    <div className="bg-emerald-600/15 border border-emerald-500/20 p-2.5 rounded-xl text-emerald-400">
                       <MessageCircle className="w-5 h-5" />
                     </div>
                     <div>
@@ -481,7 +503,7 @@ export default function ControlPanel() {
                 <div className="space-y-3 pt-2">
                   {whatsappChannels.map((channel, index) => (
                     <div key={channel.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
-                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                         <span className="text-xs font-bold text-emerald-400">قناة واتساب #{index + 1}</span>
                         <button onClick={() => removeChannel('whatsapp', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
                           <Trash2 className="w-4 h-4" />
@@ -521,18 +543,18 @@ export default function ControlPanel() {
             </div>
           )}
 
-          {/* تبويب خدمة الرسائل النصية SMS */}
+          {/* تبويب SMS */}
           {activeTab === 'sms' && (
             <div className="space-y-6">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="bg-sky-600/10 border border-sky-500/20 p-2.5 rounded-xl text-sky-400">
+                    <div className="bg-sky-600/15 border border-sky-500/20 p-2.5 rounded-xl text-sky-400">
                       <Smartphone className="w-5 h-5" />
                     </div>
                     <div>
                       <h3 className="font-bold text-sm text-slate-200">بوابة الرسائل القصيرة (SMS Gateway)</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">ربط مزودي خدمة الرسائل (مثل تقنيات، Unifonic، وغيرها) لإرسال تنبيهات SMS عند استقبال الويب هوك</p>
+                      <p className="text-xs text-slate-500 mt-0.5">ربط مزودي خدمة الرسائل (مثل تقنيات، Unifonic) لإرسال تنبيهات SMS عند استقبال الويب هوك</p>
                     </div>
                   </div>
                   <button onClick={() => addChannel('sms')} className="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
@@ -543,7 +565,7 @@ export default function ControlPanel() {
                 <div className="space-y-3 pt-2">
                   {smsChannels.map((sms, index) => (
                     <div key={sms.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
-                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                         <span className="text-xs font-bold text-sky-400">بوابة SMS #{index + 1}</span>
                         <button onClick={() => removeChannel('sms', sms.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
                           <Trash2 className="w-4 h-4" />
@@ -586,18 +608,18 @@ export default function ControlPanel() {
             </div>
           )}
 
-          {/* تبويب منصات التداول (TradingView & Binance) */}
+          {/* تبويب التداول */}
           {activeTab === 'trading' && (
             <div className="space-y-6">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="bg-amber-600/10 border border-amber-500/20 p-2.5 rounded-xl text-amber-400">
+                    <div className="bg-amber-600/15 border border-amber-500/20 p-2.5 rounded-xl text-amber-400">
                       <TrendingUp className="w-5 h-5" />
                     </div>
                     <div>
                       <h3 className="font-bold text-sm text-slate-200">إشارات التداول ومنصات المال (TradingView & Binance)</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">استقبال وتفسير تنبيهات التداول وتحويلها الفوري لعمليات شراء/بيع أو إشعارات فورية</p>
+                      <p className="text-xs text-slate-500 mt-0.5">استقبال وتفسير تنبيهات التداول وتحويلها الفوري لإشعارات أو عمليات شراء/بيع</p>
                     </div>
                   </div>
                   <button onClick={addTradingIntegration} className="bg-amber-600 hover:bg-amber-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors shadow-lg">
@@ -639,17 +661,13 @@ export default function ControlPanel() {
                           }} placeholder="BTC_Breakout_Strategy" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500" />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-medium text-slate-400 mb-1">مفتاح السرية (Secret Webhook Key)</label>
+                          <label className="block text-[11px] font-medium text-slate-400 mb-1">مفتاح السرية (Secret Key)</label>
                           <input type="password" value={item.secretKey} onChange={(e) => {
                             const updated = [...tradingIntegrations];
                             updated[index].secretKey = e.target.value;
                             setTradingIntegrations(updated);
                           }} placeholder="tv_secret_xxx" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500" />
                         </div>
-                      </div>
-
-                      <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800/60 flex items-center justify-between">
-                        <span className="text-xs text-slate-400">رابط الويب هوك الخاص بالتداول: <code className="text-amber-400 mr-2">{webhookUrl}/trading/{item.id}</code></span>
                       </div>
                     </div>
                   ))}
@@ -658,18 +676,18 @@ export default function ControlPanel() {
             </div>
           )}
 
-          {/* تبويب ربط المتاجر */}
+          {/* تبويب المتاجر */}
           {activeTab === 'stores' && (
             <div className="space-y-6">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="bg-purple-600/10 border border-purple-500/20 p-2.5 rounded-xl text-purple-400">
+                    <div className="bg-purple-600/15 border border-purple-500/20 p-2.5 rounded-xl text-purple-400">
                       <ShoppingBag className="w-5 h-5" />
                     </div>
                     <div>
                       <h3 className="font-bold text-sm text-slate-200">إدارة وربط المتاجر الإلكترونية</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">ربط منصات سلة (Salla)، زد (Zid)، ووومورس (WooCommerce) واستلام Webhooks الطلبات تلقائياً</p>
+                      <p className="text-xs text-slate-500 mt-0.5">ربط منصات سلة (Salla)، زد (Zid)، ووومورس واستلام Webhooks الطلبات تلقائياً</p>
                     </div>
                   </div>
                   <button onClick={addStoreIntegration} className="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors shadow-lg">
@@ -726,18 +744,18 @@ export default function ControlPanel() {
             </div>
           )}
 
-          {/* تبويب قسم الشركات والأقسام */}
+          {/* تبويب الشركات */}
           {activeTab === 'enterprise' && (
             <div className="space-y-6">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="bg-indigo-600/10 border border-indigo-500/20 p-2.5 rounded-xl text-indigo-400">
+                    <div className="bg-indigo-600/15 border border-indigo-500/20 p-2.5 rounded-xl text-indigo-400">
                       <Building2 className="w-5 h-5" />
                     </div>
                     <div>
                       <h3 className="font-bold text-sm text-slate-200">قسم الشركات والأقسام المهنية</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">تنظيم الويب هوك الخاص بالشركات وفصل أقسامها (قسم الدعم، المبيعات، التطوير)</p>
+                      <p className="text-xs text-slate-500 mt-0.5">تنظيم الويب هوك الخاص بالشركات وفصل أقسامها (الدعم، المبيعات، التطوير)</p>
                     </div>
                   </div>
                   <button onClick={addEnterpriseTeam} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors shadow-lg">
