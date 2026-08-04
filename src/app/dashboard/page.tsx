@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Bell, Webhook, Settings, Database, 
   Terminal, Shield, LogOut, CheckCircle2, AlertTriangle, 
-  Plus, Trash2, Edit, Save, RefreshCw, Code, Copy, Check, Lock, Sparkles, MessageSquare, Send, Globe, ShoppingBag
+  Plus, Trash2, Edit, Save, RefreshCw, Code, Copy, Check, Lock, Sparkles, MessageSquare, Send, Globe, ShoppingBag, MessageCircle, Mail, Hash
 } from 'lucide-react';
 
 export default function ControlPanel() {
@@ -12,20 +12,33 @@ export default function ControlPanel() {
   const [inputSlug, setInputSlug] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   
   const [notification, setNotification] = useState({ show: false, type: 'info', message: '' });
-
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
 
   // Subscription & Plan State (Free / Pro)
   const [userPlan, setUserPlan] = useState('free'); // 'free' or 'pro'
   
-  // Telegram Channels List (Free: max 1 channel, Pro: up to 5+ channels)
+  // Channels State (Telegram, WhatsApp, Slack, Discord, Email)
   const [telegramChannels, setTelegramChannels] = useState([
-    { id: 1, token: '', chatId: '', name: 'القناة الرئيسية' }
+    { id: 1, token: '', chatId: '', name: 'قناة تليجرام الرئيسية' }
+  ]);
+
+  const [whatsappChannels, setWhatsappChannels] = useState([
+    { id: 1, phoneNumberId: '', accessToken: '', recipientPhone: '', name: 'رقم واتساب الرسمي' }
+  ]);
+
+  const [slackChannels, setSlackChannels] = useState([
+    { id: 1, webhookUrl: '', channelName: '#alerts' }
+  ]);
+
+  const [discordChannels, setDiscordChannels] = useState([
+    { id: 1, webhookUrl: '', serverName: 'سيرفر الديسكورد' }
+  ]);
+
+  const [emailChannels, setEmailChannels] = useState([
+    { id: 1, smtpHost: '', smtpUser: '', smtpPass: '', recipientEmail: '' }
   ]);
 
   // Stores Integration State (Salla, Zid, WooCommerce)
@@ -87,25 +100,36 @@ export default function ControlPanel() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const addTelegramChannel = () => {
-    if (userPlan === 'free' && telegramChannels.length >= 1) {
-      showNotification('error', 'الخطة المجانية تتيح قناة تليجرام واحدة فقط. قم بالترقية لإضافة حتى 5 قنوات وأكثر!');
+  // Generic Add/Remove Handlers for Omnichannel
+  const addChannel = (type: string) => {
+    if (userPlan === 'free') {
+      showNotification('error', 'الخطة المجانية تتيح قناة واحدة فقط لكل نوع. قم بالترقية للباقة الشاملة لإضافة قنوات متعددة بلا حدود!');
       return;
     }
-    if (userPlan === 'pro' && telegramChannels.length >= 5) {
-      showNotification('error', 'الحد الأقصى المسموح به هو 5 قنوات تليجرام في الباقة الحالية.');
-      return;
+
+    if (type === 'telegram') {
+      setTelegramChannels([...telegramChannels, { id: Date.now(), token: '', chatId: '', name: `قناة تليجرام ${telegramChannels.length + 1}` }]);
+    } else if (type === 'whatsapp') {
+      setWhatsappChannels([...whatsappChannels, { id: Date.now(), phoneNumberId: '', accessToken: '', recipientPhone: '', name: `رقم واتساب ${whatsappChannels.length + 1}` }]);
+    } else if (type === 'slack') {
+      setSlackChannels([...slackChannels, { id: Date.now(), webhookUrl: '', channelName: `#channel-${slackChannels.length + 1}` }]);
+    } else if (type === 'discord') {
+      setDiscordChannels([...discordChannels, { id: Date.now(), webhookUrl: '', serverName: `سيرفر ديسكورد ${discordChannels.length + 1}` }]);
+    } else if (type === 'email') {
+      setEmailChannels([...emailChannels, { id: Date.now(), smtpHost: '', smtpUser: '', smtpPass: '', recipientEmail: '' }]);
     }
-    setTelegramChannels([...telegramChannels, { id: Date.now(), token: '', chatId: '', name: `قناة جديدة ${telegramChannels.length + 1}` }]);
-    showNotification('success', 'تمت إضافة حقل قناة تليجرام جديدة بنجاح');
+    showNotification('success', 'تمت إضافة القناة بنجاح');
   };
 
-  const removeTelegramChannel = (id: number) => {
-    if (telegramChannels.length === 1) {
-      showNotification('error', 'يجب أن تملك قناة تليجرام واحدة على الأقل.');
-      return;
+  const removeChannel = (type: string, id: number) => {
+    if (type === 'telegram' && telegramChannels.length > 1) setTelegramChannels(telegramChannels.filter(c => c.id !== id));
+    else if (type === 'whatsapp' && whatsappChannels.length > 1) setWhatsappChannels(whatsappChannels.filter(c => c.id !== id));
+    else if (type === 'slack' && slackChannels.length > 1) setSlackChannels(slackChannels.filter(c => c.id !== id));
+    else if (type === 'discord' && discordChannels.length > 1) setDiscordChannels(discordChannels.filter(c => c.id !== id));
+    else if (type === 'email' && emailChannels.length > 1) setEmailChannels(emailChannels.filter(c => c.id !== id));
+    else {
+      showNotification('error', 'يجب الاحتفاظ بقناة واحدة على الأقل نشطة.');
     }
-    setTelegramChannels(telegramChannels.filter(ch => ch.id !== id));
   };
 
   const addStoreIntegration = () => {
@@ -134,7 +158,7 @@ export default function ControlPanel() {
             <div className="bg-blue-600/10 border border-blue-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-400">
               <Webhook className="w-8 h-8" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">لوحة تحكم الإشارات</h1>
+            <h1 className="text-2xl font-bold tracking-tight">لوحة تحكم المنصة الشاملة</h1>
             <p className="text-slate-400 text-sm mt-2">أدخل معرف الحساب (Slug) للوصول إلى لوحة التحكم</p>
           </div>
 
@@ -174,6 +198,7 @@ export default function ControlPanel() {
         </div>
       )}
 
+      {/* Sidebar الاحترافي */}
       <aside className="w-64 bg-slate-900/50 border-l border-slate-800/80 flex flex-col justify-between hidden md:flex">
         <div>
           <div className="p-6 border-b border-slate-800/80 flex items-center justify-between">
@@ -208,10 +233,10 @@ export default function ControlPanel() {
           <nav className="p-4 space-y-1.5">
             {[
               { id: 'dashboard', label: 'الرئيسية والإحصائيات', icon: LayoutDashboard },
-              { id: 'integrations', label: 'قنوات الإشعارات (تليجرام)', icon: Webhook },
-              { id: 'stores', label: 'ربط المتاجر (Salla/Zid)', icon: ShoppingBag },
+              { id: 'integrations', label: 'قنوات الإشعارات والربط', icon: Webhook },
+              { id: 'stores', label: 'إدارة وربط المتاجر', icon: ShoppingBag },
               { id: 'rules', label: 'قواعد التوجيه الذكية', icon: Database },
-              { id: 'logs', label: 'سجل العمليات', icon: Terminal },
+              { id: 'logs', label: 'سجل العمليات الحي', icon: Terminal },
               { id: 'settings', label: 'الإعدادات العامة', icon: Settings },
             ].map((item) => {
               const Icon = item.icon;
@@ -245,32 +270,33 @@ export default function ControlPanel() {
         </div>
       </aside>
 
+      {/* المحتوى الرئيسي */}
       <main className="flex-1 flex flex-col min-h-screen overflow-y-auto">
         <header className="h-16 border-b border-slate-800/80 bg-slate-900/20 backdrop-blur px-8 flex items-center justify-between sticky top-0 z-40">
           <h1 className="font-bold text-lg">
             {activeTab === 'dashboard' && 'الرئيسية والإحصائيات'}
-            {activeTab === 'integrations' && 'قنوات الربط الشاملة (تليجرام)'}
+            {activeTab === 'integrations' && 'منصة قنوات الإشعارات الشاملة (تليجرام، واتساب، سلاك، ديسكورد، بريد)'}
             {activeTab === 'stores' && 'خدمة ربط المتاجر الإلكترونية (Salla, Zid, WooCommerce)'}
             {activeTab === 'rules' && 'محرك قواعد التوجيه الذكي'}
             {activeTab === 'logs' && 'سجل المعاملات والطلبات الحي'}
             {activeTab === 'settings' && 'إعدادات الحساب والمتغيرات'}
           </h1>
           <span className="text-xs px-2.5 py-1 rounded-full border flex items-center gap-1.5 bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span> الويب هوك يعمل
+            <span className="w-2 h-2 rounded-full bg-emerald-400"></span> النظام يعمل بكفاءة
           </span>
         </header>
 
         <div className="p-8 max-w-7xl mx-auto w-full space-y-6">
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-300">رابط الويب هوك الخاص بك</h3>
-                  <p className="text-xs text-slate-500 mt-1">استقبل إشارات المتاجر أو منصات التداول على هذا الرابط</p>
+                  <h3 className="text-sm font-semibold text-slate-300">رابط الويب هوك الشامل الخاص بك</h3>
+                  <p className="text-xs text-slate-500 mt-1">استقبل الإشارات من TradingView والمتاجر ووجهها لجميع قنواتك بمرونة تامة</p>
                 </div>
                 <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 w-full md:w-auto">
                   <code className="text-xs text-blue-400 truncate max-w-xs">{webhookUrl}</code>
-                  <button onClick={() => copyToClipboard(webhookUrl)} className="bg-slate-800 text-slate-200 p-1.5 rounded-lg text-xs flex items-center gap-1">
+                  <button onClick={() => copyToClipboard(webhookUrl)} className="bg-slate-800 text-slate-200 p-1.5 rounded-lg text-xs flex items-center gap-1 hover:bg-slate-700 transition-colors">
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copied ? 'تم' : 'نسخ'}</span>
                   </button>
@@ -278,15 +304,15 @@ export default function ControlPanel() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
                   <p className="text-xs text-slate-400 font-medium">الطلبات المُستلمة</p>
                   <h4 className="text-3xl font-bold mt-2 text-slate-100">{analytics.totalRequests}</h4>
                 </div>
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
                   <p className="text-xs text-slate-400 font-medium">نسبة النجاح</p>
                   <h4 className="text-3xl font-bold mt-2 text-emerald-400">{analytics.successRate}%</h4>
                 </div>
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
                   <p className="text-xs text-slate-400 font-medium">سرعة الاستجابة</p>
                   <h4 className="text-3xl font-bold mt-2 text-blue-400">{analytics.averageResponseTime} ms</h4>
                 </div>
@@ -294,81 +320,250 @@ export default function ControlPanel() {
             </div>
           )}
 
+          {/* تبويب قنوات الإشعارات الشاملة (Omnichannel Hub) */}
           {activeTab === 'integrations' && (
             <div className="space-y-6">
-              <div className="bg-slate-900 border border-blue-500/30 rounded-2xl p-6 space-y-4 shadow-lg">
+              
+              {/* 1. Telegram Channels */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Send className="w-5 h-5 text-blue-400" />
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-600/10 border border-blue-500/20 p-2.5 rounded-xl text-blue-400">
+                      <Send className="w-5 h-5" />
+                    </div>
                     <div>
-                      <h3 className="font-bold text-sm text-slate-200">تكامل Telegram (قنوات متعددة)</h3>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {userPlan === 'free' ? 'الخطة المجانية تتيح قناة واحدة.' : 'باقة Pro مفعلة: تتيح لك حتى 5 قنوات تليجرام.'}
-                      </p>
+                      <h3 className="font-bold text-sm text-slate-200">قنوات تليجرام (Telegram Channels)</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">أرسل إشعاراتك الفورية إلى عدة قنوات أو مجموعات تليجرام بالتوازي</p>
                     </div>
                   </div>
-                  <button 
-                    onClick={addTelegramChannel}
-                    className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors"
-                  >
+                  <button onClick={() => addChannel('telegram')} className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
                     <Plus className="w-4 h-4" /> إضافة قناة تليجرام
                   </button>
                 </div>
 
-                <div className="space-y-4 pt-2">
+                <div className="space-y-3 pt-2">
                   {telegramChannels.map((channel, index) => (
                     <div key={channel.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
                         <span className="text-xs font-bold text-blue-400">قناة تليجرام #{index + 1}</span>
-                        {telegramChannels.length > 1 && (
-                          <button 
-                            onClick={() => removeTelegramChannel(channel.id)}
-                            className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
+                        <button onClick={() => removeChannel('telegram', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">Bot Token</label>
-                          <input 
-                            type="password" 
-                            value={channel.token}
-                            onChange={(e) => {
-                              const updated = [...telegramChannels];
-                              updated[index].token = e.target.value;
-                              setTelegramChannels(updated);
-                            }}
-                            placeholder="123456789:ABC..."
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500"
-                          />
+                          <input type="password" value={channel.token} onChange={(e) => {
+                            const updated = [...telegramChannels];
+                            updated[index].token = e.target.value;
+                            setTelegramChannels(updated);
+                          }} placeholder="123456789:ABC..." className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500" />
                         </div>
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">Chat ID</label>
-                          <input 
-                            type="text" 
-                            value={channel.chatId}
-                            onChange={(e) => {
-                              const updated = [...telegramChannels];
-                              updated[index].chatId = e.target.value;
-                              setTelegramChannels(updated);
-                            }}
-                            placeholder="-100xxxxxxxxxx"
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500"
-                          />
+                          <input type="text" value={channel.chatId} onChange={(e) => {
+                            const updated = [...telegramChannels];
+                            updated[index].chatId = e.target.value;
+                            setTelegramChannels(updated);
+                          }} placeholder="-100xxxxxxxxxx" className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500" />
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* 2. WhatsApp Channels */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-emerald-600/10 border border-emerald-500/20 p-2.5 rounded-xl text-emerald-400">
+                      <MessageCircle className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-200">ربط واتساب (WhatsApp Cloud API)</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">إرسال التنبيهات ورسائل العملاء عبر حساب واتساب بزنس الرسمي</p>
+                    </div>
+                  </div>
+                  <button onClick={() => addChannel('whatsapp')} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
+                    <Plus className="w-4 h-4" /> إضافة حساب واتساب
+                  </button>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  {whatsappChannels.map((channel, index) => (
+                    <div key={channel.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <span className="text-xs font-bold text-emerald-400">قناة واتساب #{index + 1}</span>
+                        <button onClick={() => removeChannel('whatsapp', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">Phone Number ID</label>
+                          <input type="text" value={channel.phoneNumberId} onChange={(e) => {
+                            const updated = [...whatsappChannels];
+                            updated[index].phoneNumberId = e.target.value;
+                            setWhatsappChannels(updated);
+                          }} placeholder="10394858..." className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-emerald-500" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">Access Token</label>
+                          <input type="password" value={channel.accessToken} onChange={(e) => {
+                            const updated = [...whatsappChannels];
+                            updated[index].accessToken = e.target.value;
+                            setWhatsappChannels(updated);
+                          }} placeholder="EAAG..." className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-emerald-500" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">رقم المستلم / المجموعات</label>
+                          <input type="text" value={channel.recipientPhone} onChange={(e) => {
+                            const updated = [...whatsappChannels];
+                            updated[index].recipientPhone = e.target.value;
+                            setWhatsappChannels(updated);
+                          }} placeholder="+9665xxxxxxxx" className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-emerald-500" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Slack Channels */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-amber-600/10 border border-amber-500/20 p-2.5 rounded-xl text-amber-400">
+                      <Hash className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-200">قنوات سلاك (Slack Webhooks)</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">توجيه التنبيهات مباشرة إلى قنوات فريق العمل في تطبيق Slack</p>
+                    </div>
+                  </div>
+                  <button onClick={() => addChannel('slack')} className="bg-amber-600 hover:bg-amber-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
+                    <Plus className="w-4 h-4" /> إضافة قناة سلاك
+                  </button>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  {slackChannels.map((channel, index) => (
+                    <div key={channel.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <span className="text-xs font-bold text-amber-400">قناة سلاك #{index + 1}</span>
+                        <button onClick={() => removeChannel('slack', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-slate-400 mb-1">Slack Webhook URL</label>
+                        <input type="text" value={channel.webhookUrl} onChange={(e) => {
+                          const updated = [...slackChannels];
+                          updated[index].webhookUrl = e.target.value;
+                          setSlackChannels(updated);
+                        }} placeholder="https://hooks.slack.com/services/..." className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-amber-500" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 4. Discord Channels */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-indigo-600/10 border border-indigo-500/20 p-2.5 rounded-xl text-indigo-400">
+                      <MessageSquare className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-200">قنوات ديسكورد (Discord Webhooks)</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">نشر الإشارات والتقارير الآلية في سيرفرات Discord</p>
+                    </div>
+                  </div>
+                  <button onClick={() => addChannel('discord')} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
+                    <Plus className="w-4 h-4" /> إضافة قناة ديسكورد
+                  </button>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  {discordChannels.map((channel, index) => (
+                    <div key={channel.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <span className="text-xs font-bold text-indigo-400">قناة ديسكورد #{index + 1}</span>
+                        <button onClick={() => removeChannel('discord', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-slate-400 mb-1">Discord Webhook URL</label>
+                        <input type="text" value={channel.webhookUrl} onChange={(e) => {
+                          const updated = [...discordChannels];
+                          updated[index].webhookUrl = e.target.value;
+                          setDiscordChannels(updated);
+                        }} placeholder="https://discord.com/api/webhooks/..." className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 5. Email Channels */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-rose-600/10 border border-rose-500/20 p-2.5 rounded-xl text-rose-400">
+                      <Mail className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-200">البريد الإلكتروني (SMTP / Email Alerts)</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">استلام إشعارات التنبيه والتقارير البريدية عند حدوث أي حدث</p>
+                    </div>
+                  </div>
+                  <button onClick={() => addChannel('email')} className="bg-rose-600 hover:bg-rose-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
+                    <Plus className="w-4 h-4" /> إضافة بريد إلكتروني
+                  </button>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  {emailChannels.map((channel, index) => (
+                    <div key={channel.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <span className="text-xs font-bold text-rose-400">إعدادات البريد #{index + 1}</span>
+                        <button onClick={() => removeChannel('email', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">SMTP Host & Port</label>
+                          <input type="text" value={channel.smtpHost} onChange={(e) => {
+                            const updated = [...emailChannels];
+                            updated[index].smtpHost = e.target.value;
+                            setEmailChannels(updated);
+                          }} placeholder="smtp.mailgun.org:587" className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-rose-500" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">البريد المستقبل للتقارير</label>
+                          <input type="email" value={channel.recipientEmail} onChange={(e) => {
+                            const updated = [...emailChannels];
+                            updated[index].recipientEmail = e.target.value;
+                            setEmailChannels(updated);
+                          }} placeholder="admin@example.com" className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-rose-500" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
           )}
 
+          {/* تبويب ربط المتاجر */}
           {activeTab === 'stores' && (
             <div className="space-y-6">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-lg">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="bg-purple-600/10 border border-purple-500/20 p-2.5 rounded-xl text-purple-400">
@@ -479,23 +674,23 @@ export default function ControlPanel() {
           )}
 
           {activeTab === 'rules' && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-bold text-sm text-slate-200">قواعد توجيه الإشارات الذكية</h3>
-                  <p className="text-xs text-slate-500 mt-1">توجيه الرسائل بناءً على الـ Payload</p>
+                  <p className="text-xs text-slate-500 mt-1">توجيه الرسائل والطلبات بناءً على الـ Payload والشروط المخصصة</p>
                 </div>
                 <button onClick={() => setRoutingRules([...routingRules, { id: Date.now(), condition: '' }])} className="bg-blue-600 text-white px-3 py-2 rounded-xl text-xs flex items-center gap-1">
-                  <Plus className="w-4 h-4" /> إضافة قاعدة
+                  <Plus className="w-4 h-4" /> إضافة قاعدة توجيه
                 </button>
               </div>
-              {routingRules.length === 0 ? <p className="text-xs text-slate-500 text-center py-6">لا توجد قواعد مضافة.</p> : null}
+              {routingRules.length === 0 ? <p className="text-xs text-slate-500 text-center py-6">لا توجد قواعد مضافة حتى الآن.</p> : null}
             </div>
           )}
 
           {activeTab === 'logs' && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-              <h3 className="font-bold text-sm text-slate-200">سجل المعاملات الحي</h3>
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+              <h3 className="font-bold text-sm text-slate-200">سجل المعاملات والطلبات الحي</h3>
               <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-400 h-48 overflow-y-auto">
                 في انتظار استقبال الطلبات...
               </div>
@@ -503,10 +698,10 @@ export default function ControlPanel() {
           )}
 
           {activeTab === 'settings' && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
-              <h3 className="font-bold text-sm text-slate-200">الإعدادات العامة</h3>
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
+              <h3 className="font-bold text-sm text-slate-200">الإعدادات العامة والمتغيرات</h3>
               <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="اسم المستخدم" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs" />
-              <button onClick={() => showNotification('success', 'تم الحفظ')} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs">حفظ</button>
+              <button onClick={() => showNotification('success', 'تم الحفظ بنجاح')} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs">حفظ التغييرات</button>
             </div>
           )}
         </div>
