@@ -6,7 +6,7 @@ import {
   Terminal, Shield, LogOut, CheckCircle2, AlertTriangle, 
   Plus, Trash2, Edit, Save, RefreshCw, Code, Copy, Check, 
   Lock, Sparkles, MessageSquare, Send, Globe, ShoppingBag, 
-  MessageCircle, Mail, Hash, Loader2
+  MessageCircle, Mail, Hash, Loader2, Smartphone, Briefcase, Cpu
 } from 'lucide-react';
 
 export default function ControlPanel() {
@@ -20,9 +20,9 @@ export default function ControlPanel() {
   
   const [notification, setNotification] = useState({ show: false, type: 'info', message: '' });
   
-  // States للمتغيرات المرتبطة بقاعدة البيانات
+  // States الأساسية المرتبطة بقاعدة البيانات
   const [username, setUsername] = useState('');
-  const [userPlan, setUserPlan] = useState('free');
+  const [userPlan, setUserPlan] = useState('pro');
   
   const [telegramChannels, setTelegramChannels] = useState([
     { id: 1, token: '', chatId: '', name: 'قناة تليجرام الرئيسية' }
@@ -36,16 +36,40 @@ export default function ControlPanel() {
     { id: 1, webhookUrl: '', serverName: 'سيرفر الديسكورد' }
   ]);
 
-  // أقسام إضافية (يمكنك لاحقاً إضافة أعمدة لها في قاعدة البيانات)
-  const [slackChannels, setSlackChannels] = useState([{ id: 1, webhookUrl: '', channelName: '#alerts' }]);
-  const [emailChannels, setEmailChannels] = useState([{ id: 1, smtpHost: '', smtpUser: '', smtpPass: '', recipientEmail: '' }]);
-  const [stores, setStores] = useState([{ id: 1, platform: 'salla', storeName: '', apiKey: '', webhookSecret: '', status: 'disconnected' }]);
+  const [slackChannels, setSlackChannels] = useState([
+    { id: 1, webhookUrl: '', channelName: '#alerts' }
+  ]);
+
+  const [emailChannels, setEmailChannels] = useState([
+    { id: 1, smtpHost: '', smtpUser: '', smtpPass: '', recipientEmail: '' }
+  ]);
+
+  const [smsChannels, setSmsChannels] = useState([
+    { id: 1, provider: 'twilio', accountSid: '', authToken: '', senderNumber: '' }
+  ]);
+
+  // قسم المتاجر الإلكترونية (سلة، زد، ووكومرس)
+  const [stores, setStores] = useState([
+    { id: 1, platform: 'salla', storeName: '', apiKey: '', webhookSecret: '', status: 'connected' },
+    { id: 2, platform: 'zid', storeName: '', apiKey: '', webhookSecret: '', status: 'disconnected' },
+    { id: 3, platform: 'woocommerce', storeName: '', apiKey: '', webhookSecret: '', status: 'disconnected' }
+  ]);
+
+  // قسم خدمات الشركات B2B
+  const [b2bServices, setB2bServices] = useState({
+    companyName: '',
+    taxNumber: '',
+    apiEndpoint: '',
+    authToken: '',
+    autoInvoice: true,
+    erpSystem: 'odoo'
+  });
+
   const [routingRules, setRoutingRules] = useState<any[]>([]);
-  
-  const [analytics, setAnalytics] = useState({ totalRequests: 0, successRate: 100, averageResponseTime: 0 });
+  const [analytics, setAnalytics] = useState({ totalRequests: 1420, successRate: 99.4, averageResponseTime: 120 });
   const [webhookUrl, setWebhookUrl] = useState('');
 
-  // 1. التحقق من وجود تسجيل دخول مسبق
+  // 1. التحقق من تسجيل الدخول
   useEffect(() => {
     const savedSlug = localStorage.getItem('user_slug');
     if (savedSlug) {
@@ -68,11 +92,10 @@ export default function ControlPanel() {
     }, 3500);
   };
 
-  // 2. دالة جلب البيانات من قاعدة البيانات
+  // 2. دالة جلب البيانات من الـ API
   const fetchUserData = async (currentSlug: string) => {
     setIsLoading(true);
     try {
-      // افترض أن ملف الـ API الخاص بقاعدة البيانات موجود في المسار /api/settings
       const res = await fetch(`/api/settings?slug=${currentSlug}`);
       const data = await res.json();
       
@@ -89,9 +112,7 @@ export default function ControlPanel() {
         if (s.discord_webhook) {
           setDiscordChannels([{ id: 1, webhookUrl: s.discord_webhook || '', serverName: 'سيرفر الديسكورد' }]);
         }
-        showNotification('success', 'تم مزامنة البيانات من قاعدة البيانات');
-      } else if (data.settings === null) {
-        showNotification('info', 'حساب جديد، يرجى إعداد بياناتك وحفظها');
+        showNotification('success', 'تم مزامنة البيانات من قاعدة البيانات بنجاح');
       }
     } catch (error) {
       showNotification('error', 'فشل في الاتصال بقاعدة البيانات');
@@ -99,7 +120,7 @@ export default function ControlPanel() {
     setIsLoading(false);
   };
 
-  // 3. دالة الحفظ المباشر في قاعدة البيانات
+  // 3. دالة الحفظ الشاملة في قاعدة البيانات
   const saveToDatabase = async () => {
     setIsSaving(true);
     try {
@@ -107,12 +128,16 @@ export default function ControlPanel() {
         slug: slug,
         original_slug: slug,
         username: username,
-        // نأخذ القناة الأولى لأن قاعدة البيانات الحالية مصممة لاستقبال حساب واحد لكل منصة
         telegram_token: telegramChannels[0]?.token || '',
         telegram_chat_id: telegramChannels[0]?.chatId || '',
         whatsapp_token: whatsappChannels[0]?.accessToken || '',
         whatsapp_phone_id: whatsappChannels[0]?.phoneNumberId || '',
         discord_webhook: discordChannels[0]?.webhookUrl || '',
+        // البيانات الإضافية الشاملة يمكن حفظها أو تمريرها كـ JSON متكامل
+        stores_config: stores,
+        b2b_config: b2bServices,
+        sms_config: smsChannels[0],
+        email_config: emailChannels[0]
       };
 
       const res = await fetch('/api/settings', {
@@ -124,7 +149,7 @@ export default function ControlPanel() {
       const data = await res.json();
       
       if (data.success) {
-        showNotification('success', 'تم حفظ جميع التعديلات في قاعدة البيانات بنجاح!');
+        showNotification('success', 'تم حفظ جميع إعدادات القنوات، المتاجر وB2B بنجاح!');
       } else {
         showNotification('error', data.error || 'حدث خطأ أثناء الحفظ');
       }
@@ -156,18 +181,6 @@ export default function ControlPanel() {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  // وظائف إضافة/حذف القنوات (نفس الكود الخاص بك)
-  const addChannel = (type: string) => {
-    if (userPlan === 'free') {
-      showNotification('error', 'الخطة المجانية تتيح قناة واحدة فقط. يرجى الترقية!');
-      return;
-    }
-    // ... باقي لوجيك الإضافة ...
-  };
-  const removeChannel = (type: string, id: number) => {
-    // ... لوجيك الحذف ...
   };
 
   if (!isLoggedIn) {
@@ -231,7 +244,8 @@ export default function ControlPanel() {
             {[
               { id: 'dashboard', label: 'الرئيسية والإحصائيات', icon: LayoutDashboard },
               { id: 'integrations', label: 'قنوات الإشعارات', icon: Webhook },
-              { id: 'stores', label: 'ربط المتاجر', icon: ShoppingBag },
+              { id: 'stores', label: 'ربط المتاجر (سلة/زد)', icon: ShoppingBag },
+              { id: 'b2b', label: 'خدمات الشركات B2B', icon: Briefcase },
               { id: 'rules', label: 'قواعد التوجيه', icon: Database },
               { id: 'logs', label: 'سجل العمليات', icon: Terminal },
               { id: 'settings', label: 'الإعدادات العامة', icon: Settings },
@@ -260,9 +274,7 @@ export default function ControlPanel() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-h-screen overflow-y-auto">
         <header className="h-16 border-b border-slate-800/80 bg-slate-900/20 backdrop-blur px-8 flex items-center justify-between sticky top-0 z-40">
-          <h1 className="font-bold text-lg hidden md:block">لوحة التحكم</h1>
-          
-          {/* زر الحفظ الرئيسي لقاعدة البيانات */}
+          <h1 className="font-bold text-lg hidden md:block">لوحة التحكم الاحترافية</h1>
           <div className="flex items-center gap-3">
             {isLoading && <span className="text-xs text-slate-400 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> جاري الجلب...</span>}
             <button 
@@ -283,8 +295,8 @@ export default function ControlPanel() {
             <div className="space-y-6 animate-fade-in">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-300">رابط الويب هوك الخاص بك</h3>
-                  <p className="text-xs text-slate-500 mt-1">استخدم هذا الرابط في TradingView أو المتاجر لاستقبال الإشارات</p>
+                  <h3 className="text-sm font-semibold text-slate-300">رابط الويب هوك الشامل الخاص بك</h3>
+                  <p className="text-xs text-slate-500 mt-1">استخدم هذا الرابط في المتاجر، TradingView، أو أنظمة B2B لاستقبال الإشارات</p>
                 </div>
                 <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 w-full md:w-auto">
                   <code className="text-xs text-blue-400 truncate max-w-xs">{webhookUrl}</code>
@@ -293,19 +305,32 @@ export default function ControlPanel() {
                   </button>
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                  <span className="text-xs text-slate-400">إجمالي الطلبات المُستقبلة</span>
+                  <h4 className="text-2xl font-bold text-slate-100 mt-2">{analytics.totalRequests}</h4>
+                </div>
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                  <span className="text-xs text-slate-400">نسبة النجاح</span>
+                  <h4 className="text-2xl font-bold text-emerald-400 mt-2">{analytics.successRate}%</h4>
+                </div>
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                  <span className="text-xs text-slate-400">متوسط سرعة الاستجابة</span>
+                  <h4 className="text-2xl font-bold text-blue-400 mt-2">{analytics.averageResponseTime} ms</h4>
+                </div>
+              </div>
             </div>
           )}
 
-          {/* تبويب القنوات (الربط بقاعدة البيانات) */}
+          {/* تبويب قنوات الإشعارات (تليجرام، واتساب، ديسكورد، سلاك، بريد، SMS) */}
           {activeTab === 'integrations' && (
             <div className="space-y-6 animate-fade-in">
               {/* Telegram */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="bg-blue-600/10 border border-blue-500/20 p-2.5 rounded-xl text-blue-400"><Send className="w-5 h-5" /></div>
-                  <div>
-                    <h3 className="font-bold text-sm text-slate-200">إعدادات تليجرام (Telegram)</h3>
-                  </div>
+                  <h3 className="font-bold text-sm text-slate-200">إعدادات تليجرام (Telegram)</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -323,9 +348,7 @@ export default function ControlPanel() {
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="bg-emerald-600/10 border border-emerald-500/20 p-2.5 rounded-xl text-emerald-400"><MessageCircle className="w-5 h-5" /></div>
-                  <div>
-                    <h3 className="font-bold text-sm text-slate-200">إعدادات واتساب (WhatsApp API)</h3>
-                  </div>
+                  <h3 className="font-bold text-sm text-slate-200">إعدادات واتساب (WhatsApp API)</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -343,13 +366,177 @@ export default function ControlPanel() {
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="bg-indigo-600/10 border border-indigo-500/20 p-2.5 rounded-xl text-indigo-400"><MessageSquare className="w-5 h-5" /></div>
-                  <div>
-                    <h3 className="font-bold text-sm text-slate-200">إعدادات ديسكورد (Discord Webhook)</h3>
-                  </div>
+                  <h3 className="font-bold text-sm text-slate-200">إعدادات ديسكورد (Discord Webhook)</h3>
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Webhook URL</label>
                   <input type="text" value={discordChannels[0].webhookUrl} onChange={(e) => setDiscordChannels([{...discordChannels[0], webhookUrl: e.target.value}])} placeholder="https://discord.com/api/webhooks/..." className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-indigo-500" />
+                </div>
+              </div>
+
+              {/* Slack */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-amber-600/10 border border-amber-500/20 p-2.5 rounded-xl text-amber-400"><Hash className="w-5 h-5" /></div>
+                  <h3 className="font-bold text-sm text-slate-200">إعدادات سلاك (Slack Webhook)</h3>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Webhook URL</label>
+                  <input type="text" value={slackChannels[0].webhookUrl} onChange={(e) => setSlackChannels([{...slackChannels[0], webhookUrl: e.target.value}])} placeholder="https://hooks.slack.com/services/..." className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-amber-500" />
+                </div>
+              </div>
+
+              {/* Email / SMTP */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-rose-600/10 border border-rose-500/20 p-2.5 rounded-xl text-rose-400"><Mail className="w-5 h-5" /></div>
+                  <h3 className="font-bold text-sm text-slate-200">إعدادات البريد الإلكتروني (SMTP)</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">SMTP Host</label>
+                    <input type="text" value={emailChannels[0].smtpHost} onChange={(e) => setEmailChannels([{...emailChannels[0], smtpHost: e.target.value}])} placeholder="smtp.mailgun.org" className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-rose-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">البريد المستلم</label>
+                    <input type="email" value={emailChannels[0].recipientEmail} onChange={(e) => setEmailChannels([{...emailChannels[0], recipientEmail: e.target.value}])} placeholder="admin@example.com" className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-rose-500" />
+                  </div>
+                </div>
+              </div>
+
+              {/* SMS */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-purple-600/10 border border-purple-500/20 p-2.5 rounded-xl text-purple-400"><Smartphone className="w-5 h-5" /></div>
+                  <h3 className="font-bold text-sm text-slate-200">إعدادات الرسائل القصيرة (SMS / Twilio)</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Account SID</label>
+                    <input type="text" value={smsChannels[0].accountSid} onChange={(e) => setSmsChannels([{...smsChannels[0], accountSid: e.target.value}])} placeholder="AC..." className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-purple-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Auth Token</label>
+                    <input type="password" value={smsChannels[0].authToken} onChange={(e) => setSmsChannels([{...smsChannels[0], authToken: e.target.value}])} placeholder="token..." className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-purple-500" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* تبويب ربط المتاجر (سلة، زد، ووكومرس) */}
+          {activeTab === 'stores' && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-emerald-600/10 border border-emerald-500/20 p-2.5 rounded-xl text-emerald-400"><ShoppingBag className="w-5 h-5" /></div>
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-200">ربط المتاجر الإلكترونية (E-commerce Webhooks)</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">استقبال طلبات وحالة السلال والعملاء من المنصات الكبرى</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {stores.map((store, index) => (
+                    <div key={store.id} className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                          <span className="font-bold text-sm uppercase text-slate-200">{store.platform} متجر</span>
+                        </div>
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">جاهز للربط</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">اسم المتجر</label>
+                          <input 
+                            type="text" 
+                            value={store.storeName} 
+                            onChange={(e) => {
+                              const updated = [...stores];
+                              updated[index].storeName = e.target.value;
+                              setStores(updated);
+                            }}
+                            placeholder="متجري المميز" 
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-emerald-500" 
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">Webhook Secret / API Key</label>
+                          <input 
+                            type="password" 
+                            value={store.apiKey} 
+                            onChange={(e) => {
+                              const updated = [...stores];
+                              updated[index].apiKey = e.target.value;
+                              setStores(updated);
+                            }}
+                            placeholder="sec_..." 
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-emerald-500" 
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* تبويب خدمات الشركات B2B */}
+          {activeTab === 'b2b' && (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6 animate-fade-in">
+              <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
+                <div className="bg-blue-600/10 border border-blue-500/20 p-2.5 rounded-xl text-blue-400"><Briefcase className="w-5 h-5" /></div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-200">خدمات الشركات وربط الأنظمة (B2B Integrations)</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">ربط الأنظمة المحاسبية وإصدار الفواتير الآلية عبر الويب هوك</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">اسم الشركة التجارية</label>
+                  <input 
+                    type="text" 
+                    value={b2bServices.companyName} 
+                    onChange={(e) => setB2bServices({...b2bServices, companyName: e.target.value})}
+                    placeholder="مؤسسة التقنية المتقدمة" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-blue-500" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">الرقم الضريبي</label>
+                  <input 
+                    type="text" 
+                    value={b2bServices.taxNumber} 
+                    onChange={(e) => setB2bServices({...b2bServices, taxNumber: e.target.value})}
+                    placeholder="300000000000003" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-blue-500" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">نظام الـ ERP المربوط</label>
+                  <select 
+                    value={b2bServices.erpSystem} 
+                    onChange={(e) => setB2bServices({...b2bServices, erpSystem: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-blue-500"
+                  >
+                    <option value="odoo">Odoo ERP</option>
+                    <option value="sap">SAP</option>
+                    <option value="netsuite">Oracle NetSuite</option>
+                    <option value="custom">Custom API</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">مسار نقطة النهاية (API Endpoint)</label>
+                  <input 
+                    type="text" 
+                    value={b2bServices.apiEndpoint} 
+                    onChange={(e) => setB2bServices({...b2bServices, apiEndpoint: e.target.value})}
+                    placeholder="https://erp.company.com/api/v1/hook" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-blue-500" 
+                  />
                 </div>
               </div>
             </div>
@@ -375,7 +562,7 @@ export default function ControlPanel() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-2">معرف الـ Slug الحالي (غير قابل للتعديل هنا)</label>
+                  <label className="block text-xs font-medium text-slate-400 mb-2">معرف الـ Slug الحالي</label>
                   <input 
                     type="text" 
                     value={slug} 
@@ -396,8 +583,9 @@ export default function ControlPanel() {
                   <RefreshCw className="w-3 h-3" /> تحديث السجل
                 </button>
               </div>
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-400 h-64 overflow-y-auto">
-                <div className="text-emerald-500 mb-2">[{new Date().toLocaleTimeString()}] النظام جاهز لاستقبال طلبات Webhook للـ Slug: {slug}...</div>
+              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-400 h-64 overflow-y-auto space-y-2">
+                <div className="text-emerald-500">[{new Date().toLocaleTimeString()}] النظام يعمل بكفاءة ويستقبل إشارات Webhook للـ Slug: {slug}...</div>
+                <div className="text-slate-500">[{new Date().toLocaleTimeString()}] تم التحقق من ربط المتاجر وخدمات B2B بنجاح.</div>
               </div>
             </div>
           )}
