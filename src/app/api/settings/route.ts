@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
-import { Pool } from '@neondatabase/serverless';
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import ws from 'ws';
+
+// ضبط الاتصال ليعمل بسلاسة في بيئات السيرفرلس (Serverless)
+neonConfig.webSocketConstructor = ws;
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -16,7 +20,7 @@ export async function GET(request: Request) {
   try {
     const res = await client.query('SELECT * FROM user_settings WHERE slug = $1', [slug]);
     if (res.rows.length === 0) {
-      return NextResponse.json({ success: true, data: null }); // المستخدم جديد ولا توجد بيانات مخزنة بعد
+      return NextResponse.json({ success: true, data: null });
     }
     return NextResponse.json({ success: true, data: res.rows[0] });
   } catch (error: any) {
@@ -38,11 +42,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'معرف الحساب (Slug) مطلوب للحفظ' }, { status: 400 });
     }
 
-    // التحقق مما إذا كان السجل موجوداً مسبقاً
     const checkUser = await client.query('SELECT id FROM user_settings WHERE slug = $1', [slug]);
 
     if (checkUser.rows.length > 0) {
-      // تحديث البيانات الحالية
       await client.query(
         `UPDATE user_settings 
          SET telegram_channels = $1, whatsapp_channels = $2, sms_channels = $3, 
@@ -62,7 +64,6 @@ export async function POST(request: Request) {
         ]
       );
     } else {
-      // إدخال سجل جديد لأول مرة
       await client.query(
         `INSERT INTO user_settings 
          (slug, telegram_channels, whatsapp_channels, sms_channels, stores, trading_integrations, enterprise_teams, user_plan, username) 
