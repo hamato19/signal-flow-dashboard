@@ -37,15 +37,14 @@ export async function POST(
     let sentAny = false;
     let lastError = '';
 
-    // 1. الإرسال عبر تليجرام إذا كان مفعلًا
+    // 1. الإرسال عبر تليجرام (بدون استخدام parse_mode لتجنب مشاكل الرموز الخاصة)
     if (settings.telegram_token && settings.telegram_chat_id) {
       const tgRes = await fetch(`https://api.telegram.org/bot${settings.telegram_token}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: settings.telegram_chat_id,
-          text: `🔔 *إشارة تداول جديدة*\n\n${messageText}`,
-          parse_mode: 'Markdown',
+          text: `🔔 إشارة تداول جديدة\n\n${messageText}`,
         }),
       });
       const tgData = await tgRes.json();
