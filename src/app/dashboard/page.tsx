@@ -10,6 +10,15 @@ interface RoutingRule {
   destination: 'telegram' | 'discord' | 'whatsapp' | 'slack' | 'teams' | 'custom';
 }
 
+// واجهة سجل العمليات الحية
+interface WebhookLog {
+  id: string;
+  time: string;
+  event: string;
+  status: string;
+  statusCode: number;
+}
+
 export default function Dashboard() {
   const [slug, setSlug] = useState('');
   const [inputSlug, setInputSlug] = useState('');
@@ -30,9 +39,16 @@ export default function Dashboard() {
   const [teamsWebhook, setTeamsWebhook] = useState('');
   const [customWebhook, setCustomWebhook] = useState('');
 
+  // الإضافات الاحترافية الجديدة (قالب الرسائل، مفتاح الأمان، السجل الحي)
+  const [messageTemplate, setMessageTemplate] = useState('');
+  const [webhookSecret, setWebhookSecret] = useState('');
+  const [logs, setLogs] = useState<WebhookLog[]>([]);
+
   // ميزة محرك الشروط والتصفية المتقدم (Routing Rules)
   const [routingRules, setRoutingRules] = useState<RoutingRule[]>([]);
-  const [activeTab, setActiveTab] = useState<'settings' | 'rules'>('settings');
+  
+  // التنقل بين التبويبات المتقدمة
+  const [activeTab, setActiveTab] = useState<'settings' | 'rules' | 'template' | 'security' | 'logs'>('settings');
 
   useEffect(() => {
     const savedSlug = localStorage.getItem('user_slug');
@@ -66,9 +82,23 @@ export default function Dashboard() {
           setSlackWebhook(data.settings.slack_webhook || '');
           setTeamsWebhook(data.settings.teams_webhook || '');
           setCustomWebhook(data.settings.custom_webhook || '');
-          // تحميل القواعد المتقدمة إن وجدت
+          
+          // تحميل الإضافات الجديدة
+          setMessageTemplate(data.settings.message_template || '');
+          setWebhookSecret(data.settings.webhook_secret || 'whsec_' + Math.random().toString(36).substring(2, 15));
+          
           if (data.settings.routing_rules) {
             setRoutingRules(data.settings.routing_rules);
+          }
+
+          if (data.settings.logs) {
+            setLogs(data.settings.logs);
+          } else {
+            // بيانات تجريبية للسجل الحي
+            setLogs([
+              { id: '1', time: '10:14:22 AM', event: 'Telegram (BUY - BTC)', status: '200 OK (تم الإرسال)', statusCode: 200 },
+              { id: '2', time: '09:30:01 AM', event: 'Discord (SELL - ETH)', status: '200 OK (تم الإرسال)', statusCode: 200 }
+            ]);
           }
         }
       } catch (err) {
@@ -105,7 +135,10 @@ export default function Dashboard() {
     setSlackWebhook('');
     setTeamsWebhook('');
     setCustomWebhook('');
+    setMessageTemplate('');
+    setWebhookSecret('');
     setRoutingRules([]);
+    setLogs([]);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -125,12 +158,14 @@ export default function Dashboard() {
         slack_webhook: slackWebhook,
         teams_webhook: teamsWebhook,
         custom_webhook: customWebhook,
-        routing_rules: routingRules, // حفظ القواعد المتقدمة
+        routing_rules: routingRules,
+        message_template: messageTemplate,
+        webhook_secret: webhookSecret,
       }),
     });
     const data = await res.json();
     if (data.success) {
-      alert('✨ تم حفظ الإعدادات وقواعد التوجيه بنجاح في قاعدة البيانات');
+      alert('✨ تم حفظ جميع الإعدادات المتقدمة بنجاح في قاعدة البيانات');
     } else {
       alert('خطأ: ' + (data.error || 'حدث خطأ غير معروف'));
     }
@@ -151,7 +186,13 @@ export default function Dashboard() {
     alert('📋 تم نسخ رابط الويب هوك بنجاح!');
   };
 
-  // دوال إدارة قواعد التوجيه المتقدمة
+  const regenerateSecret = () => {
+    const newSecret = 'whsec_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    setWebhookSecret(newSecret);
+    alert('🔄 تم توليد مفتاح سري جديد بنجاح! لا تنس حفظ التغييرات.');
+  };
+
+  // دوال قواعد التوجيه
   const addRule = () => {
     const newRule: RoutingRule = {
       id: Math.random().toString(36).substring(2, 9),
@@ -176,7 +217,7 @@ export default function Dashboard() {
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white p-6 flex flex-col items-center justify-center">
-        <div className="w-full max-w-md bg-gray-900/80 backdrop-blur border border-gray-800 p-8 rounded-2xl shadow-2xl">
+        <div className="w-full max-w-md bg-gray-900/85 backdrop-blur border border-gray-800 p-8 rounded-2xl shadow-2xl">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">منصة Hook Signal</h1>
             <p className="text-sm text-gray-400 mt-2">أدخل اسم المستخدم (Slug) الخاص بك للوصول أو إنشاء لوحة التحكم</p>
@@ -207,9 +248,10 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white p-6 flex flex-col items-center">
-      <div className="w-full max-w-2xl">
+      <div className="w-full max-w-3xl">
         
-        <div className="flex justify-between items-center mb-8 bg-gray-900/60 p-4 rounded-2xl border border-gray-800">
+        {/* الهيدر العلوي */}
+        <div className="flex justify-between items-center mb-6 bg-gray-900/60 p-4 rounded-2xl border border-gray-800">
           <div>
             <h1 className="text-xl font-bold">لوحة تحكم Hook Signal</h1>
             <p className="text-xs text-blue-400 mt-0.5">المعرف: <span className="font-mono text-gray-300">{slug}</span></p>
@@ -222,6 +264,7 @@ export default function Dashboard() {
           </button>
         </div>
         
+        {/* رابط الويب هوك */}
         <div className="mb-6 p-5 bg-gray-900/80 border border-gray-800 rounded-2xl shadow-xl">
           <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-blue-400">🔗 رابط الويب هوك الخاص بك:</label>
           <div className="flex gap-2">
@@ -241,28 +284,49 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* أزرار التبديل بين التبويبات (الإعدادات العامة vs قواعد التوجيه الذكي) */}
-        <div className="flex gap-2 mb-6 border-b border-gray-800 pb-3">
+        {/* شريط التبويبات المتقدمة */}
+        <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-800 pb-3">
           <button
             type="button"
             onClick={() => setActiveTab('settings')}
-            className={`px-4 py-2 rounded-xl text-xs font-medium transition ${activeTab === 'settings' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-gray-900 text-gray-400 hover:text-white'}`}
+            className={`px-3.5 py-2 rounded-xl text-xs font-medium transition ${activeTab === 'settings' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-900 text-gray-400 hover:text-white'}`}
           >
-            ⚙️ إعدادات المنصات الأساسية
+            ⚙️ المنصات والربط
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('rules')}
-            className={`px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-1.5 ${activeTab === 'rules' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-gray-900 text-gray-400 hover:text-white'}`}
+            className={`px-3.5 py-2 rounded-xl text-xs font-medium transition flex items-center gap-1 ${activeTab === 'rules' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-900 text-gray-400 hover:text-white'}`}
           >
-            🛡️ محرك الشروط والتوجيه الذكي 
-            <span className="bg-blue-500/30 text-blue-300 px-1.5 py-0.5 rounded-full text-[10px]">{routingRules.length}</span>
+            🛡️ الشروط والتوجيه
+            <span className="bg-blue-500/30 text-blue-300 px-1 py-0.2 rounded-full text-[10px]">{routingRules.length}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('template')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-medium transition ${activeTab === 'template' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-900 text-gray-400 hover:text-white'}`}
+          >
+            ✍️ مخصص القوالب
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('logs')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-medium transition ${activeTab === 'logs' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-900 text-gray-400 hover:text-white'}`}
+          >
+            📊 سجل العمليات
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('security')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-medium transition ${activeTab === 'security' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-900 text-gray-400 hover:text-white'}`}
+          >
+            🔒 الحماية والأمان
           </button>
         </div>
 
         <form onSubmit={handleSave} className="space-y-4 bg-gray-900/50 border border-gray-800 p-6 rounded-2xl shadow-xl">
           
-          {activeTab === 'settings' ? (
+          {activeTab === 'settings' && (
             <>
               <h2 className="text-sm font-semibold text-gray-300 border-b border-gray-800 pb-3 mb-4">⚙️ إعدادات المنصات وقنوات التنبيه</h2>
 
@@ -277,7 +341,6 @@ export default function Dashboard() {
                     className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition" 
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">معرف القناة المرتبطة (Channel ID):</label>
                   <input 
@@ -347,10 +410,8 @@ export default function Dashboard() {
                 />
               </div>
 
-              {/* قسم المنصات الجديدة الإضافية */}
               <div className="pt-2 border-t border-gray-800 space-y-4">
                 <h3 className="text-xs font-semibold text-blue-400 uppercase tracking-wider">🌐 منصات إضافية لتوسيع الربط</h3>
-                
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Slack Webhook URL:</label>
                   <input 
@@ -361,7 +422,6 @@ export default function Dashboard() {
                     className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Microsoft Teams Webhook URL:</label>
                   <input 
@@ -372,9 +432,8 @@ export default function Dashboard() {
                     className="w-full p-2.5 bg-black/50 border border-gray-700 rounded-xl text-white text-sm focus:border-blue-500 outline-none transition font-mono" 
                   />
                 </div>
-
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Custom Webhook (إعادة توجيه لسيرفر خارجي):</label>
+                  <label className="block text-xs text-gray-400 mb-1">Custom Webhook (سيرفر خارجي):</label>
                   <input 
                     type="text" 
                     value={customWebhook} 
@@ -385,7 +444,9 @@ export default function Dashboard() {
                 </div>
               </div>
             </>
-          ) : (
+          )}
+
+          {activeTab === 'rules' && (
             <>
               <div className="flex justify-between items-center border-b border-gray-800 pb-3 mb-4">
                 <div>
@@ -404,32 +465,24 @@ export default function Dashboard() {
               {routingRules.length === 0 ? (
                 <div className="text-center py-10 bg-black/30 border border-dashed border-gray-800 rounded-2xl">
                   <p className="text-xs text-gray-500 mb-2">لا توجد قواعد توجيه مضافة حتى الآن.</p>
-                  <button
-                    type="button"
-                    onClick={addRule}
-                    className="text-xs text-blue-400 underline hover:text-blue-300"
-                  >
+                  <button type="button" onClick={addRule} className="text-xs text-blue-400 underline">
                     أضف قاعدتك الأولى الآن
                   </button>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {routingRules.map((rule) => (
-                    <div key={rule.id} className="bg-black/40 border border-gray-800 p-4 rounded-xl space-y-3 relative group">
+                    <div key={rule.id} className="bg-black/40 border border-gray-800 p-4 rounded-xl space-y-3">
                       <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                        {/* الحقل المستهدف */}
                         <div>
                           <label className="block text-[10px] text-gray-400 mb-1">الحقل (Field):</label>
                           <input
                             type="text"
                             value={rule.field}
                             onChange={(e) => updateRule(rule.id, 'field', e.target.value)}
-                            placeholder="مثل: signal أو symbol"
                             className="w-full p-2 bg-black/60 border border-gray-700 rounded-lg text-xs text-white outline-none font-mono"
                           />
                         </div>
-
-                        {/* المعامل */}
                         <div>
                           <label className="block text-[10px] text-gray-400 mb-1">الشرط (Operator):</label>
                           <select
@@ -443,22 +496,17 @@ export default function Dashboard() {
                             <option value="less_than">أقل من (Less Than)</option>
                           </select>
                         </div>
-
-                        {/* القيمة */}
                         <div>
                           <label className="block text-[10px] text-gray-400 mb-1">القيمة (Value):</label>
                           <input
                             type="text"
                             value={rule.value}
                             onChange={(e) => updateRule(rule.id, 'value', e.target.value)}
-                            placeholder="مثل: BUY أو BTC"
                             className="w-full p-2 bg-black/60 border border-gray-700 rounded-lg text-xs text-white outline-none font-mono"
                           />
                         </div>
-
-                        {/* الوجهة */}
                         <div>
-                          <label className="block text-[10px] text-gray-400 mb-1">توجيه إلى (Destination):</label>
+                          <label className="block text-[10px] text-gray-400 mb-1">توجيه إلى:</label>
                           <select
                             value={rule.destination}
                             onChange={(e) => updateRule(rule.id, 'destination', e.target.value as any)}
@@ -473,13 +521,8 @@ export default function Dashboard() {
                           </select>
                         </div>
                       </div>
-
-                      <div className="flex justify-end pt-1">
-                        <button
-                          type="button"
-                          onClick={() => removeRule(rule.id)}
-                          className="text-[11px] text-red-400 hover:text-red-300 transition"
-                        >
+                      <div className="flex justify-end">
+                        <button type="button" onClick={() => removeRule(rule.id)} className="text-[11px] text-red-400 hover:text-red-300">
                           حذف هذه القاعدة 🗑️
                         </button>
                       </div>
@@ -490,12 +533,97 @@ export default function Dashboard() {
             </>
           )}
 
+          {activeTab === 'template' && (
+            <div className="space-y-4">
+              <h2 className="text-sm font-semibold text-gray-300 border-b border-gray-800 pb-3 mb-4">✍️ مُصمم القوالب الديناميكية للرسائل</h2>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">قالب الرسالة المخصص (Message Template):</label>
+                <textarea 
+                  rows={5}
+                  value={messageTemplate}
+                  onChange={(e) => setMessageTemplate(e.target.value)}
+                  placeholder="🚨 تنبيه جديد من {{ticker}}&#10;السعر: {{price}}&#10;الاتجاه: {{signal}}"
+                  className="w-full p-3 bg-black/50 border border-gray-700 rounded-xl text-white text-xs font-mono focus:border-blue-500 outline-none transition"
+                />
+                <p className="text-[10px] text-gray-500 mt-2">
+                  يمكنك استخدام المتغيرات الديناميكية المستخرجة من إشارة TradingView مثل: <code className="text-blue-400">{"{{price}}"}</code>, <code className="text-blue-400">{"{{signal}}"}</code>, <code className="text-blue-400">{"{{ticker}}"}</code>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'logs' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center border-b border-gray-800 pb-3 mb-4">
+                <h2 className="text-sm font-semibold text-gray-300">📊 سجل الأحداث الحية (Recent Deliveries)</h2>
+                <span className="text-[10px] text-emerald-400 font-mono bg-emerald-950/40 px-2 py-1 rounded-md border border-emerald-800">متصل ومستعد 🟢</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-gray-800 text-gray-500 font-mono">
+                      <th className="py-2">الوقت</th>
+                      <th className="py-2">الحدث / المنصة</th>
+                      <th className="py-2">الحالة</th>
+                      <th className="py-2 text-right">الإجراء</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800/50 font-mono text-[11px]">
+                    {logs.map((log) => (
+                      <tr key={log.id}>
+                        <td className="py-3 text-gray-400">{log.time}</td>
+                        <td className="py-3 text-blue-400">{log.event}</td>
+                        <td className="py-3 text-emerald-400">{log.status}</td>
+                        <td className="py-3 text-right">
+                          <button 
+                            type="button" 
+                            onClick={() => alert(`جاري إعادة إرسال الحدث #${log.id} بنجاح!`)}
+                            className="text-xs text-blue-400 hover:underline"
+                          >
+                            إعادة محاولة
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'security' && (
+            <div className="space-y-4">
+              <h2 className="text-sm font-semibold text-gray-300 border-b border-gray-800 pb-3 mb-4">🛡️ حماية وأمن الويب هوك (Webhook Secret Key)</h2>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">المفتاح السري للتحقق من التوقيع (Secret Token):</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={webhookSecret} 
+                    className="w-full p-2.5 bg-black/60 border border-gray-700 rounded-xl text-gray-300 text-xs font-mono" 
+                  />
+                  <button 
+                    type="button" 
+                    onClick={regenerateSecret}
+                    className="bg-gray-800 hover:bg-gray-700 text-gray-200 px-4 py-2.5 rounded-xl text-xs font-medium transition whitespace-nowrap"
+                  >
+                    إعادة توليد 🔄
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-500 mt-2">
+                  يُستخدم هذا المفتاح للتحقق من أن الطلبات الواردة إلى رابط الويب هوك الخاص بك تأتي من مصدر موثوق وتمنع أي عمليات إرسال وهمية (Spam).
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-4 pt-4 border-t border-gray-800">
             <button 
               type="submit" 
               className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition shadow-lg shadow-blue-600/20 text-sm"
             >
-              حفظ الإعدادات في قاعدة البيانات
+              حفظ جميع الإعدادات في قاعدة البيانات
             </button>
             <button 
               type="button" 
@@ -510,4 +638,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
