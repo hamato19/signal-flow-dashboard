@@ -37,7 +37,8 @@ import {
   Check,
   Menu,
   ArrowRight,
-  Link
+  Link,
+  Info
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
@@ -1566,11 +1567,11 @@ export default function Dashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                     <div className="bg-black/40 p-3 rounded-xl">
                       <p className="text-gray-400">تاريخ الإنشاء</p>
-                      <p className="text-gray-300 mt-1">{format(new Date(webhookSecret.createdAt), 'dd/MM/yyyy', { locale: arSA })}</p>
+                      <p className="text-gray-300 mt-1">{webhookSecret.createdAt ? format(new Date(webhookSecret.createdAt), 'dd/MM/yyyy', { locale: arSA }) : '-'}</p>
                     </div>
                     <div className="bg-black/40 p-3 rounded-xl">
                       <p className="text-gray-400">تاريخ الانتهاء</p>
-                      <p className="text-gray-300 mt-1">{format(new Date(webhookSecret.expiresAt), 'dd/MM/yyyy', { locale: arSA })}</p>
+                      <p className="text-gray-300 mt-1">{webhookSecret.expiresAt ? format(new Date(webhookSecret.expiresAt), 'dd/MM/yyyy', { locale: arSA }) : '-'}</p>
                     </div>
                     <div className="bg-black/40 p-3 rounded-xl">
                       <p className="text-gray-400">آخر استخدام</p>
