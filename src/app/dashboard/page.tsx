@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Bell, Webhook, Settings, Database, 
@@ -103,7 +105,6 @@ export default function ControlPanel() {
 
   const loadData = () => {
     setIsLoading(true);
-    // محاكاة جلب البيانات الخاصة بالـ Slug
     setTimeout(() => {
       setWebhookUrl(`https://api.hooksignal.com/v1/webhook/${slug}`);
       setWebhookStatus('active');
@@ -142,7 +143,6 @@ export default function ControlPanel() {
     setIsLoggedIn(false);
     setInputSlug('');
     
-    // تصفير بيانات المستخدم والإعدادات لمنع تداخل البيانات بين الحسابات
     setUsername('');
     setEmail('');
     setTimezone('Asia/Riyadh');
@@ -214,7 +214,6 @@ export default function ControlPanel() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // شاشة تسجيل الدخول في حال لم يكن المستخدم مسجلاً
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 font-sans" dir="rtl">
@@ -254,7 +253,6 @@ export default function ControlPanel() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex font-sans" dir="rtl">
       
-      {/* إشعارات النظام العائمة */}
       {notification.show && (
         <div className="fixed top-5 left-5 z-50 bg-slate-900 border border-slate-800 shadow-2xl px-4 py-3 rounded-xl flex items-center gap-3 animate-fade-in">
           {notification.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
@@ -264,7 +262,6 @@ export default function ControlPanel() {
         </div>
       )}
 
-      {/* الشريط الجانبي (Sidebar) */}
       <aside className="w-64 bg-slate-900/50 border-l border-slate-800/80 flex flex-col justify-between hidden md:flex">
         <div>
           <div className="p-6 border-b border-slate-800/80 flex items-center gap-3">
@@ -316,7 +313,6 @@ export default function ControlPanel() {
         </div>
       </aside>
 
-      {/* المحتوى الرئيسي */}
       <main className="flex-1 flex flex-col min-h-screen overflow-y-auto">
         <header className="h-16 border-b border-slate-800/80 bg-slate-900/20 backdrop-blur px-8 flex items-center justify-between sticky top-0 z-40">
           <h1 className="font-bold text-lg capitalize">
@@ -346,10 +342,8 @@ export default function ControlPanel() {
             </div>
           ) : (
             <>
-              {/* تبويب الرئيسية */}
               {activeTab === 'dashboard' && (
                 <div className="space-y-6">
-                  {/* رابط الويب هوك السريع */}
                   <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
                       <h3 className="text-sm font-semibold text-slate-300">رابط الويب هوك الخاص بك</h3>
@@ -367,7 +361,6 @@ export default function ControlPanel() {
                     </div>
                   </div>
 
-                  {/* بطاقات الإحصائيات */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
                       <p className="text-xs text-slate-400 font-medium">إجمالي الطلبات المُستلمة</p>
@@ -385,10 +378,8 @@ export default function ControlPanel() {
                 </div>
               )}
 
-              {/* تبويب قنوات الربط */}
               {activeTab === 'integrations' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Telegram */}
                   <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="font-bold text-sm text-slate-200">تكامل Telegram</h3>
@@ -418,7 +409,6 @@ export default function ControlPanel() {
                     </div>
                   </div>
 
-                  {/* Discord */}
                   <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="font-bold text-sm text-slate-200">تكامل Discord Webhook</h3>
@@ -449,7 +439,6 @@ export default function ControlPanel() {
                 </div>
               )}
 
-              {/* تبويب قواعد التوجيه */}
               {activeTab === 'rules' && (
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
                   <div className="flex items-center justify-between">
@@ -496,7 +485,6 @@ export default function ControlPanel() {
                 </div>
               )}
 
-              {/* تبويب سجل العمليات */}
               {activeTab === 'logs' && (
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
                   <h3 className="font-bold text-sm text-slate-200">السجل الحي للطلبات (Live Logs)</h3>
@@ -510,7 +498,6 @@ export default function ControlPanel() {
                 </div>
               )}
 
-              {/* تبويب الإعدادات العامة */}
               {activeTab === 'settings' && (
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
                   <h3 className="font-bold text-sm text-slate-200">إعدادات الحساب</h3>
