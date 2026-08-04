@@ -288,17 +288,16 @@ export default function ControlPanel() {
   }, [slug]);
 
   // ============================================
-  // الدوال المساعدة
+  // الدوال المساعدة (محدثة للاتصال بقاعدة البيانات عبر الـ API)
   // ============================================
 
   const loadUserData = async (userSlug: string) => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const response = await fetch(`https://api.hooksignal.com/v1/settings/${userSlug}`);
       
-      const savedSettings = localStorage.getItem(`settings_${userSlug}`);
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
+      if (response.ok) {
+        const settings = await response.json();
         setUsername(settings.username || '');
         setEmail(settings.email || '');
         setTimezone(settings.timezone || 'Asia/Riyadh');
@@ -313,9 +312,40 @@ export default function ControlPanel() {
         if (settings.routingRules) setRoutingRules(settings.routingRules);
         if (settings.logs) setLogs(settings.logs);
         if (settings.analytics) setAnalytics(settings.analytics);
+      } else {
+        const savedSettings = localStorage.getItem(`settings_${userSlug}`);
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings);
+          setUsername(settings.username || '');
+          setEmail(settings.email || '');
+          setTimezone(settings.timezone || 'Asia/Riyadh');
+          setUserPlan(settings.plan || 'free');
+          if (settings.telegramChannels) setTelegramChannels(settings.telegramChannels);
+          if (settings.whatsappChannels) setWhatsappChannels(settings.whatsappChannels);
+          if (settings.slackChannels) setSlackChannels(settings.slackChannels);
+          if (settings.discordChannels) setDiscordChannels(settings.discordChannels);
+          if (settings.emailChannels) setEmailChannels(settings.emailChannels);
+          if (settings.stores) setStores(settings.stores);
+          if (settings.routingRules) setRoutingRules(settings.routingRules);
+        }
       }
     } catch (error) {
       console.error('Error loading user data:', error);
+      const savedSettings = localStorage.getItem(`settings_${userSlug}`);
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        setUsername(settings.username || '');
+        setEmail(settings.email || '');
+        setTimezone(settings.timezone || 'Asia/Riyadh');
+        setUserPlan(settings.plan || 'free');
+        if (settings.telegramChannels) setTelegramChannels(settings.telegramChannels);
+        if (settings.whatsappChannels) setWhatsappChannels(settings.whatsappChannels);
+        if (settings.slackChannels) setSlackChannels(settings.slackChannels);
+        if (settings.discordChannels) setDiscordChannels(settings.discordChannels);
+        if (settings.emailChannels) setEmailChannels(settings.emailChannels);
+        if (settings.stores) setStores(settings.stores);
+        if (settings.routingRules) setRoutingRules(settings.routingRules);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -325,6 +355,7 @@ export default function ControlPanel() {
     setIsLoading(true);
     try {
       const settings = {
+        slug,
         username,
         email,
         timezone,
@@ -340,12 +371,29 @@ export default function ControlPanel() {
         analytics
       };
       
+      const response = await fetch(`https://api.hooksignal.com/v1/settings/${slug}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings)
+      });
+
+      if (!response.ok) {
+        throw new Error('فشل الحفظ في السيرفر');
+      }
+
       localStorage.setItem(`settings_${slug}`, JSON.stringify(settings));
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      showNotification('success', 'تم حفظ جميع الإعدادات بنجاح!');
+      showNotification('success', 'تم حفظ جميع البيانات في قاعدة البيانات بنجاح!');
     } catch (error) {
-      showNotification('error', 'حدث خطأ أثناء حفظ البيانات');
+      console.error('Save error:', error);
+      const settings = {
+        username, email, timezone, plan: userPlan,
+        telegramChannels, whatsappChannels, slackChannels, discordChannels, emailChannels,
+        stores, routingRules, logs, analytics
+      };
+      localStorage.setItem(`settings_${slug}`, JSON.stringify(settings));
+      showNotification('warning', 'حدث خطأ أثناء الإرسال لقاعدة البيانات، تم الحفظ محلياً');
     } finally {
       setIsLoading(false);
     }
@@ -1622,7 +1670,7 @@ export default function ControlPanel() {
                       </div>
 
                       <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800/60 flex flex-wrap items-center justify-between gap-3">
-                                                <div className="text-xs text-slate-400 flex items-center gap-2">
+                        <div className="text-xs text-slate-400 flex items-center gap-2">
                           <span className="font-semibold text-slate-300">Webhook المخصص:</span>
                           <code className="text-purple-400 font-mono bg-slate-950 px-2 py-1 rounded">
                             {webhookUrl}/store/{store.id}
@@ -2114,4 +2162,4 @@ export default function ControlPanel() {
       </main>
     </div>
   );
-                        }
+}
