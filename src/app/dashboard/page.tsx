@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 
 export default function ControlPanel() {
-  // --- States ---
   const [slug, setSlug] = useState('');
   const [inputSlug, setInputSlug] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -16,16 +15,13 @@ export default function ControlPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   
-  // Notification State
   const [notification, setNotification] = useState({ show: false, type: 'info', message: '' });
 
-  // Account & General Settings
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [timezone, setTimezone] = useState('Asia/Riyadh');
   const [language, setLanguage] = useState('ar');
 
-  // Integrations Config
   const [telegramConfig, setTelegramConfig] = useState({
     token: '',
     chatId: '',
@@ -61,20 +57,19 @@ export default function ControlPanel() {
     summary: 'Signal Alert'
   });
 
-  // Advanced Webhook & Routing
   const [customWebhook, setCustomWebhook] = useState('');
   const [messageTemplate, setMessageTemplate] = useState('');
-  const [templates, setTemplates] = useState([]);
-  const [routingRules, setRoutingRules] = useState([]);
-  const [logs, setLogs] = useState([]);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [routingRules, setRoutingRules] = useState<any[]>([]);
+  const [logs, setLogs] = useState<string[]>([]);
   
   const [analytics, setAnalytics] = useState({
     totalRequests: 0,
     successRate: 0,
     averageResponseTime: 0,
-    dailyRequests: [],
-    platformUsage: [],
-    errorRates: []
+    dailyRequests: [] as any[],
+    platformUsage: [] as any[],
+    errorRates: [] as any[]
   });
 
   const [webhookSecret, setWebhookSecret] = useState({
@@ -87,7 +82,6 @@ export default function ControlPanel() {
   const [webhookUrl, setWebhookUrl] = useState('');
   const [webhookStatus, setWebhookStatus] = useState('inactive');
 
-  // --- Initialize Slug from LocalStorage ---
   useEffect(() => {
     const savedSlug = localStorage.getItem('user_slug');
     if (savedSlug) {
@@ -97,7 +91,6 @@ export default function ControlPanel() {
     }
   }, []);
 
-  // --- Load Data on Slug Change ---
   useEffect(() => {
     if (!slug) return;
     loadData();
@@ -120,16 +113,14 @@ export default function ControlPanel() {
     }, 500);
   };
 
-  const showNotification = (type, message) => {
-    const showNotification = (type: string, message: string) => {
+  const showNotification = (type: string, message: string) => {
     setNotification({ show: true, type, message });
     setTimeout(() => {
       setNotification({ show: false, type: 'info', message: '' });
     }, 3500);
   };
 
-
-  const handleLogin = (e) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputSlug.trim()) return;
     const cleanSlug = inputSlug.trim().toLowerCase();
@@ -210,7 +201,7 @@ export default function ControlPanel() {
     showNotification('info', 'تم تسجيل الخروج');
   };
 
-  const copyToClipboard = (text) => {
+  const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -264,7 +255,7 @@ export default function ControlPanel() {
         </div>
       )}
 
-      <aside className="w-64 bg-slate-900/50 border-l border-slate-800/80 flex flex-col justify-between hidden md:flex">
+      <aside className="w-64 bg-slate-900/50 border-l border-slate-800/80 flex-col justify-between hidden md:flex">
         <div>
           <div className="p-6 border-b border-slate-800/80 flex items-center gap-3">
             <div className="bg-blue-600/10 border border-blue-500/20 p-2 rounded-xl text-blue-400">
