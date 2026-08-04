@@ -3,147 +3,87 @@ import { Pool } from '@neondatabase/serverless';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+// جلب إعدادات المستخدم من قاعدة البيانات
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const slug = searchParams.get('slug');
+
+  if (!slug) {
+    return NextResponse.json({ success: false, error: 'معرف الحساب مفقود' }, { status: 400 });
+  }
+
   const client = await pool.connect();
   try {
-    const resolvedParams = await params;
-    const { slug } = resolvedParams;
-    const body = await request.json();
-
-    console.log(`[Webhook] Receiving request for slug: ${slug}`);
-
-    // جلب بيانات الحساب المستقل من جدول user_settings (أو الجدول المخصص لتخزين إعدادات لوحة التحكم)
-    const res = await client.query(
-      'SELECT * FROM user_settings WHERE slug = $1',
-      [slug]
-    );
-
+    const res = await client.query('SELECT * FROM user_settings WHERE slug = $1', [slug]);
     if (res.rows.length === 0) {
-      console.log(`[Webhook Error] User not found for slug: ${slug}`);
-      return NextResponse.json({ success: false, error: `المستخدم غير موجود بالمعرف: ${slug}` }, { status: 404 });
+      return NextResponse.json({ success: true, data: null }); // المستخدم جديد ولا توجد بيانات مخزنة بعد
     }
-
-    const settings = res.rows[0];
-    
-    // استخراج بيانات القنوات المخزنة في قاعدة البيانات (حسب الهيكل الجديد الذي يتم حفظه من لوحة التحكم)
-    // نفترض أن الأعمدة في جدول قاعدة البيانات مخزنة بصيغة JSON أو أعمدة منفصلة مطابقة لخيارات الواجهة
-    const telegramChannels = settings.telegram_channels || [];
-    const whatsappChannels = settings.whatsapp_channels || [];
-    const smsChannels = settings.sms_channels || [];
-    const discordChannels = settings.discord_channels || [];
-
-    const messageText = body.message || JSON.stringify(body, null, 2);
-    let sentAny = false;
-    let lastError = '';
-
-    // 1. معالجة وإرسال الإشعارات عبر قنوات تليجرام المتعددة
-    if (Array.isArray(telegramChannels) && telegramChannels.length > 0) {
-      for (const channel of telegramChannels) {
-        if (channel.token && channel.chatId) {
-          try {
-            const tgRes = await fetch(`https://api.telegram.org/bot${channel.token}/sendMessage`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                chat_id: channel.chatId,
-                text: `🔔 إشارة جديدة (حساب: ${slug})\n\n${messageText}`,
-              }),
-            });
-            const tgData = await tgRes.json();
-            if (tgData.ok) {
-              sentAny = true;
-            } else {
-              lastError = `Telegram Error (${channel.name || 'Channel'}): ${tgData.description || 'Unknown error'}`;
-            }
-          } catch (err: any) {
-            lastError = `Telegram Exception: ${err.message}`;
-          }
-        }
-      }
-    }
-
-    // 2. معالجة وإرسال الإشعارات عبر قنوات واتساب (WhatsApp Cloud API)
-    if (Array.isArray(whatsappChannels) && whatsappChannels.length > 0) {
-      for (const wa of whatsappChannels) {
-        if (wa.phoneNumberId && wa.accessToken && wa.recipientPhone) {
-          try {
-            const waRes = await fetch(`https://graph.facebook.com/v17.0/${wa.phoneNumberId}/messages`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${wa.accessToken}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                messaging_product: 'whatsapp',
-                to: wa.recipientPhone,
-                type: 'text',
-                text: { body: `🔔 إشارة جديدة عبر Webhook:\n\n${messageText}` }
-              }),
-            });
-            const waData = await waRes.json();
-            if (waRes.ok) {
-              sentAny = true;
-            } else {
-              lastError = `WhatsApp Error: ${JSON.stringify(waData)}`;
-            }
-          } catch (err: any) {
-            lastError = `WhatsApp Exception: ${err.message}`;
-          }
-        }
-      }
-    }
-
-    // 3. الإرسال عبر ديسكورد إذا وجدت قنوات ديسكورد مسجلة
-    if (Array.isArray(discordChannels) && discordChannels.length > 0) {
-      for (const dc of discordChannels) {
-        if (dc.webhookUrl) {
-          try {
-            const discordRes = await fetch(dc.webhookUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                content: `🔔 **إشارة جديدة لحساب (${slug})**\n\`\`\`json\n${messageText}\n\`\`\``,
-              }),
-            });
-            if (discordRes.ok) {
-              sentAny = true;
-            } else {
-              lastError = 'Discord Webhook failed to respond with OK';
-            }
-          } catch (err: any) {
-            lastError = `Discord Exception: ${err.message}`;
-          }
-        }
-      }
-    }
-
-    // 4. التوافق مع الحقول القديمة (التليجرام المفرد أو الديسكورد المفرد إن وجد في الجدول مباشرة)
-    if (!sentAny && settings.telegram_token && settings.telegram_chat_id) {
-      const tgRes = await fetch(`https://api.telegram.org/bot${settings.telegram_token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: settings.telegram_chat_id,
-          text: `🔔 إشارة تداول جديدة\n\n${messageText}`,
-        }),
-      });
-      const tgData = await tgRes.json();
-      if (tgData.ok) sentAny = true;
-    }
-
-    if (!sentAny) {
-      return NextResponse.json({ 
-        success: false, 
-        error: lastError || 'لم يتم العثور على أي قناة إرسال نشطة ومجهزة بالبيانات الصحيحة في قاعدة البيانات' 
-      }, { status: 400 });
-    }
-
-    return NextResponse.json({ success: true, message: 'تم معالجة الويب هوك وتوجيه الإشارة للقنوات بنجاح' });
+    return NextResponse.json({ success: true, data: res.rows[0] });
   } catch (error: any) {
-    console.error('[Webhook Exception]:', error.message);
+    console.error('[DB GET Error]:', error.message);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } finally {
+    client.release();
+  }
+}
+
+// حفظ أو تحديث إعدادات المستخدم في قاعدة البيانات
+export async function POST(request: Request) {
+  const client = await pool.connect();
+  try {
+    const body = await request.json();
+    const { slug, telegramChannels, whatsappChannels, smsChannels, stores, tradingIntegrations, enterpriseTeams, userPlan, username } = body;
+
+    if (!slug) {
+      return NextResponse.json({ success: false, error: 'معرف الحساب (Slug) مطلوب للحفظ' }, { status: 400 });
+    }
+
+    // التحقق مما إذا كان السجل موجوداً مسبقاً
+    const checkUser = await client.query('SELECT id FROM user_settings WHERE slug = $1', [slug]);
+
+    if (checkUser.rows.length > 0) {
+      // تحديث البيانات الحالية
+      await client.query(
+        `UPDATE user_settings 
+         SET telegram_channels = $1, whatsapp_channels = $2, sms_channels = $3, 
+             stores = $4, trading_integrations = $5, enterprise_teams = $6, 
+             user_plan = $7, username = $8, updated_at = NOW()
+         WHERE slug = $9`,
+        [
+          JSON.stringify(telegramChannels),
+          JSON.stringify(whatsappChannels),
+          JSON.stringify(smsChannels),
+          JSON.stringify(stores),
+          JSON.stringify(tradingIntegrations),
+          JSON.stringify(enterpriseTeams),
+          userPlan,
+          username,
+          slug
+        ]
+      );
+    } else {
+      // إدخال سجل جديد لأول مرة
+      await client.query(
+        `INSERT INTO user_settings 
+         (slug, telegram_channels, whatsapp_channels, sms_channels, stores, trading_integrations, enterprise_teams, user_plan, username) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          slug,
+          JSON.stringify(telegramChannels),
+          JSON.stringify(whatsappChannels),
+          JSON.stringify(smsChannels),
+          JSON.stringify(stores),
+          JSON.stringify(tradingIntegrations),
+          JSON.stringify(enterpriseTeams),
+          userPlan,
+          username
+        ]
+      );
+    }
+
+    return NextResponse.json({ success: true, message: 'تم حفظ البيانات في قاعدة البيانات بنجاح' });
+  } catch (error: any) {
+    console.error('[DB POST Error]:', error.message);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   } finally {
     client.release();
