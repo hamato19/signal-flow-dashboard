@@ -220,7 +220,6 @@ export default function Dashboard() {
       const res = await fetch(`/api/settings?slug=${slug}`);
       const data = await res.json();
       if (data.success && data.settings) {
-        // Load all settings
         setUsername(data.settings.username || '');
         setEmail(data.settings.email || '');
         setTimezone(data.settings.timezone || 'Asia/Riyadh');
@@ -415,7 +414,6 @@ export default function Dashboard() {
     setExpandedSections(newSet);
   };
 
-  // Routing Rules Functions
   const addRule = useCallback(() => {
     const newRule: RoutingRule = {
       id: Math.random().toString(36).substring(2, 9),
@@ -453,7 +451,6 @@ export default function Dashboard() {
     }
   }, [routingRules]);
 
-  // Analytics and Statistics
   const stats = useMemo(() => {
     const total = analytics.totalRequests || 0;
     const success = analytics.successRate || 0;
@@ -511,7 +508,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white flex">
-      {/* Sidebar */}
       <motion.aside 
         initial={{ x: -280 }}
         animate={{ x: 0 }}
@@ -570,10 +566,8 @@ export default function Dashboard() {
         </div>
       </motion.aside>
 
-      {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-6">
-          {/* Header */}
           <header className="flex justify-between items-center mb-6">
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
@@ -613,7 +607,6 @@ export default function Dashboard() {
             </div>
           </header>
 
-          {/* Notification */}
           <AnimatePresence>
             {notification && (
               <motion.div
@@ -638,10 +631,8 @@ export default function Dashboard() {
           </AnimatePresence>
 
           <form onSubmit={handleSave}>
-            {/* Overview Tab */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
-                {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <motion.div 
                     initial={{ opacity: 0, y: 20 }}
@@ -711,7 +702,6 @@ export default function Dashboard() {
                   </motion.div>
                 </div>
 
-                {/* Quick Actions */}
                 <div className="bg-gray-900/80 border border-gray-800 p-6 rounded-2xl">
                   <h3 className="text-sm font-semibold mb-4">إجراءات سريعة</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -750,7 +740,6 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Webhook URL */}
                 <div className="bg-gray-900/80 border border-gray-800 p-6 rounded-2xl">
                   <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-blue-400">
                     🔗 رابط الويب هوك الخاص بك
@@ -775,7 +764,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Settings Tab */}
             {activeTab === 'settings' && (
               <div className="space-y-4">
                 <div className="bg-gray-900/80 border border-gray-800 p-6 rounded-2xl">
@@ -783,7 +771,6 @@ export default function Dashboard() {
                     ⚙️ إعدادات المنصات وقنوات التنبيه
                   </h2>
 
-                  {/* General Settings */}
                   <div className="mb-6">
                     <button
                       type="button"
@@ -848,7 +835,6 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  {/* Telegram */}
                   <div className="mb-6">
                     <button
                       type="button"
@@ -922,7 +908,6 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  {/* Discord */}
                   <div className="mb-6">
                     <button
                       type="button"
@@ -979,7 +964,6 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  {/* WhatsApp */}
                   <div className="mb-6">
                     <button
                       type="button"
@@ -1039,7 +1023,6 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  {/* Slack */}
                   <div className="mb-6">
                     <button
                       type="button"
@@ -1097,7 +1080,6 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  {/* Teams */}
                   <div className="mb-6">
                     <button
                       type="button"
@@ -1144,7 +1126,6 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  {/* Custom Webhook */}
                   <div className="mb-6">
                     <button
                       type="button"
@@ -1171,7 +1152,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Rules Tab */}
             {activeTab === 'rules' && (
               <div className="bg-gray-900/80 border border-gray-800 p-6 rounded-2xl">
                 <div className="flex justify-between items-center mb-6">
@@ -1353,7 +1333,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Templates Tab */}
             {activeTab === 'templates' && (
               <div className="bg-gray-900/80 border border-gray-800 p-6 rounded-2xl">
                 <h2 className="text-sm font-semibold text-gray-300 border-b border-gray-800 pb-3 mb-4">
@@ -1411,7 +1390,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Logs Tab */}
             {activeTab === 'logs' && (
               <div className="bg-gray-900/80 border border-gray-800 p-6 rounded-2xl">
                 <div className="flex justify-between items-center mb-6">
@@ -1498,7 +1476,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Analytics Tab */}
             {activeTab === 'analytics' && (
               <div className="bg-gray-900/80 border border-gray-800 p-6 rounded-2xl">
                 <h2 className="text-sm font-semibold text-gray-300 border-b border-gray-800 pb-3 mb-4">
@@ -1519,7 +1496,6 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Charts placeholder */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-black/40 p-4 rounded-xl border border-gray-800 h-48 flex items-center justify-center">
                     <p className="text-xs text-gray-400">📊 توزيع الطلبات حسب المنصة</p>
@@ -1531,7 +1507,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Security Tab */}
             {activeTab === 'security' && (
               <div className="bg-gray-900/80 border border-gray-800 p-6 rounded-2xl">
                 <h2 className="text-sm font-semibold text-gray-300 border-b border-gray-800 pb-3 mb-4">
@@ -1587,7 +1562,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Save Button */}
             <div className="flex gap-4 pt-6 border-t border-gray-800 mt-6">
               <button 
                 type="submit" 
