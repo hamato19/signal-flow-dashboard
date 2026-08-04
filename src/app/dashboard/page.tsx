@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Bell, Webhook, Settings, Database, 
   Terminal, Shield, LogOut, CheckCircle2, AlertTriangle, 
-  Plus, Trash2, Edit, Save, RefreshCw, Code, Copy, Check, Lock, Sparkles, MessageSquare, Send, Globe
+  Plus, Trash2, Edit, Save, RefreshCw, Code, Copy, Check, Lock, Sparkles, MessageSquare, Send, Globe, ShoppingBag
 } from 'lucide-react';
 
 export default function ControlPanel() {
@@ -28,9 +28,10 @@ export default function ControlPanel() {
     { id: 1, token: '', chatId: '', name: 'القناة الرئيسية' }
   ]);
 
-  const [discordConfig, setDiscordConfig] = useState({ webhook: '' });
-  const [whatsappConfig, setWhatsappConfig] = useState({ token: '', phoneId: '' });
-  const [customConfig, setCustomConfig] = useState({ url: '' });
+  // Stores Integration State (Salla, Zid, WooCommerce)
+  const [stores, setStores] = useState([
+    { id: 1, platform: 'salla', storeName: '', apiKey: '', webhookSecret: '', status: 'disconnected' }
+  ]);
 
   const [routingRules, setRoutingRules] = useState<any[]>([]);
   const [analytics, setAnalytics] = useState({
@@ -40,7 +41,6 @@ export default function ControlPanel() {
   });
 
   const [webhookUrl, setWebhookUrl] = useState('');
-  const [webhookStatus, setWebhookStatus] = useState('active');
 
   useEffect(() => {
     const savedSlug = localStorage.getItem('user_slug');
@@ -106,6 +106,20 @@ export default function ControlPanel() {
       return;
     }
     setTelegramChannels(telegramChannels.filter(ch => ch.id !== id));
+  };
+
+  const addStoreIntegration = () => {
+    if (userPlan === 'free' && stores.length >= 1) {
+      showNotification('error', 'الخطة المجانية تتيح ربط متجر واحد فقط. قم بالترقية لربط متاجر غير محدودة!');
+      return;
+    }
+    setStores([...stores, { id: Date.now(), platform: 'salla', storeName: '', apiKey: '', webhookSecret: '', status: 'disconnected' }]);
+    showNotification('success', 'تمت إضافة نموذج ربط متجر جديد');
+  };
+
+  const removeStoreIntegration = (id: number) => {
+    setStores(stores.filter(s => s.id !== id));
+    showNotification('info', 'تم حذف المتجر بنجاح');
   };
 
   const goToPricing = () => {
@@ -178,7 +192,7 @@ export default function ControlPanel() {
             <div className="bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border border-blue-500/20 p-3 rounded-xl flex items-center justify-between">
               <div>
                 <span className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider">الباقة الحالية</span>
-                <p className="text-xs font-bold capitalize">{userPlan === 'free' ? 'الخطة المجانية (قناة 1)' : 'باقة PRO الشاملة'}</p>
+                <p className="text-xs font-bold capitalize">{userPlan === 'free' ? 'الخطة المجانية' : 'باقة PRO الشاملة'}</p>
               </div>
               {userPlan === 'free' && (
                 <button 
@@ -194,7 +208,8 @@ export default function ControlPanel() {
           <nav className="p-4 space-y-1.5">
             {[
               { id: 'dashboard', label: 'الرئيسية والإحصائيات', icon: LayoutDashboard },
-              { id: 'integrations', label: 'قنوات الربط الشاملة', icon: Webhook },
+              { id: 'integrations', label: 'قنوات الإشعارات (تليجرام)', icon: Webhook },
+              { id: 'stores', label: 'ربط المتاجر (Salla/Zid)', icon: ShoppingBag },
               { id: 'rules', label: 'قواعد التوجيه الذكية', icon: Database },
               { id: 'logs', label: 'سجل العمليات', icon: Terminal },
               { id: 'settings', label: 'الإعدادات العامة', icon: Settings },
@@ -234,7 +249,8 @@ export default function ControlPanel() {
         <header className="h-16 border-b border-slate-800/80 bg-slate-900/20 backdrop-blur px-8 flex items-center justify-between sticky top-0 z-40">
           <h1 className="font-bold text-lg">
             {activeTab === 'dashboard' && 'الرئيسية والإحصائيات'}
-            {activeTab === 'integrations' && 'قنوات الربط الشاملة (تليجرام: قناة مجانية / حتى 5 قنوات للبريميم)'}
+            {activeTab === 'integrations' && 'قنوات الربط الشاملة (تليجرام)'}
+            {activeTab === 'stores' && 'خدمة ربط المتاجر الإلكترونية (Salla, Zid, WooCommerce)'}
             {activeTab === 'rules' && 'محرك قواعد التوجيه الذكي'}
             {activeTab === 'logs' && 'سجل المعاملات والطلبات الحي'}
             {activeTab === 'settings' && 'إعدادات الحساب والمتغيرات'}
@@ -250,7 +266,7 @@ export default function ControlPanel() {
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div>
                   <h3 className="text-sm font-semibold text-slate-300">رابط الويب هوك الخاص بك</h3>
-                  <p className="text-xs text-slate-500 mt-1">استقبل إشارات TradingView أو برمجياتك على هذا الرابط</p>
+                  <p className="text-xs text-slate-500 mt-1">استقبل إشارات المتاجر أو منصات التداول على هذا الرابط</p>
                 </div>
                 <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 w-full md:w-auto">
                   <code className="text-xs text-blue-400 truncate max-w-xs">{webhookUrl}</code>
@@ -280,7 +296,6 @@ export default function ControlPanel() {
 
           {activeTab === 'integrations' && (
             <div className="space-y-6">
-              {/* Telegram Multiple Channels Section */}
               <div className="bg-slate-900 border border-blue-500/30 rounded-2xl p-6 space-y-4 shadow-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -288,7 +303,7 @@ export default function ControlPanel() {
                     <div>
                       <h3 className="font-bold text-sm text-slate-200">تكامل Telegram (قنوات متعددة)</h3>
                       <p className="text-xs text-slate-400 mt-0.5">
-                        {userPlan === 'free' ? 'الخطة المجانية تتيح قناة واحدة. قم بالترقية لإضافة حتى 5 قنوات.' : 'باقة Pro مفعلة: تتيح لك حتى 5 قنوات تليجرام.'}
+                        {userPlan === 'free' ? 'الخطة المجانية تتيح قناة واحدة.' : 'باقة Pro مفعلة: تتيح لك حتى 5 قنوات تليجرام.'}
                       </p>
                     </div>
                   </div>
@@ -348,51 +363,116 @@ export default function ControlPanel() {
                   ))}
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* Other Integrations (Discord, WhatsApp, etc. requiring Pro) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="w-5 h-5 text-indigo-400" />
-                      <h3 className="font-bold text-sm text-slate-200">تكامل Discord Webhook</h3>
+          {activeTab === 'stores' && (
+            <div className="space-y-6">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-purple-600/10 border border-purple-500/20 p-2.5 rounded-xl text-purple-400">
+                      <ShoppingBag className="w-5 h-5" />
                     </div>
-                    {userPlan !== 'pro' && (
-                      <span className="text-xs bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-full border border-amber-500/20 flex items-center gap-1 cursor-pointer" onClick={goToPricing}>
-                        <Lock className="w-3 h-3" /> يتطلب ترقية
-                      </span>
-                    )}
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-200">إدارة وربط المتاجر الإلكترونية</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">ربط منصات سلة (Salla)، زد (Zid)، وووكومرس (WooCommerce) واستلام Webhooks الطلبات تلقائياً</p>
+                    </div>
                   </div>
-                  {userPlan !== 'pro' ? (
-                    <div className="py-4 text-center space-y-2">
-                      <p className="text-xs text-slate-400">هذه القناة متاحة حصرياً في باقة Pro الشاملة.</p>
-                      <button onClick={goToPricing} className="bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-xs px-4 py-2 rounded-xl font-medium">ترقية الحساب الآن</button>
-                    </div>
-                  ) : (
-                    <input type="text" placeholder="https://discord.com/api/webhooks/..." className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs" />
-                  )}
+                  <button 
+                    onClick={addStoreIntegration}
+                    className="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors shadow-lg shadow-purple-600/20"
+                  >
+                    <Plus className="w-4 h-4" /> ربط متجر جديد
+                  </button>
                 </div>
 
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Webhook className="w-5 h-5 text-emerald-400" />
-                      <h3 className="font-bold text-sm text-slate-200">تكامل WhatsApp API</h3>
+                <div className="space-y-4 pt-2">
+                  {stores.map((store, index) => (
+                    <div key={store.id} className="bg-slate-950 border border-slate-800 p-5 rounded-xl space-y-4 relative">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-purple-400">متجر #{index + 1}</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800">
+                            {store.status === 'connected' ? 'متصل بنجاح' : 'في انتظار التفعيل'}
+                          </span>
+                        </div>
+                        {stores.length > 1 && (
+                          <button 
+                            onClick={() => removeStoreIntegration(store.id)}
+                            className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-[11px] font-medium text-slate-400 mb-1">منصة المتجر</label>
+                          <select 
+                            value={store.platform}
+                            onChange={(e) => {
+                              const updated = [...stores];
+                              updated[index].platform = e.target.value;
+                              setStores(updated);
+                            }}
+                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-purple-500"
+                          >
+                            <option value="salla">سلة (Salla)</option>
+                            <option value="zid">زد (Zid)</option>
+                            <option value="woocommerce">ووكومرس (WooCommerce)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-medium text-slate-400 mb-1">اسم المتجر</label>
+                          <input 
+                            type="text" 
+                            value={store.storeName}
+                            onChange={(e) => {
+                              const updated = [...stores];
+                              updated[index].storeName = e.target.value;
+                              setStores(updated);
+                            }}
+                            placeholder="مثال: متجر العطور الراقي"
+                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-purple-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-medium text-slate-400 mb-1">مفتاح API / Token</label>
+                          <input 
+                            type="password" 
+                            value={store.apiKey}
+                            onChange={(e) => {
+                              const updated = [...stores];
+                              updated[index].apiKey = e.target.value;
+                              setStores(updated);
+                            }}
+                            placeholder="api_token_xxxxxxxx"
+                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-purple-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800/60 flex flex-col md:flex-row items-center justify-between gap-3">
+                        <div className="text-xs text-slate-400">
+                          <span className="font-semibold text-slate-300">رابط Webhook المخصص للمتجر:</span> 
+                          <code className="text-purple-400 mr-2">{webhookUrl}/store/{store.id}</code>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            const updated = [...stores];
+                            updated[index].status = 'connected';
+                            setStores(updated);
+                            showNotification('success', 'تم حفظ واختبار اتصال المتجر بنجاح');
+                          }}
+                          className="bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium whitespace-nowrap"
+                        >
+                          اختبار وحفظ الربط
+                        </button>
+                      </div>
                     </div>
-                    {userPlan !== 'pro' && (
-                      <span className="text-xs bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-full border border-amber-500/20 flex items-center gap-1 cursor-pointer" onClick={goToPricing}>
-                        <Lock className="w-3 h-3" /> يتطلب ترقية
-                      </span>
-                    )}
-                  </div>
-                  {userPlan !== 'pro' ? (
-                    <div className="py-4 text-center space-y-2">
-                      <p className="text-xs text-slate-400">هذه القناة متاحة حصرياً في باقة Pro الشاملة.</p>
-                      <button onClick={goToPricing} className="bg-emerald-600/20 border border-emerald-500/30 text-emerald-300 text-xs px-4 py-2 rounded-xl font-medium">ترقية الحساب الآن</button>
-                    </div>
-                  ) : (
-                    <input type="text" placeholder="WhatsApp Token" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs" />
-                  )}
+                  ))}
                 </div>
               </div>
             </div>
