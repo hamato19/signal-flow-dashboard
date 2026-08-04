@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   }
 }
 
-// 2. حفظ أو تحديث البيانات مع التحقق من عدم تعارض الـ Slug (POST)
+// 2. حفظ أو تحديث البيانات مع معالجة تغيير الـ Slug بشكل صحيح (POST)
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       whatsapp_token, 
       whatsapp_phone_id, 
       discord_webhook,
-      original_slug // (اختياري) تمريره إذا كان المستخدم يقوم بتعديل إعداداته الحالية
+      original_slug 
     } = body;
 
     if (!slug) {
@@ -59,23 +59,26 @@ export async function POST(request: Request) {
         );
       }
 
-      const existing = await client.query('SELECT slug FROM user_settings WHERE slug = $1', [slug]);
-
-      if (existing.rows.length > 0) {
-        await client.query(
-          `UPDATE user_settings 
-           SET username = $1, telegram_token = $2, telegram_chat_id = $3, 
-               whatsapp_token = $4, whatsapp_phone_id = $5, discord_webhook = $6 
-           WHERE slug = $7`,
-          [username, telegram_token, telegram_chat_id, whatsapp_token, whatsapp_phone_id, discord_webhook, slug]
-        );
-      } else {
-        await client.query(
-          `INSERT INTO user_settings (slug, username, telegram_token, telegram_chat_id, whatsapp_token, whatsapp_phone_id, discord_webhook) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [slug, username, telegram_token, telegram_chat_id, whatsapp_token, whatsapp_phone_id, discord_webhook]
-        );
+      // إذا كان هناك original_slug ويختلف عن الـ slug الجديد، فهذا يعني أن المستخدم قام بتغيير معرفه، نحتاج لتحديثه أو حذف القديم وإنشاء جديد
+      if (original_slug && original_slug !== slug) {
+        // حذف السجل القديم وإنشاء الجديد أو تحديثه مباشرة
+        await client.query('DELETE FROM user_settings WHERE slug = $1', [original_slug]);
       }
+
+      // تنفيذ عملية Upsert (إدخال أو تحديث بناءً على الـ slug)
+      await client.query(
+        `INSERT INTO user_settings (slug, username, telegram_token, telegram_chat_id, whatsapp_token, whatsapp_phone_id, discord_webhook) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (slug) 
+         DO UPDATE SET 
+           username = EXCLUDED.username, 
+           telegram_token = EXCLUDED.telegram_token, 
+           telegram_chat_id = EXCLUDED.telegram_chat_id, 
+           whatsapp_token = EXCLUDED.whatsapp_token, 
+           whatsapp_phone_id = EXCLUDED.whatsapp_phone_id, 
+           discord_webhook = EXCLUDED.discord_webhook`,
+        [slug, username, telegram_token, telegram_chat_id, whatsapp_token, whatsapp_phone_id, discord_webhook]
+      );
 
       return NextResponse.json({ success: true, message: 'تم حفظ كافة الإعدادات بنجاح في قاعدة البيانات' });
     } finally {
@@ -98,7 +101,7 @@ export async function DELETE(request: Request) {
 
     const client = await pool.connect();
     try {
-      await client.query('DELETE FROM user_settings WHERE slug = $1', [slug]);
+      await client.query('DELETE FROM user_settings WHERE `slug` = $1', [slug]);
       return NextResponse.json({ success: true, message: 'تم حذف السجل نهائياً من قاعدة البيانات' });
     } finally {
       client.release();
