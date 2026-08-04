@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Bell, Webhook, Settings, Database, 
   Terminal, Shield, LogOut, CheckCircle2, AlertTriangle, 
-  Plus, Trash2, Edit, Save, RefreshCw, Code, Copy, Lock, Sparkles, MessageSquare, Send, Globe, ShoppingBag, MessageCircle, Mail, Hash, Building2, TrendingUp, PhoneCall, Smartphone
+  Plus, Trash2, Edit, Save, RefreshCw, Code, Copy, Lock, Sparkles, MessageSquare, Send, Globe, ShoppingBag, MessageCircle, Mail, Hash, Building2, TrendingUp, PhoneCall, Smartphone, Check
 } from 'lucide-react';
 
 export default function ControlPanel() {
