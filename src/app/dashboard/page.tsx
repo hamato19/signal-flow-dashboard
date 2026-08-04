@@ -22,11 +22,11 @@ export default function ControlPanel() {
   
   // Channels State (Telegram, WhatsApp, Slack, Discord, Email)
   const [telegramChannels, setTelegramChannels] = useState([
-    { id: 1, token: '', chatId: '', name: 'ظ‚ظ†ط§ط© طھظ„ظٹط¬ط±ط§ظ… ط§ظ„ط±ط¦ظٹط³ظٹط©' }
+    { id: 1, token: '', chatId: '', name: 'قناة تلجرام الرئيسية' }
   ]);
 
   const [whatsappChannels, setWhatsappChannels] = useState([
-    { id: 1, phoneNumberId: '', accessToken: '', recipientPhone: '', name: 'ط±ظ‚ظ… ظˆط§طھط³ط§ط¨ ط§ظ„ط±ط³ظ…ظٹ' }
+    { id: 1, phoneNumberId: '', accessToken: '', recipientPhone: '', name: 'رقم واتساب الرسمي' }
   ]);
 
   const [slackChannels, setSlackChannels] = useState([
@@ -34,7 +34,7 @@ export default function ControlPanel() {
   ]);
 
   const [discordChannels, setDiscordChannels] = useState([
-    { id: 1, webhookUrl: '', serverName: 'ط³ظٹط±ظپط± ط§ظ„ط¯ظٹط³ظƒظˆط±ط¯' }
+    { id: 1, webhookUrl: '', serverName: 'سيرفر الديسكورد' }
   ]);
 
   const [emailChannels, setEmailChannels] = useState([
@@ -83,7 +83,7 @@ export default function ControlPanel() {
     localStorage.setItem('user_slug', cleanSlug);
     setSlug(cleanSlug);
     setIsLoggedIn(true);
-    showNotification('success', 'طھظ… طھط³ط¬ظٹظ„ ط§ظ„ط¯ط®ظˆظ„ ط¨ظ†ط¬ط§ط­');
+    showNotification('success', 'تم تسجيل الدخول بنجاح');
   };
 
   const handleLogout = () => {
@@ -91,7 +91,7 @@ export default function ControlPanel() {
     setSlug('');
     setIsLoggedIn(false);
     setInputSlug('');
-    showNotification('info', 'طھظ… طھط³ط¬ظٹظ„ ط§ظ„ط®ط±ظˆط¬');
+    showNotification('info', 'تم تسجيل الخروج');
   };
 
   const copyToClipboard = (text: string) => {
@@ -103,22 +103,22 @@ export default function ControlPanel() {
   // Generic Add/Remove Handlers for Omnichannel
   const addChannel = (type: string) => {
     if (userPlan === 'free') {
-      showNotification('error', 'ط§ظ„ط®ط·ط© ط§ظ„ظ…ط¬ط§ظ†ظٹط© طھطھظٹط­ ظ‚ظ†ط§ط© ظˆط§ط­ط¯ط© ظپظ‚ط· ظ„ظƒظ„ ظ†ظˆط¹. ظ‚ظ… ط¨ط§ظ„طھط±ظ‚ظٹط© ظ„ظ„ط¨ط§ظ‚ط© ط§ظ„ط´ط§ظ…ظ„ط© ظ„ط¥ط¶ط§ظپط© ظ‚ظ†ظˆط§طھ ظ…طھط¹ط¯ط¯ط© ط¨ظ„ط§ ط­ط¯ظˆط¯!');
+      showNotification('error', 'الخطة المجانية تتيح قناة واحدة فقط لكل نوع. قم بالترقية للباقة الشاملة لإضافة قنوات متعددة بلا حدود!');
       return;
     }
 
     if (type === 'telegram') {
-      setTelegramChannels([...telegramChannels, { id: Date.now(), token: '', chatId: '', name: `ظ‚ظ†ط§ط© طھظ„ظٹط¬ط±ط§ظ… ${telegramChannels.length + 1}` }]);
+      setTelegramChannels([...telegramChannels, { id: Date.now(), token: '', chatId: '', name: `قناة تلجرام ${telegramChannels.length + 1}` }]);
     } else if (type === 'whatsapp') {
-      setWhatsappChannels([...whatsappChannels, { id: Date.now(), phoneNumberId: '', accessToken: '', recipientPhone: '', name: `ط±ظ‚ظ… ظˆط§طھط³ط§ط¨ ${whatsappChannels.length + 1}` }]);
+      setWhatsappChannels([...whatsappChannels, { id: Date.now(), phoneNumberId: '', accessToken: '', recipientPhone: '', name: `رقم واتساب ${whatsappChannels.length + 1}` }]);
     } else if (type === 'slack') {
       setSlackChannels([...slackChannels, { id: Date.now(), webhookUrl: '', channelName: `#channel-${slackChannels.length + 1}` }]);
     } else if (type === 'discord') {
-      setDiscordChannels([...discordChannels, { id: Date.now(), webhookUrl: '', serverName: `ط³ظٹط±ظپط± ط¯ظٹط³ظƒظˆط±ط¯ ${discordChannels.length + 1}` }]);
+      setDiscordChannels([...discordChannels, { id: Date.now(), webhookUrl: '', serverName: `سيرفر ديسكورد ${discordChannels.length + 1}` }]);
     } else if (type === 'email') {
       setEmailChannels([...emailChannels, { id: Date.now(), smtpHost: '', smtpUser: '', smtpPass: '', recipientEmail: '' }]);
     }
-    showNotification('success', 'طھظ…طھ ط¥ط¶ط§ظپط© ط§ظ„ظ‚ظ†ط§ط© ط¨ظ†ط¬ط§ط­');
+    showNotification('success', 'تمت إضافة القناة بنجاح');
   };
 
   const removeChannel = (type: string, id: number) => {
@@ -128,22 +128,22 @@ export default function ControlPanel() {
     else if (type === 'discord' && discordChannels.length > 1) setDiscordChannels(discordChannels.filter(c => c.id !== id));
     else if (type === 'email' && emailChannels.length > 1) setEmailChannels(emailChannels.filter(c => c.id !== id));
     else {
-      showNotification('error', 'ظٹط¬ط¨ ط§ظ„ط§ط­طھظپط§ط¸ ط¨ظ‚ظ†ط§ط© ظˆط§ط­ط¯ط© ط¹ظ„ظ‰ ط§ظ„ط£ظ‚ظ„ ظ†ط´ط·ط©.');
+      showNotification('error', 'يجب الاحتفاظ بقناة واحدة على الأقل نشطة.');
     }
   };
 
   const addStoreIntegration = () => {
     if (userPlan === 'free' && stores.length >= 1) {
-      showNotification('error', 'ط§ظ„ط®ط·ط© ط§ظ„ظ…ط¬ط§ظ†ظٹط© طھطھظٹط­ ط±ط¨ط· ظ…طھط¬ط± ظˆط§ط­ط¯ ظپظ‚ط·. ظ‚ظ… ط¨ط§ظ„طھط±ظ‚ظٹط© ظ„ط±ط¨ط· ظ…طھط§ط¬ط± ط؛ظٹط± ظ…ط­ط¯ظˆط¯ط©!');
+      showNotification('error', 'الخطة المجانية تتيح ربط متجر واحد فقط. قم بالترقية لربط متاجر غير محدودة!');
       return;
     }
     setStores([...stores, { id: Date.now(), platform: 'salla', storeName: '', apiKey: '', webhookSecret: '', status: 'disconnected' }]);
-    showNotification('success', 'طھظ…طھ ط¥ط¶ط§ظپط© ظ†ظ…ظˆط°ط¬ ط±ط¨ط· ظ…طھط¬ط± ط¬ط¯ظٹط¯');
+    showNotification('success', 'تمت إضافة نموذج ربط متجر جديد');
   };
 
   const removeStoreIntegration = (id: number) => {
     setStores(stores.filter(s => s.id !== id));
-    showNotification('info', 'طھظ… ط­ط°ظپ ط§ظ„ظ…طھط¬ط± ط¨ظ†ط¬ط§ط­');
+    showNotification('info', 'تم حذف المتجر بنجاح');
   };
 
   const goToPricing = () => {
@@ -158,13 +158,13 @@ export default function ControlPanel() {
             <div className="bg-blue-600/10 border border-blue-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-400">
               <Webhook className="w-8 h-8" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">ظ„ظˆط­ط© طھط­ظƒظ… ط§ظ„ظ…ظ†طµط© ط§ظ„ط´ط§ظ…ظ„ط©</h1>
-            <p className="text-slate-400 text-sm mt-2">ط£ط¯ط®ظ„ ظ…ط¹ط±ظپ ط§ظ„ط­ط³ط§ط¨ (Slug) ظ„ظ„ظˆطµظˆظ„ ط¥ظ„ظ‰ ظ„ظˆط­ط© ط§ظ„طھط­ظƒظ…</p>
+            <h1 className="text-2xl font-bold tracking-tight">لوحة تحكم المنصة الشاملة</h1>
+            <p className="text-slate-400 text-sm mt-2">أدخل معرف الحساب (Slug) للوصول إلى لوحة التحكم</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">ظ…ط¹ط±ظپ ط§ظ„ط­ط³ط§ط¨ (Slug)</label>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">معرف الحساب (Slug)</label>
               <input 
                 type="text" 
                 value={inputSlug}
@@ -178,7 +178,7 @@ export default function ControlPanel() {
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl transition-colors shadow-lg shadow-blue-600/20"
             >
-              ط§ظ„ط¯ط®ظˆظ„ ظ„ظ„ظˆط­ط© ط§ظ„طھط­ظƒظ…
+              الدخول للوحة التحكم
             </button>
           </form>
         </div>
@@ -198,7 +198,7 @@ export default function ControlPanel() {
         </div>
       )}
 
-      {/* Sidebar ط§ظ„ط§ط­طھط±ط§ظپظٹ */}
+      {/* Sidebar الاحترافي */}
       <aside className="w-64 bg-slate-900/50 border-l border-slate-800/80 flex flex-col justify-between hidden md:flex">
         <div>
           <div className="p-6 border-b border-slate-800/80 flex items-center justify-between">
@@ -216,15 +216,15 @@ export default function ControlPanel() {
           <div className="px-4 pt-4">
             <div className="bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border border-blue-500/20 p-3 rounded-xl flex items-center justify-between">
               <div>
-                <span className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider">ط§ظ„ط¨ط§ظ‚ط© ط§ظ„ط­ط§ظ„ظٹط©</span>
-                <p className="text-xs font-bold capitalize">{userPlan === 'free' ? 'ط§ظ„ط®ط·ط© ط§ظ„ظ…ط¬ط§ظ†ظٹط©' : 'ط¨ط§ظ‚ط© PRO ط§ظ„ط´ط§ظ…ظ„ط©'}</p>
+                <span className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider">الباقة الحالية</span>
+                <p className="text-xs font-bold capitalize">{userPlan === 'free' ? 'الخطة المجانية' : 'باقة PRO الشاملة'}</p>
               </div>
               {userPlan === 'free' && (
                 <button 
                   onClick={goToPricing}
                   className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-2.5 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1 shadow cursor-pointer"
                 >
-                  <Sparkles className="w-3 h-3" /> طھط±ظ‚ظٹط©
+                  <Sparkles className="w-3 h-3" /> ترقية
                 </button>
               )}
             </div>
@@ -232,12 +232,12 @@ export default function ControlPanel() {
 
           <nav className="p-4 space-y-1.5">
             {[
-              { id: 'dashboard', label: 'ط§ظ„ط±ط¦ظٹط³ظٹط© ظˆط§ظ„ط¥ط­طµط§ط¦ظٹط§طھ', icon: LayoutDashboard },
-              { id: 'integrations', label: 'ظ‚ظ†ظˆط§طھ ط§ظ„ط¥ط´ط¹ط§ط±ط§طھ ظˆط§ظ„ط±ط¨ط·', icon: Webhook },
-              { id: 'stores', label: 'ط¥ط¯ط§ط±ط© ظˆط±ط¨ط· ط§ظ„ظ…طھط§ط¬ط±', icon: ShoppingBag },
-              { id: 'rules', label: 'ظ‚ظˆط§ط¹ط¯ ط§ظ„طھظˆط¬ظٹظ‡ ط§ظ„ط°ظƒظٹط©', icon: Database },
-              { id: 'logs', label: 'ط³ط¬ظ„ ط§ظ„ط¹ظ…ظ„ظٹط§طھ ط§ظ„ط­ظٹ', icon: Terminal },
-              { id: 'settings', label: 'ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط¹ط§ظ…ط©', icon: Settings },
+              { id: 'dashboard', label: 'الرئيسية والإحصائيات', icon: LayoutDashboard },
+              { id: 'integrations', label: 'قنوات الإشعارات والربط', icon: Webhook },
+              { id: 'stores', label: 'إدارة وربط المتاجر', icon: ShoppingBag },
+              { id: 'rules', label: 'قواعد التوجيه الذكية', icon: Database },
+              { id: 'logs', label: 'سجل العمليات الحي', icon: Terminal },
+              { id: 'settings', label: 'الإعدادات العامة', icon: Settings },
             ].map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -265,24 +265,24 @@ export default function ControlPanel() {
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-rose-400 hover:bg-rose-500/10 transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            طھط³ط¬ظٹظ„ ط§ظ„ط®ط±ظˆط¬
+            تسجيل الخروج
           </button>
         </div>
       </aside>
 
-      {/* ط§ظ„ظ…ط­طھظˆظ‰ ط§ظ„ط±ط¦ظٹط³ظٹ */}
+      {/* المحتوى الرئيسي */}
       <main className="flex-1 flex flex-col min-h-screen overflow-y-auto">
         <header className="h-16 border-b border-slate-800/80 bg-slate-900/20 backdrop-blur px-8 flex items-center justify-between sticky top-0 z-40">
           <h1 className="font-bold text-lg">
-            {activeTab === 'dashboard' && 'ط§ظ„ط±ط¦ظٹط³ظٹط© ظˆط§ظ„ط¥ط­طµط§ط¦ظٹط§طھ'}
-            {activeTab === 'integrations' && 'ظ…ظ†طµط© ظ‚ظ†ظˆط§طھ ط§ظ„ط¥ط´ط¹ط§ط±ط§طھ ط§ظ„ط´ط§ظ…ظ„ط© (طھظ„ظٹط¬ط±ط§ظ…طŒ ظˆط§طھط³ط§ط¨طŒ ط³ظ„ط§ظƒطŒ ط¯ظٹط³ظƒظˆط±ط¯طŒ ط¨ط±ظٹط¯)'}
-            {activeTab === 'stores' && 'ط®ط¯ظ…ط© ط±ط¨ط· ط§ظ„ظ…طھط§ط¬ط± ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹط© (Salla, Zid, WooCommerce)'}
-            {activeTab === 'rules' && 'ظ…ط­ط±ظƒ ظ‚ظˆط§ط¹ط¯ ط§ظ„طھظˆط¬ظٹظ‡ ط§ظ„ط°ظƒظٹ'}
-            {activeTab === 'logs' && 'ط³ط¬ظ„ ط§ظ„ظ…ط¹ط§ظ…ظ„ط§طھ ظˆط§ظ„ط·ظ„ط¨ط§طھ ط§ظ„ط­ظٹ'}
-            {activeTab === 'settings' && 'ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط­ط³ط§ط¨ ظˆط§ظ„ظ…طھط؛ظٹط±ط§طھ'}
+            {activeTab === 'dashboard' && 'الرئيسية والإحصائيات'}
+            {activeTab === 'integrations' && 'منصة قنوات الإشعارات الشاملة (تلجرام، واتساب، سلاك، ديسكورد، بريد)'}
+            {activeTab === 'stores' && 'خدمة ربط المتاجر الإلكترونية (Salla, Zid, WooCommerce)'}
+            {activeTab === 'rules' && 'محرك قواعد التوجيه الذكي'}
+            {activeTab === 'logs' && 'سجل المعاملات والطلبات الحي'}
+            {activeTab === 'settings' && 'إعدادات الحساب والمتغيرات'}
           </h1>
           <span className="text-xs px-2.5 py-1 rounded-full border flex items-center gap-1.5 bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span> ط§ظ„ظ†ط¸ط§ظ… ظٹط¹ظ…ظ„ ط¨ظƒظپط§ط،ط©
+            <span className="w-2 h-2 rounded-full bg-emerald-400"></span> النظام يعمل بكفاءة
           </span>
         </header>
 
@@ -291,36 +291,36 @@ export default function ControlPanel() {
             <div className="space-y-6">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-300">ط±ط§ط¨ط· ط§ظ„ظˆظٹط¨ ظ‡ظˆظƒ ط§ظ„ط´ط§ظ…ظ„ ط§ظ„ط®ط§طµ ط¨ظƒ</h3>
-                  <p className="text-xs text-slate-500 mt-1">ط§ط³طھظ‚ط¨ظ„ ط§ظ„ط¥ط´ط§ط±ط§طھ ظ…ظ† TradingView ظˆط§ظ„ظ…طھط§ط¬ط± ظˆظˆط¬ظ‡ظ‡ط§ ظ„ط¬ظ…ظٹط¹ ظ‚ظ†ظˆط§طھظƒ ط¨ظ…ط±ظˆظ†ط© طھط§ظ…ط©</p>
+                  <h3 className="text-sm font-semibold text-slate-300">رابط الويب هوك الشامل الخاص بك</h3>
+                  <p className="text-xs text-slate-500 mt-1">استقبل الإشارات من TradingView والمتاجر ووجهها لجميع قنواتك بمرونة تامة</p>
                 </div>
                 <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 w-full md:w-auto">
                   <code className="text-xs text-blue-400 truncate max-w-xs">{webhookUrl}</code>
                   <button onClick={() => copyToClipboard(webhookUrl)} className="bg-slate-800 text-slate-200 p-1.5 rounded-lg text-xs flex items-center gap-1 hover:bg-slate-700 transition-colors">
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copied ? 'طھظ…' : 'ظ†ط³ط®'}</span>
+                    <span>{copied ? 'تم' : 'نسخ'}</span>
                   </button>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
-                  <p className="text-xs text-slate-400 font-medium">ط§ظ„ط·ظ„ط¨ط§طھ ط§ظ„ظ…ظڈط³طھظ„ظ…ط©</p>
+                  <p className="text-xs text-slate-400 font-medium">الطلبات المُستلمة</p>
                   <h4 className="text-3xl font-bold mt-2 text-slate-100">{analytics.totalRequests}</h4>
                 </div>
                 <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
-                  <p className="text-xs text-slate-400 font-medium">ظ†ط³ط¨ط© ط§ظ„ظ†ط¬ط§ط­</p>
+                  <p className="text-xs text-slate-400 font-medium">نسبة النجاح</p>
                   <h4 className="text-3xl font-bold mt-2 text-emerald-400">{analytics.successRate}%</h4>
                 </div>
                 <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
-                  <p className="text-xs text-slate-400 font-medium">ط³ط±ط¹ط© ط§ظ„ط§ط³طھط¬ط§ط¨ط©</p>
+                  <p className="text-xs text-slate-400 font-medium">سرعة الاستجابة</p>
                   <h4 className="text-3xl font-bold mt-2 text-blue-400">{analytics.averageResponseTime} ms</h4>
                 </div>
               </div>
             </div>
           )}
 
-          {/* طھط¨ظˆظٹط¨ ظ‚ظ†ظˆط§طھ ط§ظ„ط¥ط´ط¹ط§ط±ط§طھ ط§ظ„ط´ط§ظ…ظ„ط© (Omnichannel Hub) */}
+          {/* تبويب قنوات الإشعارات الشاملة (Omnichannel Hub) */}
           {activeTab === 'integrations' && (
             <div className="space-y-6">
               
@@ -332,12 +332,12 @@ export default function ControlPanel() {
                       <Send className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-slate-200">ظ‚ظ†ظˆط§طھ طھظ„ظٹط¬ط±ط§ظ… (Telegram Channels)</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">ط£ط±ط³ظ„ ط¥ط´ط¹ط§ط±ط§طھظƒ ط§ظ„ظپظˆط±ظٹط© ط¥ظ„ظ‰ ط¹ط¯ط© ظ‚ظ†ظˆط§طھ ط£ظˆ ظ…ط¬ظ…ظˆط¹ط§طھ طھظ„ظٹط¬ط±ط§ظ… ط¨ط§ظ„طھظˆط§ط²ظٹ</p>
+                      <h3 className="font-bold text-sm text-slate-200">قنوات تلجرام (Telegram Channels)</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">أرسل إشعاراتك الفورية إلى عدة قنوات أو مجموعات تلجرام بالتوازي</p>
                     </div>
                   </div>
                   <button onClick={() => addChannel('telegram')} className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
-                    <Plus className="w-4 h-4" /> ط¥ط¶ط§ظپط© ظ‚ظ†ط§ط© طھظ„ظٹط¬ط±ط§ظ…
+                    <Plus className="w-4 h-4" /> إضافة قناة تلجرام
                   </button>
                 </div>
 
@@ -345,7 +345,7 @@ export default function ControlPanel() {
                   {telegramChannels.map((channel, index) => (
                     <div key={channel.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
                       <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                        <span className="text-xs font-bold text-blue-400">ظ‚ظ†ط§ط© طھظ„ظٹط¬ط±ط§ظ… #{index + 1}</span>
+                        <span className="text-xs font-bold text-blue-400">قناة تلجرام #{index + 1}</span>
                         <button onClick={() => removeChannel('telegram', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -381,12 +381,12 @@ export default function ControlPanel() {
                       <MessageCircle className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-slate-200">ط±ط¨ط· ظˆط§طھط³ط§ط¨ (WhatsApp Cloud API)</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">ط¥ط±ط³ط§ظ„ ط§ظ„طھظ†ط¨ظٹظ‡ط§طھ ظˆط±ط³ط§ط¦ظ„ ط§ظ„ط¹ظ…ظ„ط§ط، ط¹ط¨ط± ط­ط³ط§ط¨ ظˆط§طھط³ط§ط¨ ط¨ط²ظ†ط³ ط§ظ„ط±ط³ظ…ظٹ</p>
+                      <h3 className="font-bold text-sm text-slate-200">ربط واتساب (WhatsApp Cloud API)</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">إرسال التنبيهات ورسائل العملاء عبر حساب واتساب بزنس الرسمي</p>
                     </div>
                   </div>
                   <button onClick={() => addChannel('whatsapp')} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
-                    <Plus className="w-4 h-4" /> ط¥ط¶ط§ظپط© ط­ط³ط§ط¨ ظˆط§طھط³ط§ط¨
+                    <Plus className="w-4 h-4" /> إضافة حساب واتساب
                   </button>
                 </div>
 
@@ -394,7 +394,7 @@ export default function ControlPanel() {
                   {whatsappChannels.map((channel, index) => (
                     <div key={channel.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
                       <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                        <span className="text-xs font-bold text-emerald-400">ظ‚ظ†ط§ط© ظˆط§طھط³ط§ط¨ #{index + 1}</span>
+                        <span className="text-xs font-bold text-emerald-400">قناة واتساب #{index + 1}</span>
                         <button onClick={() => removeChannel('whatsapp', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -417,7 +417,7 @@ export default function ControlPanel() {
                           }} placeholder="EAAG..." className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-emerald-500" />
                         </div>
                         <div>
-                          <label className="block text-[11px] text-slate-400 mb-1">ط±ظ‚ظ… ط§ظ„ظ…ط³طھظ„ظ… / ط§ظ„ظ…ط¬ظ…ظˆط¹ط§طھ</label>
+                          <label className="block text-[11px] text-slate-400 mb-1">رقم المستلم / المجموعات</label>
                           <input type="text" value={channel.recipientPhone} onChange={(e) => {
                             const updated = [...whatsappChannels];
                             updated[index].recipientPhone = e.target.value;
@@ -438,12 +438,12 @@ export default function ControlPanel() {
                       <Hash className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-slate-200">ظ‚ظ†ظˆط§طھ ط³ظ„ط§ظƒ (Slack Webhooks)</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">طھظˆط¬ظٹظ‡ ط§ظ„طھظ†ط¨ظٹظ‡ط§طھ ظ…ط¨ط§ط´ط±ط© ط¥ظ„ظ‰ ظ‚ظ†ظˆط§طھ ظپط±ظٹظ‚ ط§ظ„ط¹ظ…ظ„ ظپظٹ طھط·ط¨ظٹظ‚ Slack</p>
+                      <h3 className="font-bold text-sm text-slate-200">قنوات سلاك (Slack Webhooks)</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">توجيه التنبيهات مباشرة إلى قنوات فريق العمل في تطبيق Slack</p>
                     </div>
                   </div>
                   <button onClick={() => addChannel('slack')} className="bg-amber-600 hover:bg-amber-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
-                    <Plus className="w-4 h-4" /> ط¥ط¶ط§ظپط© ظ‚ظ†ط§ط© ط³ظ„ط§ظƒ
+                    <Plus className="w-4 h-4" /> إضافة قناة سلاك
                   </button>
                 </div>
 
@@ -451,7 +451,7 @@ export default function ControlPanel() {
                   {slackChannels.map((channel, index) => (
                     <div key={channel.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
                       <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                        <span className="text-xs font-bold text-amber-400">ظ‚ظ†ط§ط© ط³ظ„ط§ظƒ #{index + 1}</span>
+                        <span className="text-xs font-bold text-amber-400">قناة سلاك #{index + 1}</span>
                         <button onClick={() => removeChannel('slack', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -477,12 +477,12 @@ export default function ControlPanel() {
                       <MessageSquare className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-slate-200">ظ‚ظ†ظˆط§طھ ط¯ظٹط³ظƒظˆط±ط¯ (Discord Webhooks)</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">ظ†ط´ط± ط§ظ„ط¥ط´ط§ط±ط§طھ ظˆط§ظ„طھظ‚ط§ط±ظٹط± ط§ظ„ط¢ظ„ظٹط© ظپظٹ ط³ظٹط±ظپط±ط§طھ Discord</p>
+                      <h3 className="font-bold text-sm text-slate-200">قنوات ديسكورد (Discord Webhooks)</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">نشر الإشارات والتقارير الآلية في سيرفرات Discord</p>
                     </div>
                   </div>
                   <button onClick={() => addChannel('discord')} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
-                    <Plus className="w-4 h-4" /> ط¥ط¶ط§ظپط© ظ‚ظ†ط§ط© ط¯ظٹط³ظƒظˆط±ط¯
+                    <Plus className="w-4 h-4" /> إضافة قناة ديسكورد
                   </button>
                 </div>
 
@@ -490,7 +490,7 @@ export default function ControlPanel() {
                   {discordChannels.map((channel, index) => (
                     <div key={channel.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
                       <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                        <span className="text-xs font-bold text-indigo-400">ظ‚ظ†ط§ط© ط¯ظٹط³ظƒظˆط±ط¯ #{index + 1}</span>
+                        <span className="text-xs font-bold text-indigo-400">قناة ديسكورد #{index + 1}</span>
                         <button onClick={() => removeChannel('discord', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -516,12 +516,12 @@ export default function ControlPanel() {
                       <Mail className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-slate-200">ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹ (SMTP / Email Alerts)</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">ط§ط³طھظ„ط§ظ… ط¥ط´ط¹ط§ط±ط§طھ ط§ظ„طھظ†ط¨ظٹظ‡ ظˆط§ظ„طھظ‚ط§ط±ظٹط± ط§ظ„ط¨ط±ظٹط¯ظٹط© ط¹ظ†ط¯ ط­ط¯ظˆط« ط£ظٹ ط­ط¯ط«</p>
+                      <h3 className="font-bold text-sm text-slate-200">البريد الإلكتروني (SMTP / Email Alerts)</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">استلام إشعارات التنبيه والتقارير البريدية عند حدوث أي حدث</p>
                     </div>
                   </div>
                   <button onClick={() => addChannel('email')} className="bg-rose-600 hover:bg-rose-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
-                    <Plus className="w-4 h-4" /> ط¥ط¶ط§ظپط© ط¨ط±ظٹط¯ ط¥ظ„ظƒطھط±ظˆظ†ظٹ
+                    <Plus className="w-4 h-4" /> إضافة بريد إلكتروني
                   </button>
                 </div>
 
@@ -529,7 +529,7 @@ export default function ControlPanel() {
                   {emailChannels.map((channel, index) => (
                     <div key={channel.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
                       <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                        <span className="text-xs font-bold text-rose-400">ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط¨ط±ظٹط¯ #{index + 1}</span>
+                        <span className="text-xs font-bold text-rose-400">إعدادات البريد #{index + 1}</span>
                         <button onClick={() => removeChannel('email', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -544,7 +544,7 @@ export default function ControlPanel() {
                           }} placeholder="smtp.mailgun.org:587" className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-rose-500" />
                         </div>
                         <div>
-                          <label className="block text-[11px] text-slate-400 mb-1">ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ظ…ط³طھظ‚ط¨ظ„ ظ„ظ„طھظ‚ط§ط±ظٹط±</label>
+                          <label className="block text-[11px] text-slate-400 mb-1">البريد المستقبل للتقارير</label>
                           <input type="email" value={channel.recipientEmail} onChange={(e) => {
                             const updated = [...emailChannels];
                             updated[index].recipientEmail = e.target.value;
@@ -560,7 +560,7 @@ export default function ControlPanel() {
             </div>
           )}
 
-          {/* طھط¨ظˆظٹط¨ ط±ط¨ط· ط§ظ„ظ…طھط§ط¬ط± */}
+          {/* تبويب ربط المتاجر */}
           {activeTab === 'stores' && (
             <div className="space-y-6">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
@@ -570,15 +570,15 @@ export default function ControlPanel() {
                       <ShoppingBag className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-slate-200">ط¥ط¯ط§ط±ط© ظˆط±ط¨ط· ط§ظ„ظ…طھط§ط¬ط± ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹط©</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">ط±ط¨ط· ظ…ظ†طµط§طھ ط³ظ„ط© (Salla)طŒ ط²ط¯ (Zid)طŒ ظˆظˆظˆظƒظˆظ…ط±ط³ (WooCommerce) ظˆط§ط³طھظ„ط§ظ… Webhooks ط§ظ„ط·ظ„ط¨ط§طھ طھظ„ظ‚ط§ط¦ظٹط§ظ‹</p>
+                      <h3 className="font-bold text-sm text-slate-200">إدارة وربط المتاجر الإلكترونية</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">ربط منصات سلة (Salla)، زد (Zid)، ووومورس (WooCommerce) واستلام Webhooks الطلبات تلقائياً</p>
                     </div>
                   </div>
                   <button 
                     onClick={addStoreIntegration}
                     className="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors shadow-lg shadow-purple-600/20"
                   >
-                    <Plus className="w-4 h-4" /> ط±ط¨ط· ظ…طھط¬ط± ط¬ط¯ظٹط¯
+                    <Plus className="w-4 h-4" /> ربط متجر جديد
                   </button>
                 </div>
 
@@ -587,9 +587,9 @@ export default function ControlPanel() {
                     <div key={store.id} className="bg-slate-950 border border-slate-800 p-5 rounded-xl space-y-4 relative">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-purple-400">ظ…طھط¬ط± #{index + 1}</span>
+                          <span className="text-xs font-bold text-purple-400">متجر #{index + 1}</span>
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800">
-                            {store.status === 'connected' ? 'ظ…طھطµظ„ ط¨ظ†ط¬ط§ط­' : 'ظپظٹ ط§ظ†طھط¸ط§ط± ط§ظ„طھظپط¹ظٹظ„'}
+                            {store.status === 'connected' ? 'متصل بنجاح' : 'في انتظار التفعيل'}
                           </span>
                         </div>
                         {stores.length > 1 && (
@@ -604,7 +604,7 @@ export default function ControlPanel() {
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                          <label className="block text-[11px] font-medium text-slate-400 mb-1">ظ…ظ†طµط© ط§ظ„ظ…طھط¬ط±</label>
+                          <label className="block text-[11px] font-medium text-slate-400 mb-1">منصة المتجر</label>
                           <select 
                             value={store.platform}
                             onChange={(e) => {
@@ -614,13 +614,13 @@ export default function ControlPanel() {
                             }}
                             className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-purple-500"
                           >
-                            <option value="salla">ط³ظ„ط© (Salla)</option>
-                            <option value="zid">ط²ط¯ (Zid)</option>
-                            <option value="woocommerce">ظˆظˆظƒظˆظ…ط±ط³ (WooCommerce)</option>
+                            <option value="salla">سلة (Salla)</option>
+                            <option value="zid">زد (Zid)</option>
+                            <option value="woocommerce">وومورس (WooCommerce)</option>
                           </select>
                         </div>
                         <div>
-                          <label className="block text-[11px] font-medium text-slate-400 mb-1">ط§ط³ظ… ط§ظ„ظ…طھط¬ط±</label>
+                          <label className="block text-[11px] font-medium text-slate-400 mb-1">اسم المتجر</label>
                           <input 
                             type="text" 
                             value={store.storeName}
@@ -629,12 +629,12 @@ export default function ControlPanel() {
                               updated[index].storeName = e.target.value;
                               setStores(updated);
                             }}
-                            placeholder="ظ…ط«ط§ظ„: ظ…طھط¬ط± ط§ظ„ط¹ط·ظˆط± ط§ظ„ط±ط§ظ‚ظٹ"
+                            placeholder="مثال: متجر العطور الراقي"
                             className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-purple-500"
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-medium text-slate-400 mb-1">ظ…ظپطھط§ط­ API / Token</label>
+                          <label className="block text-[11px] font-medium text-slate-400 mb-1">مفتاح API / Token</label>
                           <input 
                             type="password" 
                             value={store.apiKey}
@@ -651,7 +651,7 @@ export default function ControlPanel() {
 
                       <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800/60 flex flex-col md:flex-row items-center justify-between gap-3">
                         <div className="text-xs text-slate-400">
-                          <span className="font-semibold text-slate-300">ط±ط§ط¨ط· Webhook ط§ظ„ظ…ط®طµطµ ظ„ظ„ظ…طھط¬ط±:</span> 
+                          <span className="font-semibold text-slate-300">رابط Webhook المخصص للمتجر:</span> 
                           <code className="text-purple-400 mr-2">{webhookUrl}/store/{store.id}</code>
                         </div>
                         <button 
@@ -659,11 +659,11 @@ export default function ControlPanel() {
                             const updated = [...stores];
                             updated[index].status = 'connected';
                             setStores(updated);
-                            showNotification('success', 'طھظ… ط­ظپط¸ ظˆط§ط®طھط¨ط§ط± ط§طھطµط§ظ„ ط§ظ„ظ…طھط¬ط± ط¨ظ†ط¬ط§ط­');
+                            showNotification('success', 'تم حفظ واختبار اتصال المتجر بنجاح');
                           }}
                           className="bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium whitespace-nowrap"
                         >
-                          ط§ط®طھط¨ط§ط± ظˆط­ظپط¸ ط§ظ„ط±ط¨ط·
+                          اختبار وحفظ الربط
                         </button>
                       </div>
                     </div>
@@ -677,31 +677,31 @@ export default function ControlPanel() {
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-sm text-slate-200">ظ‚ظˆط§ط¹ط¯ طھظˆط¬ظٹظ‡ ط§ظ„ط¥ط´ط§ط±ط§طھ ط§ظ„ط°ظƒظٹط©</h3>
-                  <p className="text-xs text-slate-500 mt-1">طھظˆط¬ظٹظ‡ ط§ظ„ط±ط³ط§ط¦ظ„ ظˆط§ظ„ط·ظ„ط¨ط§طھ ط¨ظ†ط§ط،ظ‹ ط¹ظ„ظ‰ ط§ظ„ظ€ Payload ظˆط§ظ„ط´ط±ظˆط· ط§ظ„ظ…ط®طµطµط©</p>
+                  <h3 className="font-bold text-sm text-slate-200">قواعد توجيه الإشارات الذكية</h3>
+                  <p className="text-xs text-slate-500 mt-1">توجيه الرسائل والطلبات بناءً على الـ Payload والشروط المخصصة</p>
                 </div>
                 <button onClick={() => setRoutingRules([...routingRules, { id: Date.now(), condition: '' }])} className="bg-blue-600 text-white px-3 py-2 rounded-xl text-xs flex items-center gap-1">
-                  <Plus className="w-4 h-4" /> ط¥ط¶ط§ظپط© ظ‚ط§ط¹ط¯ط© طھظˆط¬ظٹظ‡
+                  <Plus className="w-4 h-4" /> إضافة قاعدة توجيه
                 </button>
               </div>
-              {routingRules.length === 0 ? <p className="text-xs text-slate-500 text-center py-6">ظ„ط§ طھظˆط¬ط¯ ظ‚ظˆط§ط¹ط¯ ظ…ط¶ط§ظپط© ط­طھظ‰ ط§ظ„ط¢ظ†.</p> : null}
+              {routingRules.length === 0 ? <p className="text-xs text-slate-500 text-center py-6">لا توجد قواعد مضافة حتى الآن.</p> : null}
             </div>
           )}
 
           {activeTab === 'logs' && (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-              <h3 className="font-bold text-sm text-slate-200">ط³ط¬ظ„ ط§ظ„ظ…ط¹ط§ظ…ظ„ط§طھ ظˆط§ظ„ط·ظ„ط¨ط§طھ ط§ظ„ط­ظٹ</h3>
+              <h3 className="font-bold text-sm text-slate-200">سجل المعاملات والطلبات الحي</h3>
               <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-400 h-48 overflow-y-auto">
-                ظپظٹ ط§ظ†طھط¸ط§ط± ط§ط³طھظ‚ط¨ط§ظ„ ط§ظ„ط·ظ„ط¨ط§طھ...
+                في انتظار استقبال الطلبات...
               </div>
             </div>
           )}
 
           {activeTab === 'settings' && (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
-              <h3 className="font-bold text-sm text-slate-200">ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط¹ط§ظ…ط© ظˆط§ظ„ظ…طھط؛ظٹط±ط§طھ</h3>
-              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="ط§ط³ظ… ط§ظ„ظ…ط³طھط®ط¯ظ…" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs" />
-              <button onClick={() => showNotification('success', 'طھظ… ط§ظ„ط­ظپط¸ ط¨ظ†ط¬ط§ط­')} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs">ط­ظپط¸ ط§ظ„طھط؛ظٹظٹط±ط§طھ</button>
+              <h3 className="font-bold text-sm text-slate-200">الإعدادات العامة والمتغيرات</h3>
+              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="اسم المستخدم" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs" />
+              <button onClick={() => showNotification('success', 'تم الحفظ بنجاح')} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs">حفظ التغييرات</button>
             </div>
           )}
         </div>
