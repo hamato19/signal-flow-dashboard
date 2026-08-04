@@ -51,9 +51,9 @@ export default function ControlPanel() {
     { id: 1, platform: 'salla', storeName: '', apiKey: '', webhookSecret: '', status: 'disconnected' }
   ]);
 
-  // Trading & Financial Integration State (TradingView, Binance, MetaTrader)
+  // Trading & Financial Integration State (TradingView, Binance, MetaTrader, US Markets)
   const [tradingIntegrations, setTradingIntegrations] = useState([
-    { id: 1, platform: 'tradingview', strategyName: '', secretKey: '', actionType: 'alert' }
+    { id: 1, platform: 'tradingview', strategyName: '', secretKey: '', actionType: 'alert', marketType: 'crypto' }
   ]);
 
   // Enterprise / Companies Management State
@@ -96,6 +96,9 @@ export default function ControlPanel() {
         const data = result.data;
         if (data.telegram_channels) setTelegramChannels(data.telegram_channels);
         if (data.whatsapp_channels) setWhatsappChannels(data.whatsapp_channels);
+        if (data.slack_channels) setSlackChannels(data.slack_channels);
+        if (data.discord_channels) setDiscordChannels(data.discord_channels);
+        if (data.email_channels) setEmailChannels(data.email_channels);
         if (data.sms_channels) setSmsChannels(data.sms_channels);
         if (data.stores) setStores(data.stores);
         if (data.trading_integrations) setTradingIntegrations(data.trading_integrations);
@@ -109,14 +112,17 @@ export default function ControlPanel() {
     }
   };
 
-  // دالة حفظ البيانات الخاصة بالمستخدم الحالي في قاعدة بيانات Neon عبر الـ API
-  const saveUserDataToDB = async () => {
+  // دالة حفظ البيانات الشاملة أو المخصصة في قاعدة بيانات Neon عبر الـ API
+  const saveUserDataToDB = async (customPayload?: any) => {
     if (!slug) return;
     
-    const payload = {
+    const payload = customPayload || {
       slug,
       telegramChannels,
       whatsappChannels,
+      slackChannels,
+      discordChannels,
+      emailChannels,
       smsChannels,
       stores,
       tradingIntegrations,
@@ -225,7 +231,7 @@ export default function ControlPanel() {
   };
 
   const addTradingIntegration = () => {
-    setTradingIntegrations([...tradingIntegrations, { id: Date.now(), platform: 'tradingview', strategyName: '', secretKey: '', actionType: 'alert' }]);
+    setTradingIntegrations([...tradingIntegrations, { id: Date.now(), platform: 'tradingview', strategyName: '', secretKey: '', actionType: 'alert', marketType: 'crypto' }]);
     showNotification('success', 'تمت إضافة منصة التداول بنجاح');
   };
 
@@ -333,7 +339,7 @@ export default function ControlPanel() {
               { id: 'dashboard', label: 'الرئيسية والإحصائيات', icon: LayoutDashboard },
               { id: 'integrations', label: 'قنوات الإشعارات والربط', icon: Webhook },
               { id: 'sms', label: 'خدمة الرسائل النصية (SMS)', icon: Smartphone },
-              { id: 'trading', label: 'منصات التداول (TradingView & Binance)', icon: TrendingUp },
+              { id: 'trading', label: 'منصات التداول والأسواق العالمية', icon: TrendingUp },
               { id: 'stores', label: 'إدارة وربط المتاجر', icon: ShoppingBag },
               { id: 'enterprise', label: 'قسم الشركات والأقسام', icon: Building2 },
               { id: 'rules', label: 'قواعد التوجيه الذكية', icon: Database },
@@ -362,10 +368,10 @@ export default function ControlPanel() {
 
         <div className="p-4 border-t border-slate-800/80 space-y-2">
           <button
-            onClick={saveUserDataToDB}
+            onClick={() => saveUserDataToDB()}
             className="w-full flex items-center justify-center gap-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 py-2.5 rounded-xl text-xs font-medium transition-colors shadow"
           >
-            <Save className="w-4 h-4" /> حفظ البيانات بقاعدة البيانات
+            <Save className="w-4 h-4" /> حفظ كل البيانات بقاعدة البيانات
           </button>
           <button
             onClick={handleLogout}
@@ -382,9 +388,9 @@ export default function ControlPanel() {
         <header className="h-16 border-b border-slate-800/80 bg-slate-900/20 backdrop-blur px-8 flex items-center justify-between sticky top-0 z-40">
           <h1 className="font-bold text-lg">
             {activeTab === 'dashboard' && 'الرئيسية والإحصائيات'}
-            {activeTab === 'integrations' && 'منصة قنوات الإشعارات الشاملة (تلجرام، واتساب، سلاك، ديسكورد، بريد)'}
+            {activeTab === 'integrations' && 'منصة قنوات الإشعارات الشاملة (تلجرام، واتساب، ديسكورد، سلاك، البريد)'}
             {activeTab === 'sms' && 'بوابة رسائل الهواتف القصيرة (SMS Gateway)'}
-            {activeTab === 'trading' && 'إشارات التداول ومنصات المال (TradingView, Binance, MetaTrader)'}
+            {activeTab === 'trading' && 'إشارات التداول والأسواق الأمريكية والعملات الرقمية (TradingView, Binance, MetaTrader)'}
             {activeTab === 'stores' && 'خدمة ربط المتاجر الإلكترونية (Salla, Zid, WooCommerce)'}
             {activeTab === 'enterprise' && 'قسم الشركات والفرق المهنية المستقلة'}
             {activeTab === 'rules' && 'محرك قواعد التوجيه الذكي'}
@@ -481,6 +487,11 @@ export default function ControlPanel() {
                     </div>
                   ))}
                 </div>
+                <div className="flex justify-end pt-2">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                    <Save className="w-3.5 h-3.5" /> حفظ إعدادات تلجرام
+                  </button>
+                </div>
               </div>
 
               {/* WhatsApp */}
@@ -537,6 +548,189 @@ export default function ControlPanel() {
                       </div>
                     </div>
                   ))}
+                </div>
+                <div className="flex justify-end pt-2">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                    <Save className="w-3.5 h-3.5" /> حفظ إعدادات واتساب
+                  </button>
+                </div>
+              </div>
+
+              {/* Discord */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-indigo-600/15 border border-indigo-500/20 p-2.5 rounded-xl text-indigo-400">
+                      <Hash className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-200">سيرفرات ديسكورد (Discord Webhooks)</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">توجيه التنبيهات وإشارات التداول إلى قنوات ديسكورد التفاعلية</p>
+                    </div>
+                  </div>
+                  <button onClick={() => addChannel('discord')} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
+                    <Plus className="w-4 h-4" /> إضافة سيرفر ديسكورد
+                  </button>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  {discordChannels.map((discord, index) => (
+                    <div key={discord.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span className="text-xs font-bold text-indigo-400">ديسكورد #{index + 1}</span>
+                        <button onClick={() => removeChannel('discord', discord.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">Discord Webhook URL</label>
+                          <input type="password" value={discord.webhookUrl} onChange={(e) => {
+                            const updated = [...discordChannels];
+                            updated[index].webhookUrl = e.target.value;
+                            setDiscordChannels(updated);
+                          }} placeholder="https://discord.com/api/webhooks/..." className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">اسم السيرفر / القناة</label>
+                          <input type="text" value={discord.serverName} onChange={(e) => {
+                            const updated = [...discordChannels];
+                            updated[index].serverName = e.target.value;
+                            setDiscordChannels(updated);
+                          }} placeholder="Trading Signals" className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end pt-2">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                    <Save className="w-3.5 h-3.5" /> حفظ إعدادات ديسكورد
+                  </button>
+                </div>
+              </div>
+
+              {/* Slack */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-purple-600/15 border border-purple-500/20 p-2.5 rounded-xl text-purple-400">
+                      <MessageSquare className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-200">سلاك (Slack Webhooks)</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">إرسال التنبيهات البرمجية والمالية إلى قنوات فريق العمل في Slack</p>
+                    </div>
+                  </div>
+                  <button onClick={() => addChannel('slack')} className="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
+                    <Plus className="w-4 h-4" /> إضافة قناة سلاك
+                  </button>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  {slackChannels.map((slack, index) => (
+                    <div key={slack.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span className="text-xs font-bold text-purple-400">سلاك #{index + 1}</span>
+                        <button onClick={() => removeChannel('slack', slack.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">Slack Webhook URL</label>
+                          <input type="password" value={slack.webhookUrl} onChange={(e) => {
+                            const updated = [...slackChannels];
+                            updated[index].webhookUrl = e.target.value;
+                            setSlackChannels(updated);
+                          }} placeholder="https://hooks.slack.com/services/..." className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-purple-500" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">اسم القناة (#channel)</label>
+                          <input type="text" value={slack.channelName} onChange={(e) => {
+                            const updated = [...slackChannels];
+                            updated[index].channelName = e.target.value;
+                            setSlackChannels(updated);
+                          }} placeholder="#alerts" className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-purple-500" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end pt-2">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                    <Save className="w-3.5 h-3.5" /> حفظ إعدادات سلاك
+                  </button>
+                </div>
+              </div>
+
+              {/* Email SMTP */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-rose-600/15 border border-rose-500/20 p-2.5 rounded-xl text-rose-400">
+                      <Mail className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-200">البريد الإلكتروني (SMTP Email Notifications)</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">إرسال تقارير الإشعارات عبر بريد SMTP مخصص عند كل استلام ويب هوك</p>
+                    </div>
+                  </div>
+                  <button onClick={() => addChannel('email')} className="bg-rose-600 hover:bg-rose-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
+                    <Plus className="w-4 h-4" /> إضافة إعداد بريد
+                  </button>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  {emailChannels.map((email, index) => (
+                    <div key={email.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span className="text-xs font-bold text-rose-400">إعداد البريد #{index + 1}</span>
+                        <button onClick={() => removeChannel('email', email.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">SMTP Host</label>
+                          <input type="text" value={email.smtpHost} onChange={(e) => {
+                            const updated = [...emailChannels];
+                            updated[index].smtpHost = e.target.value;
+                            setEmailChannels(updated);
+                          }} placeholder="smtp.mailgun.org" className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-rose-500" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">SMTP User</label>
+                          <input type="text" value={email.smtpUser} onChange={(e) => {
+                            const updated = [...emailChannels];
+                            updated[index].smtpUser = e.target.value;
+                            setEmailChannels(updated);
+                          }} placeholder="user@domain.com" className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-rose-500" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">SMTP Pass</label>
+                          <input type="password" value={email.smtpPass} onChange={(e) => {
+                            const updated = [...emailChannels];
+                            updated[index].smtpPass = e.target.value;
+                            setEmailChannels(updated);
+                          }} placeholder="********" className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-rose-500" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">البريد المستلم</label>
+                          <input type="email" value={email.recipientEmail} onChange={(e) => {
+                            const updated = [...emailChannels];
+                            updated[index].recipientEmail = e.target.value;
+                            setEmailChannels(updated);
+                          }} placeholder="admin@domain.com" className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-rose-500" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end pt-2">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                    <Save className="w-3.5 h-3.5" /> حفظ إعدادات البريد الإلكتروني
+                  </button>
                 </div>
               </div>
 
@@ -604,11 +798,16 @@ export default function ControlPanel() {
                     </div>
                   ))}
                 </div>
+                <div className="flex justify-end pt-2">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                    <Save className="w-3.5 h-3.5" /> حفظ إعدادات SMS
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
-          {/* تبويب التداول */}
+          {/* تبويب التداول والأسواق العالمية والعملات الرقمية */}
           {activeTab === 'trading' && (
             <div className="space-y-6">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
@@ -618,8 +817,8 @@ export default function ControlPanel() {
                       <TrendingUp className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-slate-200">إشارات التداول ومنصات المال (TradingView & Binance)</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">استقبال وتفسير تنبيهات التداول وتحويلها الفوري لإشعارات أو عمليات شراء/بيع</p>
+                      <h3 className="font-bold text-sm text-slate-200">منصات التداول، الأسواق الأمريكية والعملات الرقمية (TradingView, Binance, MetaTrader)</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">استقبال وتفسير تنبيهات TradingView للأسهم الأمريكية، العملات الرقمية (Binance Futures)، والفوركس (MetaTrader)</p>
                     </div>
                   </div>
                   <button onClick={addTradingIntegration} className="bg-amber-600 hover:bg-amber-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors shadow-lg">
@@ -631,7 +830,7 @@ export default function ControlPanel() {
                   {tradingIntegrations.map((item, index) => (
                     <div key={item.id} className="bg-slate-950 border border-slate-800 p-5 rounded-xl space-y-4 relative">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                        <span className="text-xs font-bold text-amber-400">منصة تداول #{index + 1}</span>
+                        <span className="text-xs font-bold text-amber-400">منصة تداول / سوق مال #{index + 1}</span>
                         {tradingIntegrations.length > 1 && (
                           <button onClick={() => removeTradingIntegration(item.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
                             <Trash2 className="w-4 h-4" />
@@ -639,7 +838,7 @@ export default function ControlPanel() {
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                           <label className="block text-[11px] font-medium text-slate-400 mb-1">المنصة</label>
                           <select value={item.platform} onChange={(e) => {
@@ -648,8 +847,23 @@ export default function ControlPanel() {
                             setTradingIntegrations(updated);
                           }} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500">
                             <option value="tradingview">تريدينج فيو (TradingView)</option>
-                            <option value="binance">باينانس (Binance Futures)</option>
-                            <option value="metatrader">ميتا تريدر (MetaTrader)</option>
+                            <option value="binance">باينانس للعملات الرقمية (Binance Futures)</option>
+                            <option value="metatrader">ميتا تريدر (MetaTrader 4/5)</option>
+                            <option value="alpaca">ألبكا للأسواق الأمريكية (Alpaca Markets)</option>
+                            <option value="interactive_brokers">إنتربركتيف بروكرز (Interactive Brokers)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-medium text-slate-400 mb-1">نوع السوق / الأداة</label>
+                          <select value={item.marketType || 'crypto'} onChange={(e) => {
+                            const updated = [...tradingIntegrations];
+                            updated[index].marketType = e.target.value;
+                            setTradingIntegrations(updated);
+                          }} className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500">
+                            <option value="crypto">عملات رقمية (Crypto)</option>
+                            <option value="us_stocks">الأسهم الأمريكية (US Stocks / NASDAQ / NYSE)</option>
+                            <option value="forex">عملات أجنبية وفوركس (Forex)</option>
+                            <option value="commodities">معادن وسلع (Gold, Oil)</option>
                           </select>
                         </div>
                         <div>
@@ -658,7 +872,7 @@ export default function ControlPanel() {
                             const updated = [...tradingIntegrations];
                             updated[index].strategyName = e.target.value;
                             setTradingIntegrations(updated);
-                          }} placeholder="BTC_Breakout_Strategy" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500" />
+                          }} placeholder="AAPL_Breakout / BTC_Strategy" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500" />
                         </div>
                         <div>
                           <label className="block text-[11px] font-medium text-slate-400 mb-1">مفتاح السرية (Secret Key)</label>
@@ -671,6 +885,11 @@ export default function ControlPanel() {
                       </div>
                     </div>
                   ))}
+                </div>
+                <div className="flex justify-end pt-2">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                    <Save className="w-3.5 h-3.5" /> حفظ إعدادات التداول والأسواق
+                  </button>
                 </div>
               </div>
             </div>
@@ -740,6 +959,11 @@ export default function ControlPanel() {
                     </div>
                   ))}
                 </div>
+                <div className="flex justify-end pt-2">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                    <Save className="w-3.5 h-3.5" /> حفظ إعدادات المتاجر
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -796,6 +1020,11 @@ export default function ControlPanel() {
                     </div>
                   ))}
                 </div>
+                <div className="flex justify-end pt-2">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                    <Save className="w-3.5 h-3.5" /> حفظ إعدادات الشركات
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -836,7 +1065,7 @@ export default function ControlPanel() {
                   <label className="block text-xs text-slate-400 mb-1">اسم المسؤول عن الحساب</label>
                   <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="اسمك أو اسم المؤسسة" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs" />
                 </div>
-                <button onClick={saveUserDataToDB} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-medium shadow transition-colors">
+                <button onClick={() => saveUserDataToDB()} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-medium shadow transition-colors">
                   حفظ وتحديث قاعدة البيانات المستقلة
                 </button>
               </div>
