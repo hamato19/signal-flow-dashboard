@@ -121,11 +121,13 @@ export default function ControlPanel() {
   };
 
   const showNotification = (type, message) => {
+    const showNotification = (type: string, message: string) => {
     setNotification({ show: true, type, message });
     setTimeout(() => {
       setNotification({ show: false, type: 'info', message: '' });
     }, 3500);
   };
+
 
   const handleLogin = (e) => {
     e.preventDefault();
