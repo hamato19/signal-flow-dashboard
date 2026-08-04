@@ -294,10 +294,8 @@ export default function ControlPanel() {
   const loadUserData = async (userSlug: string) => {
     setIsLoading(true);
     try {
-      // محاكاة تحميل البيانات من API
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      // تحميل الإعدادات المحفوظة
       const savedSettings = localStorage.getItem(`settings_${userSlug}`);
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
@@ -343,8 +341,6 @@ export default function ControlPanel() {
       };
       
       localStorage.setItem(`settings_${slug}`, JSON.stringify(settings));
-      
-      // محاكاة حفظ في قاعدة البيانات
       await new Promise(resolve => setTimeout(resolve, 500));
       
       showNotification('success', 'تم حفظ جميع الإعدادات بنجاح!');
@@ -391,7 +387,7 @@ export default function ControlPanel() {
     showNotification('success', 'تم النسخ إلى الحافظة');
   };
 
-  // ===== إدارة القنوات =====
+  // ===== دوال إدارة القنوات =====
 
   const addChannel = (type: string) => {
     if (userPlan === 'free') {
@@ -413,7 +409,8 @@ export default function ControlPanel() {
       id: Date.now(),
       name: `قناة جديدة ${new Date().toLocaleDateString('ar-SA')}`,
       enabled: true,
-      status: 'disconnected' as const
+      status: 'disconnected' as const,
+      lastUsed: undefined
     };
 
     switch (type) {
@@ -446,7 +443,8 @@ export default function ControlPanel() {
         setDiscordChannels([...discordChannels, { 
           ...newChannel, 
           webhookUrl: '', 
-          serverName: 'سيرفر جديد' 
+          serverName: 'سيرفر جديد',
+          embedColor: '#5865F2'
         }]);
         break;
       case 'email':
@@ -465,7 +463,7 @@ export default function ControlPanel() {
   };
 
   const removeChannel = (type: string, id: string | number) => {
-    const setters = {
+    const setters: Record<string, React.Dispatch<React.SetStateAction<any>>> = {
       telegram: setTelegramChannels,
       whatsapp: setWhatsappChannels,
       slack: setSlackChannels,
@@ -473,7 +471,7 @@ export default function ControlPanel() {
       email: setEmailChannels
     };
 
-    const getters = {
+    const getters: Record<string, any[]> = {
       telegram: telegramChannels,
       whatsapp: whatsappChannels,
       slack: slackChannels,
@@ -481,11 +479,12 @@ export default function ControlPanel() {
       email: emailChannels
     };
 
-    const setter = setters[type as keyof typeof setters];
-    const channels = getters[type as keyof typeof getters];
+    const setter = setters[type];
+    const channels = getters[type];
 
     if (channels.length > 1) {
-      setter(channels.filter(c => c.id !== id));
+      const filtered = channels.filter((c: Channel) => c.id !== id);
+      setter(filtered);
       showNotification('info', 'تم حذف القناة بنجاح');
     } else {
       showNotification('warning', 'يجب الاحتفاظ بقناة واحدة على الأقل');
@@ -493,7 +492,7 @@ export default function ControlPanel() {
   };
 
   const toggleChannel = (type: string, id: string | number) => {
-    const setters = {
+    const setters: Record<string, React.Dispatch<React.SetStateAction<any>>> = {
       telegram: setTelegramChannels,
       whatsapp: setWhatsappChannels,
       slack: setSlackChannels,
@@ -501,7 +500,7 @@ export default function ControlPanel() {
       email: setEmailChannels
     };
 
-    const getters = {
+    const getters: Record<string, any[]> = {
       telegram: telegramChannels,
       whatsapp: whatsappChannels,
       slack: slackChannels,
@@ -509,10 +508,10 @@ export default function ControlPanel() {
       email: emailChannels
     };
 
-    const setter = setters[type as keyof typeof setters];
-    const channels = getters[type as keyof typeof getters];
+    const setter = setters[type];
+    const channels = getters[type];
 
-    setter(channels.map(c => 
+    setter(channels.map((c: Channel) => 
       c.id === id ? { ...c, enabled: !c.enabled } : c
     ));
   };
@@ -598,8 +597,14 @@ export default function ControlPanel() {
   }, [telegramChannels, whatsappChannels, slackChannels, discordChannels, emailChannels]);
 
   const activeChannels = useMemo(() => {
-    return [...telegramChannels, ...whatsappChannels, ...slackChannels, ...discordChannels, ...emailChannels]
-      .filter(c => c.enabled).length;
+    const allChannels = [
+      ...telegramChannels, 
+      ...whatsappChannels, 
+      ...slackChannels, 
+      ...discordChannels, 
+      ...emailChannels
+    ];
+    return allChannels.filter(c => c.enabled).length;
   }, [telegramChannels, whatsappChannels, slackChannels, discordChannels, emailChannels]);
 
   const connectedStores = useMemo(() => {
@@ -665,6 +670,149 @@ export default function ControlPanel() {
       </div>
     );
   }
+
+  // ============================================
+  // مكون ChannelSection المساعد (داخل المكون الرئيسي)
+  // ============================================
+
+  const ChannelSection = ({ 
+    title, 
+    icon: Icon, 
+    color, 
+    channels, 
+    setChannels, 
+    onAdd, 
+    onRemove, 
+    onToggle, 
+    renderFields 
+  }: {
+    title: string;
+    icon: React.ElementType;
+    color: string;
+    channels: any[];
+    setChannels: React.Dispatch<React.SetStateAction<any[]>>;
+    onAdd: () => void;
+    onRemove: (id: string | number) => void;
+    onToggle: (id: string | number) => void;
+    renderFields: (channel: any, index: number, updateChannel: (updated: any) => void) => React.ReactNode;
+  }) => {
+    const colorClasses: Record<string, string> = {
+      blue: 'bg-blue-600/10 border-blue-500/20 text-blue-400',
+      emerald: 'bg-emerald-600/10 border-emerald-500/20 text-emerald-400',
+      amber: 'bg-amber-600/10 border-amber-500/20 text-amber-400',
+      indigo: 'bg-indigo-600/10 border-indigo-500/20 text-indigo-400',
+      rose: 'bg-rose-600/10 border-rose-500/20 text-rose-400',
+    };
+
+    const addButtonColors: Record<string, string> = {
+      blue: 'bg-blue-600 hover:bg-blue-500',
+      emerald: 'bg-emerald-600 hover:bg-emerald-500',
+      amber: 'bg-amber-600 hover:bg-amber-500',
+      indigo: 'bg-indigo-600 hover:bg-indigo-500',
+      rose: 'bg-rose-600 hover:bg-rose-500',
+    };
+
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className={`${colorClasses[color] || colorClasses.blue} p-2.5 rounded-xl`}>
+              <Icon className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-slate-200">{title}</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {channels.filter((c: Channel) => c.enabled).length} قناة نشطة
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={onAdd}
+            className={`${addButtonColors[color] || addButtonColors.blue} text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors shadow-lg`}
+          >
+            <Plus className="w-4 h-4" /> إضافة قناة
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {channels.map((channel, index) => (
+            <div 
+              key={channel.id} 
+              className={`bg-slate-950 border p-4 rounded-xl space-y-3 transition-colors ${
+                channel.enabled ? 'border-slate-800' : 'border-slate-800/50 opacity-60'
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <input 
+                    type="text" 
+                    value={channel.name}
+                    onChange={(e) => {
+                      const updated = [...channels];
+                      updated[index].name = e.target.value;
+                      setChannels(updated);
+                    }}
+                    className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1 text-xs font-medium focus:outline-none focus:border-blue-500 w-40"
+                  />
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                    channel.status === 'connected' 
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                      : channel.status === 'error'
+                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                      : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                  }`}>
+                    {channel.status === 'connected' ? '✅ متصل' : 
+                     channel.status === 'error' ? '⚠️ خطأ' : '⏳ غير متصل'}
+                  </span>
+                  {channel.lastUsed && (
+                    <span className="text-[10px] text-slate-500">
+                      آخر استخدام: {new Date(channel.lastUsed).toLocaleTimeString('ar-SA')}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => onToggle(channel.id)}
+                    className={`p-1.5 rounded-lg transition-colors ${
+                      channel.enabled 
+                        ? 'text-emerald-400 hover:bg-emerald-500/10' 
+                        : 'text-slate-500 hover:bg-slate-800'
+                    }`}
+                  >
+                    {channel.enabled ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={() => {
+                      const updated = [...channels];
+                      updated[index].status = 'connected';
+                      updated[index].lastUsed = new Date().toISOString();
+                      setChannels(updated);
+                      showNotification('success', 'تم تحديث حالة القناة');
+                    }}
+                    className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors text-blue-400"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => onRemove(channel.id)}
+                    className="p-1.5 hover:bg-rose-500/10 rounded-lg transition-colors text-rose-400"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {renderFields(channel, index, (updated) => {
+                const newChannels = [...channels];
+                newChannels[index] = updated;
+                setChannels(newChannels);
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   // ============================================
   // الواجهة الرئيسية
@@ -745,7 +893,7 @@ export default function ControlPanel() {
                   </div>
                   {userPlan !== 'enterprise' && (
                     <button 
-                      onClick={() => {}} 
+                      onClick={() => {}}
                       className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[10px] px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1 shadow-lg shadow-blue-600/20"
                     >
                       <Sparkles className="w-3 h-3" /> ترقية
@@ -911,7 +1059,7 @@ export default function ControlPanel() {
                   },
                 ].map((stat, index) => {
                   const Icon = stat.icon;
-                  const colorClasses = {
+                  const colorClasses: Record<string, string> = {
                     blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
                     emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
                     purple: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
@@ -931,7 +1079,7 @@ export default function ControlPanel() {
                           <h4 className="text-2xl font-bold mt-1 text-slate-100">{stat.value}</h4>
                           <p className="text-[10px] text-emerald-400 mt-1">{stat.change}</p>
                         </div>
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${colorClasses[stat.color as keyof typeof colorClasses]}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${colorClasses[stat.color]}`}>
                           <Icon className="w-4 h-4" />
                         </div>
                       </div>
@@ -1046,26 +1194,13 @@ export default function ControlPanel() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] text-slate-400 mb-1">Bot Token</label>
-                        <div className="relative">
-                          <input 
-                            type="password" 
-                            value={channel.token}
-                            onChange={(e) => updateChannel({ ...channel, token: e.target.value })}
-                            placeholder="123456789:ABC..."
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 pr-8"
-                          />
-                          <button 
-                            className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                            onClick={() => {
-                              const input = document.querySelector(`#token-${channel.id}`) as HTMLInputElement;
-                              if (input) {
-                                input.type = input.type === 'password' ? 'text' : 'password';
-                              }
-                            }}
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <input 
+                          type="password" 
+                          value={channel.token}
+                          onChange={(e) => updateChannel({ ...channel, token: e.target.value })}
+                          placeholder="123456789:ABC..."
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500"
+                        />
                       </div>
                       <div>
                         <label className="block text-[10px] text-slate-400 mb-1">Chat ID</label>
@@ -1487,7 +1622,7 @@ export default function ControlPanel() {
                       </div>
 
                       <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800/60 flex flex-wrap items-center justify-between gap-3">
-                        <div className="text-xs text-slate-400 flex items-center gap-2">
+                                                <div className="text-xs text-slate-400 flex items-center gap-2">
                           <span className="font-semibold text-slate-300">Webhook المخصص:</span>
                           <code className="text-purple-400 font-mono bg-slate-950 px-2 py-1 rounded">
                             {webhookUrl}/store/{store.id}
@@ -1948,6 +2083,29 @@ export default function ControlPanel() {
                     إعادة تعيين
                   </button>
                 </div>
+
+                {/* معلومات إضافية */}
+                <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-800">
+                  <h4 className="text-xs font-semibold text-slate-400 mb-2">📌 معلومات الحساب</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">معرف الحساب (Slug)</span>
+                      <span className="text-blue-400 font-mono">{slug}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">عدد القنوات</span>
+                      <span className="text-slate-300">{totalChannels}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">المتاجر المتصلة</span>
+                      <span className="text-slate-300">{connectedStores}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">قواعد التوجيه</span>
+                      <span className="text-slate-300">{routingRules.length}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -1956,149 +2114,4 @@ export default function ControlPanel() {
       </main>
     </div>
   );
-}
-
-// ============================================
-// مكون عرض القناة المساعد
-// ============================================
-
-interface ChannelSectionProps<T> {
-  title: string;
-  icon: React.ElementType;
-  color: string;
-  channels: T[];
-  setChannels: React.Dispatch<React.SetStateAction<T[]>>;
-  onAdd: () => void;
-  onRemove: (id: string | number) => void;
-  onToggle: (id: string | number) => void;
-  renderFields: (channel: T, index: number, updateChannel: (updated: T) => void) => React.ReactNode;
-}
-
-function ChannelSection<T extends Channel>({
-  title,
-  icon: Icon,
-  color,
-  channels,
-  setChannels,
-  onAdd,
-  onRemove,
-  onToggle,
-  renderFields
-}: ChannelSectionProps<T>) {
-  const colorClasses = {
-    blue: 'bg-blue-600/10 border-blue-500/20 text-blue-400',
-    emerald: 'bg-emerald-600/10 border-emerald-500/20 text-emerald-400',
-    amber: 'bg-amber-600/10 border-amber-500/20 text-amber-400',
-    indigo: 'bg-indigo-600/10 border-indigo-500/20 text-indigo-400',
-    rose: 'bg-rose-600/10 border-rose-500/20 text-rose-400',
-  };
-
-  const addButtonColors = {
-    blue: 'bg-blue-600 hover:bg-blue-500',
-    emerald: 'bg-emerald-600 hover:bg-emerald-500',
-    amber: 'bg-amber-600 hover:bg-amber-500',
-    indigo: 'bg-indigo-600 hover:bg-indigo-500',
-    rose: 'bg-rose-600 hover:bg-rose-500',
-  };
-
-  return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className={`${colorClasses[color as keyof typeof colorClasses]} p-2.5 rounded-xl`}>
-            <Icon className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="font-bold text-sm text-slate-200">{title}</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {channels.filter(c => c.enabled).length} قناة نشطة
-            </p>
-          </div>
-        </div>
-        <button 
-          onClick={onAdd}
-          className={`${addButtonColors[color as keyof typeof addButtonColors]} text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors shadow-lg shadow-${color}-600/20`}
-        >
-          <Plus className="w-4 h-4" /> إضافة قناة
-        </button>
-      </div>
-
-      <div className="space-y-3">
-        {channels.map((channel, index) => (
-          <div 
-            key={channel.id} 
-            className={`bg-slate-950 border p-4 rounded-xl space-y-3 transition-colors ${
-              channel.enabled ? 'border-slate-800' : 'border-slate-800/50 opacity-60'
-            }`}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <input 
-                  type="text" 
-                  value={channel.name}
-                  onChange={(e) => {
-                    const updated = [...channels];
-                    updated[index].name = e.target.value;
-                    setChannels(updated);
-                  }}
-                  className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1 text-xs font-medium focus:outline-none focus:border-blue-500 w-40"
-                />
-                <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                  channel.status === 'connected' 
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                    : channel.status === 'error'
-                    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                    : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
-                }`}>
-                  {channel.status === 'connected' ? '✅ متصل' : 
-                   channel.status === 'error' ? '⚠️ خطأ' : '⏳ غير متصل'}
-                </span>
-                {channel.lastUsed && (
-                  <span className="text-[10px] text-slate-500">
-                    آخر استخدام: {new Date(channel.lastUsed).toLocaleTimeString('ar-SA')}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => onToggle(channel.id)}
-                  className={`p-1.5 rounded-lg transition-colors ${
-                    channel.enabled 
-                      ? 'text-emerald-400 hover:bg-emerald-500/10' 
-                      : 'text-slate-500 hover:bg-slate-800'
-                  }`}
-                >
-                  {channel.enabled ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
-                </button>
-                <button
-                  onClick={() => {
-                    const updated = [...channels];
-                    updated[index].status = 'connected';
-                    updated[index].lastUsed = new Date().toISOString();
-                    setChannels(updated);
-                    // إظهار إشعار نجاح
-                  }}
-                  className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors text-blue-400"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => onRemove(channel.id)}
-                  className="p-1.5 hover:bg-rose-500/10 rounded-lg transition-colors text-rose-400"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {renderFields(channel, index, (updated) => {
-              const newChannels = [...channels];
-              newChannels[index] = updated;
-              setChannels(newChannels);
-            })}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+                        }
