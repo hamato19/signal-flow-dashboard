@@ -1,19 +1,30 @@
-import { NextResponse } from 'next/server';
-import { Pool } from '@neondatabase/serverless';
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  const client = await pool.connect();
+  let client;
   try {
     const resolvedParams = await params;
     const { slug } = resolvedParams;
-    const body = await request.json();
+
+    // قراءة نص الطلب أولاً بدلاً من request.json مباشرة لمنع الانهيار
+    const rawText = await request.text();
+    let body: any = {};
+    
+    if (rawText && rawText.trim() !== '') {
+      try {
+        body = JSON.parse(rawText);
+      } catch (parseError) {
+        // إذا لم يكن النص بصيغة JSON صحيحة، نعتبره رسالة نصية مباشرة
+        body = { message: rawText };
+      }
+    } else {
+      body = { message: "طلب ويب هوك فارغ بدون محتوى" };
+    }
 
     console.log(`[Webhook] Receiving request for slug: ${slug}`);
+
+    client = await pool.connect();
 
     // جلب كافة إعدادات ومعرفات المستخدم من قاعدة البيانات
     const res = await client.query(
@@ -37,7 +48,7 @@ export async function POST(
     let sentAny = false;
     let lastError = '';
 
-    // 1. الإرسال عبر تليجرام (بدون استخدام parse_mode لتجنب مشاكل الرموز الخاصة)
+    // 1. الإرسال عبر تليجرام
     if (settings.telegram_token && settings.telegram_chat_id) {
       const tgRes = await fetch(`https://api.telegram.org/bot${settings.telegram_token}/sendMessage`, {
         method: 'POST',
@@ -57,7 +68,7 @@ export async function POST(
       }
     }
 
-    // 2. الإرسال عبر ديسكورد إذا كان رابط الويب هوك موجوداً
+    // 2. الإرسال عبر ديسكورد
     if (settings.discord_webhook) {
       const discordRes = await fetch(settings.discord_webhook, {
         method: 'POST',
@@ -85,6 +96,8 @@ export async function POST(
     console.error('[Webhook Exception]:', error.message);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   } finally {
-    client.release();
+    if (client) {
+      client.release();
+    }
   }
 }
