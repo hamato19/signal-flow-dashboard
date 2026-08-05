@@ -46,17 +46,24 @@ export async function POST(
     }
 
     const settings = res.rows[0];
+    
+    // طباعة كامل محتوى السجل في الـ Logs لتتمكن من رؤيته بوضوح على Render
+    console.log('[Webhook Debug] Full User Settings from DB:', JSON.stringify(settings, null, 2));
+
     const messageText = body.message || JSON.stringify(body, null, 2);
     let sentAny = false;
     let lastError = '';
 
-    // 1. الإرسال عبر قنوات تليجرام المخزنة في مصفوفة JSONB
-    const telegramChannels = settings.telegram_channels || [];
+    // جلب القنوات بشكل مرن (سواء كانت في telegram_channels أو أعمدة أخرى)
+    const telegramChannels = settings.telegram_channels || settings.telegramChannels || [];
+    
     if (Array.isArray(telegramChannels) && telegramChannels.length > 0) {
       for (const channel of telegramChannels) {
-        // التحقق من الحقول داخل المصفوفة (حسب ما يتم حفظه من الواجهة: botToken و chatId أو ما شابه)
-        const token = channel.botToken || channel.token || channel.telegram_token;
-        const chatId = channel.chatId || channel.chat_id;
+        // البحث عن التوكن والـ Chat ID بأي اسم محتمل للمفتاح
+        const token = channel.botToken || channel.token || channel.bot_token || channel.telegram_token || channel.apiKey;
+        const chatId = channel.chatId || channel.chat_id || channel.id;
+
+        console.log('[Telegram Parsed Channel]:', { hasToken: !!token, hasChatId: !!chatId, channelData: channel });
 
         if (token && chatId) {
           try {
@@ -84,10 +91,8 @@ export async function POST(
       }
     }
 
-    // 2. الإرسال عبر ديسكورد (إذا كانت مخزنة كمصفوفة أو نص مفرد)
-    const discordChannels = settings.discord_channels || [];
-    const discordWebhookUrl = settings.discord_webhook || (Array.isArray(discordChannels) && discordChannels[0]?.webhookUrl);
-    
+    // ديسكورد
+    const discordWebhookUrl = settings.discord_webhook || settings.discordWebhook;
     if (discordWebhookUrl) {
       try {
         const discordRes = await fetch(discordWebhookUrl, {
@@ -112,7 +117,7 @@ export async function POST(
     if (!sentAny) {
       return NextResponse.json({ 
         success: false, 
-        error: lastError || 'لم يتم العثور على قنوات تليجرام مفعلة تحتوي على Bot Token و Chat ID صالحين' 
+        error: lastError || 'لم يتم العثور على توكن تليجرام أو شات آي دي صالحين داخل مصفوفة القنوات' 
       }, { status: 400 });
     }
 
