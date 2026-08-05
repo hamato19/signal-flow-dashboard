@@ -1,32 +1,20 @@
 import { NextResponse } from 'next/server';
-import { Pool } from 'pg';
+import { neon } from '@neondatabase/serverless';
 
-// إعداد الاتصال بقاعدة بيانات Neon
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+// إنشاء دالة الاتصال باستخدام Neon Serverless
+const sql = neon(process.env.DATABASE_URL!);
 
-// دالة لجلب إعدادات المستخدم (GET)
+// جلب إعدادات المستخدم (GET)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId') || 'default_user'; // استبدل بآلية المصвідقة الحقيقية لديك (NextAuth / Clert إلخ)
+    const userId = searchParams.get('userId') || 'default_user';
 
-    const client = await pool.connect();
-    
-    // جلب البيانات من جدول الإعدادات
-    const result = await client.query(
-      'SELECT settings_data FROM user_settings WHERE user_id = $1',
-      [userId]
-    );
-    
-    client.release();
+    const result = await sql`
+      SELECT settings_data FROM user_settings WHERE user_id = ${userId}
+    `;
 
-    if (result.rows.length === 0) {
-      // إرجاع هيكل افتراضي في حال عدم وجود سجل سابق
+    if (result.length === 0) {
       return NextResponse.json({
         success: true,
         settings: {
@@ -45,7 +33,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      settings: result.rows[0].settings_data,
+      settings: result[0].settings_data,
     });
 
   } catch (error: any) {
@@ -57,7 +45,7 @@ export async function GET(request: Request) {
   }
 }
 
-// دالة لحفظ أو تحديث إعدادات المستخدم (POST / PUT)
+// حفظ أو تحديث إعدادات المستخدم (POST)
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -70,12 +58,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const client = await pool.connect();
-
-    // استخدام صيغة Upsert (الإدخال أو التحديث تلقائياً في حال وجود المستخدم)
-    const query = `
+    // إدخال أو تحديث البيانات باستخدام صيغة Upsert المتوافقة مع Neon
+    const result = await sql`
       INSERT INTO user_settings (user_id, settings_data, updated_at)
-      VALUES ($1, $2, NOW())
+      VALUES (${userId}, ${JSON.stringify(settings)}::jsonb, NOW())
       ON CONFLICT (user_id)
       DO UPDATE SET 
         settings_data = EXCLUDED.settings_data,
@@ -83,13 +69,10 @@ export async function POST(request: Request) {
       RETURNING *;
     `;
 
-    const result = await client.query(query, [userId, JSON.stringify(settings)]);
-    client.release();
-
     return NextResponse.json({
       success: true,
       message: 'Settings saved successfully',
-      data: result.rows[0],
+      data: result[0],
     });
 
   } catch (error: any) {
