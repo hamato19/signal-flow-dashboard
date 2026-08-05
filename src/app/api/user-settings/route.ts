@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
-import pool from '@/lib/db'; // استيراد اتصال قاعدة البيانات الموحد
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import ws from 'ws';
+
+neonConfig.webSocketConstructor = ws;
+
+// إنشاء بركة الاتصالات مباشرة داخل الملف لمنع مشاكل المسارات
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 // دالة لجلب إعدادات المستخدم بناءً على الـ slug
 export async function GET(request: Request) {
@@ -54,7 +60,6 @@ export async function POST(request: Request) {
 
     client = await pool.connect();
 
-    // استخدام جملة UPSERT (INSERT مع ON CONFLICT) للحفظ أو التحديث المباشر
     await client.query(`
       INSERT INTO user_settings (
         slug, username, user_plan, telegram_channels, whatsapp_channels, 
