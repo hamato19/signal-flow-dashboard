@@ -107,7 +107,7 @@ export async function POST(request: Request) {
         ]
       );
     } else {
-      // إدخال جديد
+      // إدخال جديد (تم تصحيح مصفوفة القيم لتشمل slug كأول عنصر مطابق لـ 32 عموداً)
       await client.query(
         `INSERT INTO user_settings 
          (slug, username, email, timezone, language, telegram_token, telegram_chat_id, telegram_parse_mode, 
@@ -128,7 +128,7 @@ export async function POST(request: Request) {
           JSON.stringify(routing_rules || []),
           JSON.stringify(templates || []),
           JSON.stringify(logs || []),
-          JSON.stringify(analytics || {}),
+          JSON.stringify(analytics || {})
         ]
       );
     }
