@@ -20,9 +20,9 @@ export default function ControlPanel() {
   // Subscription & Plan State (Free / Pro)
   const [userPlan, setUserPlan] = useState('free'); // 'free' or 'pro'
   
-  // Channels State (Telegram, WhatsApp, Slack, Discord, Email, SMS)
+  // Channels State (مطابقة تماماً للمفاتيح التي يتوقعها السيرفر: botToken, chatId)
   const [telegramChannels, setTelegramChannels] = useState([
-    { id: 1, token: '', chatId: '', name: 'قناة تلجرام الرئيسية' }
+    { id: 1, botToken: '', chatId: '', name: 'قناة تلجرام الرئيسية' }
   ]);
 
   const [whatsappChannels, setWhatsappChannels] = useState([
@@ -51,7 +51,7 @@ export default function ControlPanel() {
     { id: 1, platform: 'salla', storeName: '', apiKey: '', webhookSecret: '', status: 'disconnected' }
   ]);
 
-  // Trading & Financial Integration State (TradingView, Binance, MetaTrader, US Markets)
+  // Trading & Financial Integration State
   const [tradingIntegrations, setTradingIntegrations] = useState([
     { id: 1, platform: 'tradingview', strategyName: '', secretKey: '', actionType: 'alert', marketType: 'crypto' }
   ]);
@@ -94,15 +94,15 @@ export default function ControlPanel() {
       
       if (result.success && result.data) {
         const data = result.data;
-        if (data.telegram_channels) setTelegramChannels(data.telegram_channels);
-        if (data.whatsapp_channels) setWhatsappChannels(data.whatsapp_channels);
-        if (data.slack_channels) setSlackChannels(data.slack_channels);
-        if (data.discord_channels) setDiscordChannels(data.discord_channels);
-        if (data.email_channels) setEmailChannels(data.email_channels);
-        if (data.sms_channels) setSmsChannels(data.sms_channels);
-        if (data.stores) setStores(data.stores);
-        if (data.trading_integrations) setTradingIntegrations(data.trading_integrations);
-        if (data.enterprise_teams) setEnterpriseTeams(data.enterprise_teams);
+        if (data.telegram_channels && data.telegram_channels.length > 0) setTelegramChannels(data.telegram_channels);
+        if (data.whatsapp_channels && data.whatsapp_channels.length > 0) setWhatsappChannels(data.whatsapp_channels);
+        if (data.slack_channels && data.slack_channels.length > 0) setSlackChannels(data.slack_channels);
+        if (data.discord_channels && data.discord_channels.length > 0) setDiscordChannels(data.discord_channels);
+        if (data.email_channels && data.email_channels.length > 0) setEmailChannels(data.email_channels);
+        if (data.sms_channels && data.sms_channels.length > 0) setSmsChannels(data.sms_channels);
+        if (data.stores && data.stores.length > 0) setStores(data.stores);
+        if (data.trading_integrations && data.trading_integrations.length > 0) setTradingIntegrations(data.trading_integrations);
+        if (data.enterprise_teams && data.enterprise_teams.length > 0) setEnterpriseTeams(data.enterprise_teams);
         if (data.user_plan) setUserPlan(data.user_plan);
         if (data.username) setUsername(data.username);
       }
@@ -112,7 +112,7 @@ export default function ControlPanel() {
     }
   };
 
-  // دالة حفظ البيانات الشاملة أو المخصصة في قاعدة بيانات Neon عبر الـ API
+  // دالة حفظ البيانات الشاملة أو المخصصة في قاعدة البيانات عبر الـ API
   const saveUserDataToDB = async (customPayload?: any) => {
     if (!slug) return;
     
@@ -140,7 +140,7 @@ export default function ControlPanel() {
       
       const result = await res.json();
       if (result.success) {
-        showNotification('success', 'تم حفظ وتحديث البيانات في قاعدة بيانات Neon بنجاح');
+        showNotification('success', 'تم حفظ وتحديث البيانات في قاعدة البيانات بنجاح');
       } else {
         showNotification('error', `فشل الحفظ: ${result.error}`);
       }
@@ -189,7 +189,7 @@ export default function ControlPanel() {
     }
 
     if (type === 'telegram') {
-      setTelegramChannels([...telegramChannels, { id: Date.now(), token: '', chatId: '', name: `قناة تلجرام ${telegramChannels.length + 1}` }]);
+      setTelegramChannels([...telegramChannels, { id: Date.now(), botToken: '', chatId: '', name: `قناة تلجرام ${telegramChannels.length + 1}` }]);
     } else if (type === 'whatsapp') {
       setWhatsappChannels([...whatsappChannels, { id: Date.now(), phoneNumberId: '', accessToken: '', recipientPhone: '', name: `رقم واتساب ${whatsappChannels.length + 1}` }]);
     } else if (type === 'slack') {
@@ -217,10 +217,6 @@ export default function ControlPanel() {
   };
 
   const addStoreIntegration = () => {
-    if (userPlan === 'free' && stores.length >= 1) {
-      showNotification('error', 'الخطة المجانية تتيح ربط متجر واحد فقط. قم بالترقية لربط متاجر غير محدودة!');
-      return;
-    }
     setStores([...stores, { id: Date.now(), platform: 'salla', storeName: '', apiKey: '', webhookSecret: '', status: 'disconnected' }]);
     showNotification('success', 'تمت إضافة نموذج ربط متجر جديد');
   };
@@ -440,7 +436,7 @@ export default function ControlPanel() {
           {activeTab === 'integrations' && (
             <div className="space-y-6">
               
-              {/* Telegram */}
+              {/* Telegram (مصحح ليستخدم botToken بدلاً من token) */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -469,15 +465,15 @@ export default function ControlPanel() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">Bot Token</label>
-                          <input type="password" value={channel.token} onChange={(e) => {
+                          <input type="password" value={channel.botToken || ''} onChange={(e) => {
                             const updated = [...telegramChannels];
-                            updated[index].token = e.target.value;
+                            updated[index].botToken = e.target.value;
                             setTelegramChannels(updated);
                           }} placeholder="123456789:ABC..." className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500" />
                         </div>
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">Chat ID</label>
-                          <input type="text" value={channel.chatId} onChange={(e) => {
+                          <input type="text" value={channel.chatId || ''} onChange={(e) => {
                             const updated = [...telegramChannels];
                             updated[index].chatId = e.target.value;
                             setTelegramChannels(updated);
@@ -523,7 +519,7 @@ export default function ControlPanel() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">Phone Number ID</label>
-                          <input type="text" value={channel.phoneNumberId} onChange={(e) => {
+                          <input type="text" value={channel.phoneNumberId || ''} onChange={(e) => {
                             const updated = [...whatsappChannels];
                             updated[index].phoneNumberId = e.target.value;
                             setWhatsappChannels(updated);
@@ -531,7 +527,7 @@ export default function ControlPanel() {
                         </div>
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">Access Token</label>
-                          <input type="password" value={channel.accessToken} onChange={(e) => {
+                          <input type="password" value={channel.accessToken || ''} onChange={(e) => {
                             const updated = [...whatsappChannels];
                             updated[index].accessToken = e.target.value;
                             setWhatsappChannels(updated);
@@ -539,7 +535,7 @@ export default function ControlPanel() {
                         </div>
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">رقم المستلم / المجموعات</label>
-                          <input type="text" value={channel.recipientPhone} onChange={(e) => {
+                          <input type="text" value={channel.recipientPhone || ''} onChange={(e) => {
                             const updated = [...whatsappChannels];
                             updated[index].recipientPhone = e.target.value;
                             setWhatsappChannels(updated);
@@ -585,7 +581,7 @@ export default function ControlPanel() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">Discord Webhook URL</label>
-                          <input type="password" value={discord.webhookUrl} onChange={(e) => {
+                          <input type="password" value={discord.webhookUrl || ''} onChange={(e) => {
                             const updated = [...discordChannels];
                             updated[index].webhookUrl = e.target.value;
                             setDiscordChannels(updated);
@@ -593,7 +589,7 @@ export default function ControlPanel() {
                         </div>
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">اسم السيرفر / القناة</label>
-                          <input type="text" value={discord.serverName} onChange={(e) => {
+                          <input type="text" value={discord.serverName || ''} onChange={(e) => {
                             const updated = [...discordChannels];
                             updated[index].serverName = e.target.value;
                             setDiscordChannels(updated);
@@ -639,7 +635,7 @@ export default function ControlPanel() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">Slack Webhook URL</label>
-                          <input type="password" value={slack.webhookUrl} onChange={(e) => {
+                          <input type="password" value={slack.webhookUrl || ''} onChange={(e) => {
                             const updated = [...slackChannels];
                             updated[index].webhookUrl = e.target.value;
                             setSlackChannels(updated);
@@ -647,7 +643,7 @@ export default function ControlPanel() {
                         </div>
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">اسم القناة (#channel)</label>
-                          <input type="text" value={slack.channelName} onChange={(e) => {
+                          <input type="text" value={slack.channelName || ''} onChange={(e) => {
                             const updated = [...slackChannels];
                             updated[index].channelName = e.target.value;
                             setSlackChannels(updated);
@@ -693,7 +689,7 @@ export default function ControlPanel() {
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">SMTP Host</label>
-                          <input type="text" value={email.smtpHost} onChange={(e) => {
+                          <input type="text" value={email.smtpHost || ''} onChange={(e) => {
                             const updated = [...emailChannels];
                             updated[index].smtpHost = e.target.value;
                             setEmailChannels(updated);
@@ -701,7 +697,7 @@ export default function ControlPanel() {
                         </div>
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">SMTP User</label>
-                          <input type="text" value={email.smtpUser} onChange={(e) => {
+                          <input type="text" value={email.smtpUser || ''} onChange={(e) => {
                             const updated = [...emailChannels];
                             updated[index].smtpUser = e.target.value;
                             setEmailChannels(updated);
@@ -709,7 +705,7 @@ export default function ControlPanel() {
                         </div>
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">SMTP Pass</label>
-                          <input type="password" value={email.smtpPass} onChange={(e) => {
+                          <input type="password" value={email.smtpPass || ''} onChange={(e) => {
                             const updated = [...emailChannels];
                             updated[index].smtpPass = e.target.value;
                             setEmailChannels(updated);
@@ -717,7 +713,7 @@ export default function ControlPanel() {
                         </div>
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">البريد المستلم</label>
-                          <input type="email" value={email.recipientEmail} onChange={(e) => {
+                          <input type="email" value={email.recipientEmail || ''} onChange={(e) => {
                             const updated = [...emailChannels];
                             updated[index].recipientEmail = e.target.value;
                             setEmailChannels(updated);
@@ -768,7 +764,7 @@ export default function ControlPanel() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">مزود الخدمة</label>
-                          <select value={sms.provider} onChange={(e) => {
+                          <select value={sms.provider || 'taqnyat'} onChange={(e) => {
                             const updated = [...smsChannels];
                             updated[index].provider = e.target.value;
                             setSmsChannels(updated);
@@ -780,7 +776,7 @@ export default function ControlPanel() {
                         </div>
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">API Key / Token</label>
-                          <input type="password" value={sms.apiKey} onChange={(e) => {
+                          <input type="password" value={sms.apiKey || ''} onChange={(e) => {
                             const updated = [...smsChannels];
                             updated[index].apiKey = e.target.value;
                             setSmsChannels(updated);
@@ -788,7 +784,7 @@ export default function ControlPanel() {
                         </div>
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">اسم المرسل (Sender Name)</label>
-                          <input type="text" value={sms.senderName} onChange={(e) => {
+                          <input type="text" value={sms.senderName || ''} onChange={(e) => {
                             const updated = [...smsChannels];
                             updated[index].senderName = e.target.value;
                             setSmsChannels(updated);
@@ -841,7 +837,7 @@ export default function ControlPanel() {
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                           <label className="block text-[11px] font-medium text-slate-400 mb-1">المنصة</label>
-                          <select value={item.platform} onChange={(e) => {
+                          <select value={item.platform || 'tradingview'} onChange={(e) => {
                             const updated = [...tradingIntegrations];
                             updated[index].platform = e.target.value;
                             setTradingIntegrations(updated);
@@ -859,7 +855,7 @@ export default function ControlPanel() {
                             const updated = [...tradingIntegrations];
                             updated[index].marketType = e.target.value;
                             setTradingIntegrations(updated);
-                          }} className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500">
+                          }} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500">
                             <option value="crypto">عملات رقمية (Crypto)</option>
                             <option value="us_stocks">الأسهم الأمريكية (US Stocks / NASDAQ / NYSE)</option>
                             <option value="forex">عملات أجنبية وفوركس (Forex)</option>
@@ -868,7 +864,7 @@ export default function ControlPanel() {
                         </div>
                         <div>
                           <label className="block text-[11px] font-medium text-slate-400 mb-1">اسم الاستراتيجية / الحساب</label>
-                          <input type="text" value={item.strategyName} onChange={(e) => {
+                          <input type="text" value={item.strategyName || ''} onChange={(e) => {
                             const updated = [...tradingIntegrations];
                             updated[index].strategyName = e.target.value;
                             setTradingIntegrations(updated);
@@ -876,7 +872,7 @@ export default function ControlPanel() {
                         </div>
                         <div>
                           <label className="block text-[11px] font-medium text-slate-400 mb-1">مفتاح السرية (Secret Key)</label>
-                          <input type="password" value={item.secretKey} onChange={(e) => {
+                          <input type="password" value={item.secretKey || ''} onChange={(e) => {
                             const updated = [...tradingIntegrations];
                             updated[index].secretKey = e.target.value;
                             setTradingIntegrations(updated);
@@ -929,7 +925,7 @@ export default function ControlPanel() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <label className="block text-[11px] font-medium text-slate-400 mb-1">منصة المتجر</label>
-                          <select value={store.platform} onChange={(e) => {
+                          <select value={store.platform || 'salla'} onChange={(e) => {
                             const updated = [...stores];
                             updated[index].platform = e.target.value;
                             setStores(updated);
@@ -941,7 +937,7 @@ export default function ControlPanel() {
                         </div>
                         <div>
                           <label className="block text-[11px] font-medium text-slate-400 mb-1">اسم المتجر</label>
-                          <input type="text" value={store.storeName} onChange={(e) => {
+                          <input type="text" value={store.storeName || ''} onChange={(e) => {
                             const updated = [...stores];
                             updated[index].storeName = e.target.value;
                             setStores(updated);
@@ -949,7 +945,7 @@ export default function ControlPanel() {
                         </div>
                         <div>
                           <label className="block text-[11px] font-medium text-slate-400 mb-1">مفتاح API</label>
-                          <input type="password" value={store.apiKey} onChange={(e) => {
+                          <input type="password" value={store.apiKey || ''} onChange={(e) => {
                             const updated = [...stores];
                             updated[index].apiKey = e.target.value;
                             setStores(updated);
@@ -1002,7 +998,7 @@ export default function ControlPanel() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-[11px] font-medium text-slate-400 mb-1">اسم الشركة</label>
-                          <input type="text" value={team.companyName} onChange={(e) => {
+                          <input type="text" value={team.companyName || ''} onChange={(e) => {
                             const updated = [...enterpriseTeams];
                             updated[index].companyName = e.target.value;
                             setEnterpriseTeams(updated);
@@ -1010,7 +1006,7 @@ export default function ControlPanel() {
                         </div>
                         <div>
                           <label className="block text-[11px] font-medium text-slate-400 mb-1">القسم الداخلي</label>
-                          <input type="text" value={team.department} onChange={(e) => {
+                          <input type="text" value={team.department || ''} onChange={(e) => {
                             const updated = [...enterpriseTeams];
                             updated[index].department = e.target.value;
                             setEnterpriseTeams(updated);
@@ -1063,7 +1059,7 @@ export default function ControlPanel() {
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">اسم المسؤول عن الحساب</label>
-                  <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="اسمك أو اسم المؤسسة" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs" />
+                  <input type="text" value={username || ''} onChange={(e) => setUsername(e.target.value)} placeholder="اسمك أو اسم المؤسسة" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs" />
                 </div>
                 <button onClick={() => saveUserDataToDB()} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-medium shadow transition-colors">
                   حفظ وتحديث قاعدة البيانات المستقلة
