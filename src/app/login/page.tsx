@@ -1,7 +1,7 @@
 "use client";
 
-import React,مع, { useState } from 'react';
-import { Webhook, Lock, Mail, ArrowRight, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Webhook, Lock, Mail, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -17,7 +17,6 @@ export default function LoginPage() {
     setErrorMsg('');
 
     try {
-      // استبدل هذا الرابط برابط الـ API الفعلي الخاص بتسجيل الدخول في السيرفر لديك
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -27,18 +26,13 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // حفظ رمز الجلسة أو الـ Token في localStorage
         localStorage.setItem('token', data.token || 'active_session');
         localStorage.setItem('user_slug', data.slug || 'mo');
-        
-        // التوجيه المباشر إلى لوحة التحكم
         router.push('/dashboard');
       } else {
         setErrorMsg(data.message || 'بيانات الدخول غير صحيحة، يرجى المحاولة مرة أخرى.');
       }
     } catch (error) {
-      // في حال تجربة الواجهة محلياً بدون سيرفر حقيقي، يمكنك تفعيل التوجيه التجريبي المباشر:
-      // router.push('/dashboard');
       setErrorMsg('حدث خطأ في الاتصال بالخادم. تأكد من تشغيل السيرفر.');
     } finally {
       setIsLoading(false);
@@ -48,7 +42,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex items-center justify-center p-4 font-sans" dir="rtl">
       
-      {/* خلفية جمالية مضيئة */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl animate-pulse delay-1000" />
@@ -56,7 +49,6 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-md bg-slate-900/80 border border-slate-800/80 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
         
-        {/* الهيدر والشعار */}
         <div className="text-center space-y-3 mb-8">
           <div className="inline-flex relative">
             <div className="absolute inset-0 bg-blue-500/30 rounded-2xl blur-xl animate-pulse" />
@@ -72,15 +64,13 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* رسالة الخطأ إن وجدت */}
         {errorMsg && (
-          <div className="mb-6 bg-rose-500/10 border border-rose-500/20 text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2.5 animate-shake">
+          <div className="mb-6 bg-rose-500/10 border border-rose-500/20 text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2.5">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
-        {/* نموذج الإدخال */}
         <form onSubmit={handleLogin} className="space-y-5">
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-slate-300">البريد الإلكتروني</label>
