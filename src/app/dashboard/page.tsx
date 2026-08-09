@@ -38,8 +38,7 @@ export default function DashboardPage() {
     tradingviewWebhook: '',
     binanceWebhook: '',
     metaTraderWebhook: '',
-    telegramToken: '',
-    telegramChatId: '',
+    telegramToken: '', // الاعتماد على توكن البوت فقط لتليجرام
     discordWebhook: '',
     slackWebhook: '',
     whatsappApiUrl: '',
@@ -50,14 +49,9 @@ export default function DashboardPage() {
     corporateApiKey: '',
     corporateEndpoint: '',
     upgradedServices: [] as string[],
-    // تخزين القنوات المجانية الأولى المثبتة (Locked First Channels) لمنع تعديلها أو حذفها
-    lockedChannels: {
-      trading: '',
-      telegram: '',
-      discord: '',
-      whatsapp: '',
-      emailSms: '',
-      corporate: ''
+    lockedGlobalChannel: {
+      category: '',
+      identifier: ''
     }
   });
 
@@ -80,11 +74,12 @@ export default function DashboardPage() {
         ...prev,
         upgradedServices: [...new Set([...prev.upgradedServices, upgradedService])]
       }));
-      setSuccessMsg(`تم تفعيل خدمة (${upgradedService}) بنجاح بعد الاشتراك! يمكنك الآن إضافة قنواتك الجديدة.`);
+      setSuccessMsg(`تم تفعيل الخدمة بنجاح بعد الاشتراك! يمكنك الآن إضافة قنواتك الجديدة.`);
       setTimeout(() => setSuccessMsg(''), 5000);
     }
   }, [router]);
 
+  // جلب إعدادات المستخدم من قاعدة البيانات واسترجاعها بدقة عند العودة أو تسجيل الدخول
   const fetchUserSettings = async (currentSlug: string) => {
     try {
       const res = await fetch(`/api/settings?slug=${currentSlug}`, {
@@ -105,12 +100,23 @@ export default function DashboardPage() {
       
       if (result.success && result.data) {
         const data = result.data;
+        
         const initialTrading = data.tradingview_webhook || data.binance_webhook || data.metatrader_webhook || '';
         const initialTelegram = data.telegram_token || '';
         const initialDiscord = data.discord_webhook || '';
         const initialWhatsapp = data.whatsapp_api_url || '';
         const initialEmailSms = data.email_to || '';
         const initialCorporate = data.corporate_name || '';
+
+        // تحديد القناة المسجلة مسبقاً لتثبيت القيد المجاني عند التحميل
+        let globalLockedCat = '';
+        let globalLockedVal = '';
+        if (initialTrading) { globalLockedCat = 'trading_platforms'; globalLockedVal = initialTrading; }
+        else if (initialTelegram) { globalLockedCat = 'telegram'; globalLockedVal = initialTelegram; }
+        else if (initialDiscord) { globalLockedCat = 'discord'; globalLockedVal = initialDiscord; }
+        else if (initialWhatsapp) { globalLockedCat = 'whatsapp'; globalLockedVal = initialWhatsapp; }
+        else if (initialEmailSms) { globalLockedCat = 'email_sms'; globalLockedVal = initialEmailSms; }
+        else if (initialCorporate) { globalLockedCat = 'corporate'; globalLockedVal = initialCorporate; }
 
         setSettings({
           username: data.username || '',
@@ -119,7 +125,6 @@ export default function DashboardPage() {
           binanceWebhook: data.binance_webhook || '',
           metaTraderWebhook: data.metatrader_webhook || '',
           telegramToken: data.telegram_token || '',
-          telegramChatId: data.telegram_chat_id || '',
           discordWebhook: data.discord_webhook || '',
           slackWebhook: data.slack_webhook || '',
           whatsappApiUrl: data.whatsapp_api_url || '',
@@ -130,13 +135,9 @@ export default function DashboardPage() {
           corporateApiKey: data.corporate_api_key || '',
           corporateEndpoint: data.corporate_endpoint || '',
           upgradedServices: data.upgraded_services || [],
-          lockedChannels: data.locked_channels || {
-            trading: initialTrading,
-            telegram: initialTelegram,
-            discord: initialDiscord,
-            whatsapp: initialWhatsapp,
-            emailSms: initialEmailSms,
-            corporate: initialCorporate
+          lockedGlobalChannel: {
+            category: globalLockedCat,
+            identifier: globalLockedVal
           }
         });
       }
@@ -148,46 +149,39 @@ export default function DashboardPage() {
     }
   };
 
-  const isUpgraded = (serviceKey: string) => {
-    return settings.userPlan === 'pro' || 
-           settings.userPlan === 'enterprise' || 
-           settings.upgradedServices.includes(serviceKey);
-  };
+  // التحكم الصارم بقناة مجانية واحدة فقط لإجمالي المنصات
+  const handleFieldChange = (field: string, value: string, category: string) => {
+    const isFree = settings.userPlan === 'free' && settings.userPlan !== 'pro' && settings.userPlan !== 'enterprise';
 
-  // التحكم الصارم بمنع الحذف، التعديل، أو إضافة قناة ثانية للمستخدم المجاني
-  const handleFieldChange = (field: string, value: string, category: string, lockedKey: keyof typeof settings.lockedChannels) => {
-    const isFree = settings.userPlan === 'free' && !isUpgraded(category);
-    const lockedVal = settings.lockedChannels[lockedKey];
-
-    // إذا كانت القناة موجودة مسبقاً (تم تعبئتها وحفظها)، يمنع الحذف أو التعديل ويطلب اشتراك فوراً
-    if (isFree && lockedVal && lockedVal !== '' && value !== lockedVal) {
-      router.push(`/upgrade?service=${category}`);
-      return;
+    if (isFree && value.trim() !== '') {
+      if (settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== category) {
+        router.push(`/upgrade?service=all_channels`);
+        return;
+      }
+      const lockedVal = settings.lockedGlobalChannel.identifier;
+      if (lockedVal && lockedVal !== '' && value !== lockedVal) {
+        router.push(`/upgrade?service=${category}`);
+        return;
+      }
     }
 
-    let updatedLocked = { ...settings.lockedChannels };
-    // أول مرة يقوم المستخدم بإدخال قناة مجانية، يتم تثبيتها كقناة أولى وحيدة
-    if (isFree && !lockedVal && value.trim() !== '') {
-      updatedLocked[lockedKey] = value;
+    let updatedGlobal = { ...settings.lockedGlobalChannel };
+    if (isFree && !updatedGlobal.identifier && value.trim() !== '') {
+      updatedGlobal = { category, identifier: value };
     }
 
     setSettings({
       ...settings,
       [field]: value,
-      lockedChannels: updatedLocked
+      lockedGlobalChannel: updatedGlobal
     });
   };
 
-  // عند الضغط على زر إضافة قناة جديدة، يطلب اشتراك مباشرة إذا لم تكن الباقة مترقية
   const handleAddChannelClick = (category: string) => {
-    if (!isUpgraded(category)) {
-      router.push(`/upgrade?service=${category}`);
-    } else {
-      setSuccessMsg(`الحساب مُترقى! يمكنك الآن إضافة قنوات إضافية.`);
-      setTimeout(() => setSuccessMsg(''), 4000);
-    }
+    router.push(`/upgrade?service=${category}`);
   };
 
+  // حفظ البيانات في قاعدة البيانات
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -208,7 +202,7 @@ export default function DashboardPage() {
       const result = await res.json();
 
       if (result.success) {
-        setSuccessMsg('تم حفظ وتحديث الإعدادات بنجاح في قاعدة البيانات!');
+        setSuccessMsg('تم حفظ وتحديث الإعدادات بنجاح في قاعدة البيانات وسيتم استرجاعها دائماً!');
         setTimeout(() => setSuccessMsg(''), 4000);
       } else {
         setErrorMsg(result.error || 'حدث خطأ أثناء الحفظ');
@@ -241,7 +235,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-          <p className="text-sm text-slate-400">جاري تحميل لوحة التحكم الذكية...</p>
+          <p className="text-sm text-slate-400">جاري استرجاع بياناتك من قاعدة البيانات...</p>
         </div>
       </div>
     );
@@ -283,14 +277,14 @@ export default function DashboardPage() {
       <main className="max-w-6xl mx-auto px-4 mt-8 space-y-6">
 
         {successMsg && (
-          <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-2xl text-xs flex items-center gap-3">
+          <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-2xl text-xs flex items-center gap-3 shadow-lg">
             <ShieldCheck className="w-5 h-5 flex-shrink-0" />
             <span>{successMsg}</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-2xl text-xs flex items-center gap-3">
+          <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-2xl text-xs flex items-center gap-3 shadow-lg">
             <Database className="w-5 h-5 flex-shrink-0" />
             <span>{errorMsg}</span>
           </div>
@@ -337,23 +331,15 @@ export default function DashboardPage() {
             <h2 className="text-sm font-bold text-slate-200">إعدادات المنصات والقنوات</h2>
           </div>
 
-          {/* تنبيه تأكيد البيانات وعدم إمكانية تعديلها عند الحفظ */}
           <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 p-4 rounded-2xl text-xs flex items-start gap-3 shadow-lg">
             <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-400 mt-0.5" />
             <div className="space-y-1">
-              <strong className="block text-amber-200 font-bold">تنبيه هام جداً للمستخدمين:</strong>
+              <strong className="block text-amber-200 font-bold">قاعدة الباقة المجانية:</strong>
               <p className="text-amber-300/90 leading-relaxed">
-                الرجاء التأكد تماماً من صحة البيانات المضافة قبل الحفظ. في الباقة المجانية، <strong>لن يمكنك تعديل أو حذف القناة</strong> بعد حفظها لأول مرة، وأي محاولة لتغييرها لاحقاً ستتطلب الترقية إلى الباقة المدفوعة.
+                يُسمح لك بقناة واحدة فقط مجاناً لإجمالي الأقسام. سيتم حفظ بياناتك دائماً في قاعدة البيانات واسترجاعها تلقائياً عند تسجيل الدخول في أي وقت.
               </p>
             </div>
           </div>
-
-          {settings.userPlan === 'free' && (
-            <div className="bg-blue-500/10 border border-blue-500/20 text-blue-300 p-3.5 rounded-2xl text-xs flex items-center gap-3">
-              <Sparkles className="w-4 h-4 flex-shrink-0 text-blue-400" />
-              <span>الباقة المجانية تتيح لك <strong>قناة واحدة مجانية فقط</strong> لكل قسم. وإضافة قناة جديدة تتطلب الترقية.</span>
-            </div>
-          )}
 
           {/* معلومات الحساب الأساسية */}
           <div className="space-y-4">
@@ -377,7 +363,7 @@ export default function DashboardPage() {
                   onChange={(e) => setSettings({...settings, userPlan: e.target.value})}
                   className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition-all"
                 >
-                  <option value="free">المجانية (قناة واحدة ثابتة لكل قسم)</option>
+                  <option value="free">المجانية (قناة واحدة فقط لجميع الأقسام)</option>
                   <option value="pro">المتقدمة (Pro - قنوات غير محدودة)</option>
                   <option value="enterprise">الشركات (Enterprise)</option>
                 </select>
@@ -391,27 +377,25 @@ export default function DashboardPage() {
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
                 <TrendingUp className="w-3.5 h-3.5" /> 2. منصات التداول والرسوم البيانية
               </h3>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleAddChannelClick('trading_platforms')}
-                  className="text-[10px] px-3 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
-                >
-                  <Plus className="w-3 h-3" /> إضافة قناة جديدة (يتطلب اشتراك)
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => handleAddChannelClick('trading_platforms')}
+                className="text-[10px] px-3 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
+              >
+                <Plus className="w-3 h-3" /> إضافة قناة جديدة (يتطلب اشتراك)
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>TradingView Webhook</span>
-                  {!isUpgraded('trading_platforms') && settings.lockedChannels.trading && <Lock className="w-3 h-3 text-amber-400" />}
+                  {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'trading_platforms' && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
                   value={settings.tradingviewWebhook}
-                  onChange={(e) => handleFieldChange('tradingviewWebhook', e.target.value, 'trading_platforms', 'trading')}
+                  onChange={(e) => handleFieldChange('tradingviewWebhook', e.target.value, 'trading_platforms')}
                   placeholder="Webhook URL or Secret"
                   className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
                   dir="ltr"
@@ -421,12 +405,12 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>Binance Execution Hook</span>
-                  {!isUpgraded('trading_platforms') && settings.lockedChannels.trading && <Lock className="w-3 h-3 text-amber-400" />}
+                  {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'trading_platforms' && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
                   value={settings.binanceWebhook}
-                  onChange={(e) => handleFieldChange('binanceWebhook', e.target.value, 'trading_platforms', 'trading')}
+                  onChange={(e) => handleFieldChange('binanceWebhook', e.target.value, 'trading_platforms')}
                   placeholder="Binance API key"
                   className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
                   dir="ltr"
@@ -436,12 +420,12 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>MetaTrader Bridge Hook</span>
-                  {!isUpgraded('trading_platforms') && settings.lockedChannels.trading && <Lock className="w-3 h-3 text-amber-400" />}
+                  {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'trading_platforms' && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
                   value={settings.metaTraderWebhook}
-                  onChange={(e) => handleFieldChange('metaTraderWebhook', e.target.value, 'trading_platforms', 'trading')}
+                  onChange={(e) => handleFieldChange('metaTraderWebhook', e.target.value, 'trading_platforms')}
                   placeholder="MT4/MT5 Endpoint ID"
                   className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
                   dir="ltr"
@@ -458,37 +442,38 @@ export default function DashboardPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               
-              {/* Telegram */}
+              {/* Telegram (باستخدام التوكن فقط مع الخيارات) */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                    تليجرام (Telegram Bot)
-                    {!isUpgraded('telegram') && settings.lockedChannels.telegram && <Lock className="w-3 h-3 text-amber-400" />}
+                    تليجرام (Bot Token فقط)
+                    {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'telegram' && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleAddChannelClick('telegram')}
-                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
+                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
                   >
                     <Plus className="w-3 h-3" /> إضافة قناة جديدة
                   </button>
                 </div>
+                
                 <input 
                   type="text"
                   value={settings.telegramToken}
-                  onChange={(e) => handleFieldChange('telegramToken', e.target.value, 'telegram', 'telegram')}
-                  placeholder="Telegram Bot Token"
+                  onChange={(e) => handleFieldChange('telegramToken', e.target.value, 'telegram')}
+                  placeholder="Telegram Bot Token (e.g., 123456:ABC-DEF...)"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                   dir="ltr"
                 />
-                <input 
-                  type="text"
-                  value={settings.telegramChatId}
-                  onChange={(e) => handleFieldChange('telegramChatId', e.target.value, 'telegram', 'telegram')}
-                  placeholder="Chat ID (-100...)"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
-                  dir="ltr"
-                />
+
+                <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl space-y-1 text-[11px] text-slate-300">
+                  <p className="font-bold text-blue-400">طرق الاستلام المتاحة:</p>
+                  <ul className="list-disc list-inside space-y-0.5 text-slate-400">
+                    <li><strong>مباشر:</strong> تصل الإشارات لمحادثة البوت الخاصة.</li>
+                    <li><strong>قناة/مجموعة:</strong> أضف البوت <strong>مشرفاً (Admin)</strong> في قناتك.</li>
+                  </ul>
+                </div>
               </div>
 
               {/* Discord */}
@@ -496,12 +481,12 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     ديسكورد (Discord Webhook)
-                    {!isUpgraded('discord') && settings.lockedChannels.discord && <Lock className="w-3 h-3 text-amber-400" />}
+                    {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'discord' && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleAddChannelClick('discord')}
-                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
+                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
                   >
                     <Plus className="w-3 h-3" /> إضافة قناة جديدة
                   </button>
@@ -509,7 +494,7 @@ export default function DashboardPage() {
                 <input 
                   type="text"
                   value={settings.discordWebhook}
-                  onChange={(e) => handleFieldChange('discordWebhook', e.target.value, 'discord', 'discord')}
+                  onChange={(e) => handleFieldChange('discordWebhook', e.target.value, 'discord')}
                   placeholder="Discord Webhook URL"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                   dir="ltr"
@@ -521,12 +506,12 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     خدمة واتساب (WhatsApp API)
-                    {!isUpgraded('whatsapp') && settings.lockedChannels.whatsapp && <Lock className="w-3 h-3 text-amber-400" />}
+                    {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'whatsapp' && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleAddChannelClick('whatsapp')}
-                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
+                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
                   >
                     <Plus className="w-3 h-3" /> إضافة قناة جديدة
                   </button>
@@ -534,7 +519,7 @@ export default function DashboardPage() {
                 <input 
                   type="text"
                   value={settings.whatsappApiUrl}
-                  onChange={(e) => handleFieldChange('whatsappApiUrl', e.target.value, 'whatsapp', 'whatsapp')}
+                  onChange={(e) => handleFieldChange('whatsappApiUrl', e.target.value, 'whatsapp')}
                   placeholder="WhatsApp API Endpoint"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                   dir="ltr"
@@ -546,12 +531,12 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     البريد الإلكتروني والرسائل
-                    {!isUpgraded('email_sms') && settings.lockedChannels.emailSms && <Lock className="w-3 h-3 text-amber-400" />}
+                    {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'email_sms' && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleAddChannelClick('email_sms')}
-                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
+                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
                   >
                     <Plus className="w-3 h-3" /> إضافة قناة جديدة
                   </button>
@@ -559,7 +544,7 @@ export default function DashboardPage() {
                 <input 
                   type="email"
                   value={settings.emailTo}
-                  onChange={(e) => handleFieldChange('emailTo', e.target.value, 'email_sms', 'emailSms')}
+                  onChange={(e) => handleFieldChange('emailTo', e.target.value, 'email_sms')}
                   placeholder="alerts@domain.com"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                   dir="ltr"
@@ -578,7 +563,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => handleAddChannelClick('corporate')}
-                className="text-[10px] px-3 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
+                className="text-[10px] px-3 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
               >
                 <Plus className="w-3 h-3" /> إضافة مؤسسة جديدة (يتطلب اشتراك)
               </button>
@@ -590,7 +575,7 @@ export default function DashboardPage() {
                 <input 
                   type="text"
                   value={settings.corporateName}
-                  onChange={(e) => handleFieldChange('corporateName', e.target.value, 'corporate', 'corporate')}
+                  onChange={(e) => handleFieldChange('corporateName', e.target.value, 'corporate')}
                   placeholder="مثال: شركة سمو الأرقام للتقنية"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-100"
                 />
@@ -601,7 +586,7 @@ export default function DashboardPage() {
                 <input 
                   type="text"
                   value={settings.corporateApiKey}
-                  onChange={(e) => handleFieldChange('corporateApiKey', e.target.value, 'corporate', 'corporate')}
+                  onChange={(e) => handleFieldChange('corporateApiKey', e.target.value, 'corporate')}
                   placeholder="corp_live_xxxxxxxxxx"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-100 font-mono"
                   dir="ltr"
@@ -613,7 +598,7 @@ export default function DashboardPage() {
                 <input 
                   type="text"
                   value={settings.corporateEndpoint}
-                  onChange={(e) => handleFieldChange('corporateEndpoint', e.target.value, 'corporate', 'corporate')}
+                  onChange={(e) => handleFieldChange('corporateEndpoint', e.target.value, 'corporate')}
                   placeholder="https://api.yourcompany.com/v1/hook"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-100 font-mono"
                   dir="ltr"
@@ -631,7 +616,7 @@ export default function DashboardPage() {
             >
               {isSaving ? (
                 <>
-                  جاري الحفظ وتحديث قاعدة البيانات <Loader2 className="w-4 h-4 animate-spin" />
+                  جاري الحفظ في قاعدة البيانات <Loader2 className="w-4 h-4 animate-spin" />
                 </>
               ) : (
                 <>
