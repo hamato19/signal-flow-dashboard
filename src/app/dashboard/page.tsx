@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Bell, Webhook, Settings, Database, 
   Terminal, Shield, LogOut, CheckCircle2, AlertTriangle, 
-  Plus, Trash2, Edit, Save, RefreshCw, Code, Copy, Lock, Sparkles, MessageSquare, Send, Globe, ShoppingBag, MessageCircle, Mail, Hash, Building2, TrendingUp, PhoneCall, Smartphone, Check
+  Plus, Trash2, Edit, Save, RefreshCw, Code, Copy, Lock, Sparkles, MessageSquare, Send, Globe, ShoppingBag, MessageCircle, Mail, Hash, Building2, TrendingUp, PhoneCall, Smartphone, Check, Menu, X
 } from 'lucide-react';
 
 export default function ControlPanel() {
@@ -14,13 +14,16 @@ export default function ControlPanel() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [copied, setCopied] = useState(false);
   
+  // حالة التحكم بظهور القائمة الجانبية في الجوال
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
   const [notification, setNotification] = useState({ show: false, type: 'info', message: '' });
   const [username, setUsername] = useState('');
 
   // Subscription & Plan State (Free / Pro)
   const [userPlan, setUserPlan] = useState('free'); // 'free' or 'pro'
   
-  // Channels State (مطابقة تماماً للمفاتيح التي يتوقعها السيرفر: botToken, chatId)
+  // Channels State
   const [telegramChannels, setTelegramChannels] = useState([
     { id: 1, botToken: '', chatId: '', name: 'قناة تلجرام الرئيسية' }
   ]);
@@ -41,22 +44,18 @@ export default function ControlPanel() {
     { id: 1, smtpHost: '', smtpUser: '', smtpPass: '', recipientEmail: '' }
   ]);
 
-  // SMS Gateway Channels State
   const [smsChannels, setSmsChannels] = useState([
     { id: 1, provider: 'taqnyat', apiKey: '', senderName: '', recipientPhone: '' }
   ]);
 
-  // Stores Integration State (Salla, Zid, WooCommerce)
   const [stores, setStores] = useState([
     { id: 1, platform: 'salla', storeName: '', apiKey: '', webhookSecret: '', status: 'disconnected' }
   ]);
 
-  // Trading & Financial Integration State
   const [tradingIntegrations, setTradingIntegrations] = useState([
     { id: 1, platform: 'tradingview', strategyName: '', secretKey: '', actionType: 'alert', marketType: 'crypto' }
   ]);
 
-  // Enterprise / Companies Management State
   const [enterpriseTeams, setEnterpriseTeams] = useState([
     { id: 1, companyName: '', department: 'التقنية', webhookKey: '' }
   ]);
@@ -70,7 +69,6 @@ export default function ControlPanel() {
 
   const [webhookUrl, setWebhookUrl] = useState('');
 
-  // التحقق من الجلسة المخزنة عند التحميل واستدعاء البيانات من قاعدة البيانات
   useEffect(() => {
     const savedSlug = localStorage.getItem('user_slug');
     if (savedSlug) {
@@ -86,7 +84,6 @@ export default function ControlPanel() {
     setWebhookUrl(`https://api.hooksignal.com/v1/webhook/${slug}`);
   }, [slug]);
 
-  // دالة جلب بيانات المستخدم من قاعدة البيانات عبر الـ API
   const fetchUserData = async (userSlug: string) => {
     try {
       const res = await fetch(`/api/user-settings?slug=${userSlug}`);
@@ -112,7 +109,6 @@ export default function ControlPanel() {
     }
   };
 
-  // دالة حفظ البيانات الشاملة أو المخصصة في قاعدة البيانات عبر الـ API
   const saveUserDataToDB = async (customPayload?: any) => {
     if (!slug) return;
     
@@ -287,7 +283,7 @@ export default function ControlPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex font-sans" dir="rtl">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex font-sans relative" dir="rtl">
       
       {notification.show && (
         <div className="fixed top-5 left-5 z-50 bg-slate-900 border border-slate-800 shadow-2xl px-4 py-3 rounded-xl flex items-center gap-3 animate-fade-in">
@@ -298,8 +294,20 @@ export default function ControlPanel() {
         </div>
       )}
 
-      {/* الشريط الجانبي */}
-      <aside className="w-64 bg-slate-900/50 border-l border-slate-800/80 flex flex-col justify-between hidden md:flex">
+      {/* خلفية معتمة تظهر عند فتح القائمة الجانبية في الجوال */}
+      {mobileMenuOpen && (
+        <div 
+          onClick={() => setMobileMenuOpen(false)}
+          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
+        />
+      )}
+
+      {/* الشريط الجانبي (متجاوب مع الجوال والشاشات الكبيرة) */}
+      <aside className={`
+        fixed inset-y-0 right-0 z-50 w-64 bg-slate-900/95 md:bg-slate-900/50 border-l border-slate-800/80 
+        flex flex-col justify-between transition-transform duration-300 ease-in-out
+        ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+      `}>
         <div>
           <div className="p-6 border-b border-slate-800/80 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -311,6 +319,13 @@ export default function ControlPanel() {
                 <span className="text-xs text-blue-400 font-mono truncate block max-w-[120px]">@{slug}</span>
               </div>
             </div>
+            {/* زر إغلاق القائمة في الجوال */}
+            <button 
+              onClick={() => setMobileMenuOpen(false)}
+              className="md:hidden text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800/50"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
           <div className="px-4 pt-4">
@@ -347,7 +362,10 @@ export default function ControlPanel() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setMobileMenuOpen(false); // إغلاق القائمة تلقائياً عند اختيار قسم في الجوال
+                  }}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                     isActive 
                       ? 'bg-blue-600/15 text-blue-400 border border-blue-500/20' 
@@ -380,25 +398,34 @@ export default function ControlPanel() {
       </aside>
 
       {/* المحتوى الرئيسي */}
-      <main className="flex-1 flex flex-col min-h-screen overflow-y-auto">
-        <header className="h-16 border-b border-slate-800/80 bg-slate-900/20 backdrop-blur px-8 flex items-center justify-between sticky top-0 z-40">
-          <h1 className="font-bold text-lg">
-            {activeTab === 'dashboard' && 'الرئيسية والإحصائيات'}
-            {activeTab === 'integrations' && 'منصة قنوات الإشعارات الشاملة (تلجرام، واتساب، ديسكورد، سلاك، البريد)'}
-            {activeTab === 'sms' && 'بوابة رسائل الهواتف القصيرة (SMS Gateway)'}
-            {activeTab === 'trading' && 'إشارات التداول والأسواق الأمريكية والعملات الرقمية (TradingView, Binance, MetaTrader)'}
-            {activeTab === 'stores' && 'خدمة ربط المتاجر الإلكترونية (Salla, Zid, WooCommerce)'}
-            {activeTab === 'enterprise' && 'قسم الشركات والفرق المهنية المستقلة'}
-            {activeTab === 'rules' && 'محرك قواعد التوجيه الذكي'}
-            {activeTab === 'logs' && 'سجل المعاملات والطلبات الحي'}
-            {activeTab === 'settings' && 'إعدادات الحساب المستقل وقاعدة البيانات'}
-          </h1>
-          <span className="text-xs px-3 py-1 rounded-full border flex items-center gap-1.5 bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span> الحساب المستقل نشط ({slug})
+      <main className="flex-1 flex flex-col min-h-screen overflow-y-auto w-full">
+        <header className="h-16 border-b border-slate-800/80 bg-slate-900/20 backdrop-blur px-4 md:px-8 flex items-center justify-between sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            {/* زر فتح القائمة الجانبية في الشاشات الصغيرة */}
+            <button 
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden bg-slate-800/60 border border-slate-700/50 p-2 rounded-xl text-slate-200 hover:bg-slate-800 transition-colors"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <h1 className="font-bold text-sm md:text-lg truncate max-w-[200px] md:max-w-none">
+              {activeTab === 'dashboard' && 'الرئيسية والإحصائيات'}
+              {activeTab === 'integrations' && 'قنوات الإشعارات (تلجرام، واتساب...)'}
+              {activeTab === 'sms' && 'بوابة رسائل الهواتف القصيرة (SMS)'}
+              {activeTab === 'trading' && 'إشارات التداول والأسواق العالمية'}
+              {activeTab === 'stores' && 'خدمة ربط المتاجر الإلكترونية'}
+              {activeTab === 'enterprise' && 'قسم الشركات والفرق المهنية'}
+              {activeTab === 'rules' && 'محرك قواعد التوجيه الذكي'}
+              {activeTab === 'logs' && 'سجل المعاملات والطلبات الحي'}
+              {activeTab === 'settings' && 'إعدادات الحساب المستقل وقاعدة البيانات'}
+            </h1>
+          </div>
+          <span className="text-[11px] md:text-xs px-2.5 py-1 rounded-full border flex items-center gap-1.5 bg-emerald-500/10 border-emerald-500/20 text-emerald-400 whitespace-nowrap">
+            <span className="w-2 h-2 rounded-full bg-emerald-400"></span> الحساب نشط ({slug})
           </span>
         </header>
 
-        <div className="p-8 max-w-7xl mx-auto w-full space-y-6">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
@@ -436,7 +463,7 @@ export default function ControlPanel() {
           {activeTab === 'integrations' && (
             <div className="space-y-6">
               
-              {/* Telegram (مصحح ليستخدم botToken بدلاً من token) */}
+              {/* Telegram */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -449,7 +476,7 @@ export default function ControlPanel() {
                     </div>
                   </div>
                   <button onClick={() => addChannel('telegram')} className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
-                    <Plus className="w-4 h-4" /> إضافة قناة تلجرام
+                    <Plus className="w-4 h-4" /> إضافة
                   </button>
                 </div>
 
@@ -503,7 +530,7 @@ export default function ControlPanel() {
                     </div>
                   </div>
                   <button onClick={() => addChannel('whatsapp')} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
-                    <Plus className="w-4 h-4" /> إضافة حساب واتساب
+                    <Plus className="w-4 h-4" /> إضافة
                   </button>
                 </div>
 
@@ -565,7 +592,7 @@ export default function ControlPanel() {
                     </div>
                   </div>
                   <button onClick={() => addChannel('discord')} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
-                    <Plus className="w-4 h-4" /> إضافة سيرفر ديسكورد
+                    <Plus className="w-4 h-4" /> إضافة
                   </button>
                 </div>
 
@@ -619,7 +646,7 @@ export default function ControlPanel() {
                     </div>
                   </div>
                   <button onClick={() => addChannel('slack')} className="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
-                    <Plus className="w-4 h-4" /> إضافة قناة سلاك
+                    <Plus className="w-4 h-4" /> إضافة
                   </button>
                 </div>
 
@@ -668,12 +695,12 @@ export default function ControlPanel() {
                       <Mail className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-slate-200">البريد الإلكتروني (SMTP Email Notifications)</h3>
+                      <h3 className="font-bold text-sm text-slate-200">البريد الإلكتروني (SMTP Email)</h3>
                       <p className="text-xs text-slate-500 mt-0.5">إرسال تقارير الإشعارات عبر بريد SMTP مخصص عند كل استلام ويب هوك</p>
                     </div>
                   </div>
                   <button onClick={() => addChannel('email')} className="bg-rose-600 hover:bg-rose-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
-                    <Plus className="w-4 h-4" /> إضافة إعداد بريد
+                    <Plus className="w-4 h-4" /> إضافة
                   </button>
                 </div>
 
@@ -725,7 +752,7 @@ export default function ControlPanel() {
                 </div>
                 <div className="flex justify-end pt-2">
                   <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
-                    <Save className="w-3.5 h-3.5" /> حفظ إعدادات البريد الإلكتروني
+                    <Save className="w-3.5 h-3.5" /> حفظ إعدادات البريد
                   </button>
                 </div>
               </div>
@@ -744,11 +771,11 @@ export default function ControlPanel() {
                     </div>
                     <div>
                       <h3 className="font-bold text-sm text-slate-200">بوابة الرسائل القصيرة (SMS Gateway)</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">ربط مزودي خدمة الرسائل (مثل تقنيات، Unifonic) لإرسال تنبيهات SMS عند استقبال الويب هوك</p>
+                      <p className="text-xs text-slate-500 mt-0.5">ربط مزودي خدمة الرسائل (مثل تقنيات، Unifonic) لإرسال تنبيهات SMS</p>
                     </div>
                   </div>
                   <button onClick={() => addChannel('sms')} className="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
-                    <Plus className="w-4 h-4" /> إضافة بوابة SMS
+                    <Plus className="w-4 h-4" /> إضافة بوابة
                   </button>
                 </div>
 
@@ -803,7 +830,7 @@ export default function ControlPanel() {
             </div>
           )}
 
-          {/* تبويب التداول والأسواق العالمية والعملات الرقمية */}
+          {/* تبويب التداول */}
           {activeTab === 'trading' && (
             <div className="space-y-6">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
@@ -813,12 +840,12 @@ export default function ControlPanel() {
                       <TrendingUp className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-slate-200">منصات التداول، الأسواق الأمريكية والعملات الرقمية (TradingView, Binance, MetaTrader)</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">استقبال وتفسير تنبيهات TradingView للأسهم الأمريكية، العملات الرقمية (Binance Futures)، والفوركس (MetaTrader)</p>
+                      <h3 className="font-bold text-sm text-slate-200">منصات التداول والأسواق العالمية (TradingView)</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">استقبال وتفسير تنبيهات TradingView للأسهم الأمريكية والعملات الرقمية</p>
                     </div>
                   </div>
                   <button onClick={addTradingIntegration} className="bg-amber-600 hover:bg-amber-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors shadow-lg">
-                    <Plus className="w-4 h-4" /> ربط منصة تداول جديدة
+                    <Plus className="w-4 h-4" /> ربط منصة
                   </button>
                 </div>
 
@@ -826,7 +853,7 @@ export default function ControlPanel() {
                   {tradingIntegrations.map((item, index) => (
                     <div key={item.id} className="bg-slate-950 border border-slate-800 p-5 rounded-xl space-y-4 relative">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                        <span className="text-xs font-bold text-amber-400">منصة تداول / سوق مال #{index + 1}</span>
+                        <span className="text-xs font-bold text-amber-400">منصة تداول #{index + 1}</span>
                         {tradingIntegrations.length > 1 && (
                           <button onClick={() => removeTradingIntegration(item.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
                             <Trash2 className="w-4 h-4" />
@@ -843,40 +870,37 @@ export default function ControlPanel() {
                             setTradingIntegrations(updated);
                           }} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500">
                             <option value="tradingview">تريدينج فيو (TradingView)</option>
-                            <option value="binance">باينانس للعملات الرقمية (Binance Futures)</option>
-                            <option value="metatrader">ميتا تريدر (MetaTrader 4/5)</option>
-                            <option value="alpaca">ألبكا للأسواق الأمريكية (Alpaca Markets)</option>
-                            <option value="interactive_brokers">إنتربركتيف بروكرز (Interactive Brokers)</option>
+                            <option value="binance">باينانس (Binance Futures)</option>
+                            <option value="metatrader">ميتا تريدر (MetaTrader)</option>
                           </select>
                         </div>
                         <div>
-                          <label className="block text-[11px] font-medium text-slate-400 mb-1">نوع السوق / الأداة</label>
+                          <label className="block text-[11px] font-medium text-slate-400 mb-1">نوع السوق</label>
                           <select value={item.marketType || 'crypto'} onChange={(e) => {
                             const updated = [...tradingIntegrations];
                             updated[index].marketType = e.target.value;
                             setTradingIntegrations(updated);
                           }} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500">
                             <option value="crypto">عملات رقمية (Crypto)</option>
-                            <option value="us_stocks">الأسهم الأمريكية (US Stocks / NASDAQ / NYSE)</option>
-                            <option value="forex">عملات أجنبية وفوركس (Forex)</option>
-                            <option value="commodities">معادن وسلع (Gold, Oil)</option>
+                            <option value="us_stocks">الأسهم الأمريكية (US Stocks)</option>
+                            <option value="forex">فوركس (Forex)</option>
                           </select>
                         </div>
                         <div>
-                          <label className="block text-[11px] font-medium text-slate-400 mb-1">اسم الاستراتيجية / الحساب</label>
+                          <label className="block text-[11px] font-medium text-slate-400 mb-1">اسم الاستراتيجية</label>
                           <input type="text" value={item.strategyName || ''} onChange={(e) => {
                             const updated = [...tradingIntegrations];
                             updated[index].strategyName = e.target.value;
                             setTradingIntegrations(updated);
-                          }} placeholder="AAPL_Breakout / BTC_Strategy" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500" />
+                          }} placeholder="BTC_Strategy" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500" />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-medium text-slate-400 mb-1">مفتاح السرية (Secret Key)</label>
+                          <label className="block text-[11px] font-medium text-slate-400 mb-1">مفتاح السرية</label>
                           <input type="password" value={item.secretKey || ''} onChange={(e) => {
                             const updated = [...tradingIntegrations];
                             updated[index].secretKey = e.target.value;
                             setTradingIntegrations(updated);
-                          }} placeholder="tv_secret_xxx" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500" />
+                          }} placeholder="secret_xxx" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500" />
                         </div>
                       </div>
                     </div>
@@ -884,7 +908,7 @@ export default function ControlPanel() {
                 </div>
                 <div className="flex justify-end pt-2">
                   <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
-                    <Save className="w-3.5 h-3.5" /> حفظ إعدادات التداول والأسواق
+                    <Save className="w-3.5 h-3.5" /> حفظ إعدادات التداول
                   </button>
                 </div>
               </div>
@@ -906,7 +930,7 @@ export default function ControlPanel() {
                     </div>
                   </div>
                   <button onClick={addStoreIntegration} className="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors shadow-lg">
-                    <Plus className="w-4 h-4" /> ربط متجر جديد
+                    <Plus className="w-4 h-4" /> ربط متجر
                   </button>
                 </div>
 
@@ -975,11 +999,11 @@ export default function ControlPanel() {
                     </div>
                     <div>
                       <h3 className="font-bold text-sm text-slate-200">قسم الشركات والأقسام المهنية</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">تنظيم الويب هوك الخاص بالشركات وفصل أقسامها (الدعم، المبيعات، التطوير)</p>
+                      <p className="text-xs text-slate-500 mt-0.5">تنظيم الويب هوك الخاص بالشركات وفصل أقسامها (الدعم، المبيعات)</p>
                     </div>
                   </div>
                   <button onClick={addEnterpriseTeam} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors shadow-lg">
-                    <Plus className="w-4 h-4" /> إضافة قسم شركة جديد
+                    <Plus className="w-4 h-4" /> إضافة قسم
                   </button>
                 </div>
 
@@ -1033,7 +1057,7 @@ export default function ControlPanel() {
                   <p className="text-xs text-slate-500 mt-1">توجيه الرسائل والطلبات بناءً على الـ Payload وشروط الفلترة المخصصة</p>
                 </div>
                 <button onClick={() => setRoutingRules([...routingRules, { id: Date.now(), condition: '' }])} className="bg-blue-600 text-white px-3 py-2 rounded-xl text-xs flex items-center gap-1">
-                  <Plus className="w-4 h-4" /> إضافة قاعدة توجيه
+                  <Plus className="w-4 h-4" /> إضافة قاعدة
                 </button>
               </div>
               {routingRules.length === 0 ? <p className="text-xs text-slate-500 text-center py-6">لا توجد قواعد مضافة حتى الآن في حسابك المستقل.</p> : null}
