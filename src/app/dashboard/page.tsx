@@ -18,6 +18,20 @@ import {
   Gem, Sparkle, Zap as ZapIcon, Clock
 } from 'lucide-react';
 
+// ====== Types ======
+type NavItem = {
+  id: string;
+  label: string;
+  icon: any;
+  badge?: string;
+  pro?: boolean;
+};
+
+type NavSection = {
+  title: string;
+  items: NavItem[];
+};
+
 export default function ControlPanel() {
   // ====== State Management ======
   const [slug, setSlug] = useState('');
@@ -124,7 +138,7 @@ export default function ControlPanel() {
   });
 
   // ====== Sidebar Navigation Structure ======
-  const navSections = [
+  const navSections: NavSection[] = [
     {
       title: 'الرئيسية',
       items: [
