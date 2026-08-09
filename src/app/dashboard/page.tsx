@@ -16,7 +16,8 @@ import {
   Sparkles,
   TrendingUp,
   Building2,
-  ArrowUpRight
+  ArrowUpRight,
+  Lock
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -29,15 +30,13 @@ export default function DashboardPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // هيكل البيانات الشامل لجميع الخدمات ومنصات التداول والشركات
+  // هيكل البيانات الشامل
   const [settings, setSettings] = useState({
     username: '',
     userPlan: 'free',
-    // منصات التداول والرسوم البيانية
     tradingviewWebhook: '',
     binanceWebhook: '',
     metaTraderWebhook: '',
-    // قنوات التواصل
     telegramToken: '',
     telegramChatId: '',
     discordWebhook: '',
@@ -46,12 +45,19 @@ export default function DashboardPage() {
     whatsappToken: '',
     emailTo: '',
     smsEndpoint: '',
-    // قسم الشركات
     corporateName: '',
     corporateApiKey: '',
     corporateEndpoint: '',
-    // تفعيل الخدمات الفردية
     upgradedServices: [] as string[],
+    // تخزين القنوات المجانية الأولى المثبتة (Locked First Channels)
+    lockedChannels: {
+      trading: '',
+      telegram: '',
+      discord: '',
+      whatsapp: '',
+      emailSms: '',
+      corporate: ''
+    }
   });
 
   useEffect(() => {
@@ -92,6 +98,14 @@ export default function DashboardPage() {
           corporateApiKey: data.corporate_api_key || '',
           corporateEndpoint: data.corporate_endpoint || '',
           upgradedServices: data.upgraded_services || [],
+          lockedChannels: data.locked_channels || {
+            trading: data.tradingview_webhook || data.binance_webhook || data.metatrader_webhook || '',
+            telegram: data.telegram_token || '',
+            discord: data.discord_webhook || '',
+            whatsapp: data.whatsapp_api_url || '',
+            emailSms: data.email_to || '',
+            corporate: data.corporate_name || ''
+          }
         });
       }
     } catch (error) {
@@ -100,6 +114,37 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // التحقق مما إذا كان القسم مُترقىً
+  const isUpgraded = (serviceKey: string) => {
+    return settings.userPlan === 'pro' || 
+           settings.userPlan === 'enterprise' || 
+           settings.upgradedServices.includes(serviceKey);
+  };
+
+  // دالة التعامل مع التغيير مع قفل القناة الأولى المجانية وعدم السماح بتعديلها أو إضافة ثانية إلا بالترقية
+  const handleFieldChange = (field: string, value: string, category: string, lockedKey: keyof typeof settings.lockedChannels) => {
+    const isFree = settings.userPlan === 'free' && !isUpgraded(category);
+    const lockedVal = settings.lockedChannels[lockedKey];
+
+    if (isFree && lockedVal && lockedVal !== '' && value !== lockedVal) {
+      // حاول المستخدم تعديل القناة المثبتة أو إضافة قناة جديدة
+      router.push(`/upgrade?service=${category}`);
+      return;
+    }
+
+    // إذا كانت القناة فارغة وتمت كتابتها لأول مرة في الباقة المجانية، نقوم بتثبيتها
+    let updatedLocked = { ...settings.lockedChannels };
+    if (isFree && !lockedVal && value.trim() !== '') {
+      updatedLocked[lockedKey] = value;
+    }
+
+    setSettings({
+      ...settings,
+      [field]: value,
+      lockedChannels: updatedLocked
+    });
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -130,7 +175,6 @@ export default function DashboardPage() {
     }
   };
 
-  // التوجيه إلى صفحة الترقية والدفع مع تمرير اسم الخدمة
   const handleUpgradeService = (serviceKey: string) => {
     router.push(`/upgrade?service=${serviceKey}`);
   };
@@ -249,8 +293,16 @@ export default function DashboardPage() {
           
           <div className="flex items-center gap-2 border-b border-slate-800 pb-4">
             <Settings className="w-5 h-5 text-blue-400" />
-            <h2 className="text-sm font-bold text-slate-200">إعدادات المنصات، الخدمات، وقسم الشركات</h2>
+            <h2 className="text-sm font-bold text-slate-200">إعدادات المنصات، القنوات، وقسم الشركات</h2>
           </div>
+
+          {/* تنبيه الباقة المجانية الدائمة */}
+          {settings.userPlan === 'free' && (
+            <div className="bg-blue-500/10 border border-blue-500/20 text-blue-300 p-3.5 rounded-2xl text-xs flex items-center gap-3">
+              <Sparkles className="w-4 h-4 flex-shrink-0 text-blue-400" />
+              <span>الباقة المجانية تتيح لك <strong>قناة واحدة مجانية مدى الحياة</strong> في كل قسم. عند حفظ القناة الأولى يتم تثبيتها، وستحتاج للترقية لإضافة قناة ثانية أو تعديلها.</span>
+            </div>
+          )}
 
           {/* 1. معلومات الحساب الأساسية */}
           <div className="space-y-4">
@@ -274,7 +326,7 @@ export default function DashboardPage() {
                   onChange={(e) => setSettings({...settings, userPlan: e.target.value})}
                   className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition-all"
                 >
-                  <option value="free">المجانية (Free) مع إمكانية ترقية خدمات منفردة</option>
+                  <option value="free">المجانية (قناة واحدة لكل قسم - مثبتة)</option>
                   <option value="pro">المتقدمة (Pro - شاملة)</option>
                   <option value="enterprise">الشركات (Enterprise)</option>
                 </select>
@@ -286,7 +338,7 @@ export default function DashboardPage() {
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-                <TrendingUp className="w-3.5 h-3.5" /> 2. منصات التداول والرسوم البيانية (TradingView & Binance)
+                <TrendingUp className="w-3.5 h-3.5" /> 2. منصات التداول والرسوم البيانية
               </h3>
               <button
                 type="button"
@@ -294,17 +346,20 @@ export default function DashboardPage() {
                 className="text-[10px] px-3 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
               >
                 <Sparkles className="w-3 h-3" />
-                ترقية هذه الخدمة (شهري، سنوي، مدى الحياة) <ArrowUpRight className="w-3 h-3" />
+                ترقية لفتح منصات متعددة <ArrowUpRight className="w-3 h-3" />
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">TradingView Alert Webhook</label>
+                <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
+                  <span>TradingView Webhook</span>
+                  {settings.lockedChannels.trading === settings.tradingviewWebhook && settings.tradingviewWebhook && <Lock className="w-3 h-3 text-amber-400" title="قناة مجانية مثبتة" />}
+                </label>
                 <input 
                   type="text"
                   value={settings.tradingviewWebhook}
-                  onChange={(e) => setSettings({...settings, tradingviewWebhook: e.target.value})}
+                  onChange={(e) => handleFieldChange('tradingviewWebhook', e.target.value, 'trading_platforms', 'trading')}
                   placeholder="Custom secret or token"
                   className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
                   dir="ltr"
@@ -312,23 +367,29 @@ export default function DashboardPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">Binance Execution Hook</label>
+                <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
+                  <span>Binance Execution Hook</span>
+                  {settings.lockedChannels.trading === settings.binanceWebhook && settings.binanceWebhook && <Lock className="w-3 h-3 text-amber-400" title="قناة مجانية مثبتة" />}
+                </label>
                 <input 
                   type="text"
                   value={settings.binanceWebhook}
-                  onChange={(e) => setSettings({...settings, binanceWebhook: e.target.value})}
-                  placeholder="Binance API key/secret ID"
+                  onChange={(e) => handleFieldChange('binanceWebhook', e.target.value, 'trading_platforms', 'trading')}
+                  placeholder="Binance API key"
                   className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
                   dir="ltr"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">MetaTrader Bridge Hook</label>
+                <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
+                  <span>MetaTrader Bridge Hook</span>
+                  {settings.lockedChannels.trading === settings.metaTraderWebhook && settings.metaTraderWebhook && <Lock className="w-3 h-3 text-amber-400" title="قناة مجانية مثبتة" />}
+                </label>
                 <input 
                   type="text"
                   value={settings.metaTraderWebhook}
-                  onChange={(e) => setSettings({...settings, metaTraderWebhook: e.target.value})}
+                  onChange={(e) => handleFieldChange('metaTraderWebhook', e.target.value, 'trading_platforms', 'trading')}
                   placeholder="MT4/MT5 Endpoint ID"
                   className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
                   dir="ltr"
@@ -337,10 +398,10 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 3. قنوات التواصل (تليجرام، ديسكورد، واتساب، البريد والـ SMS) */}
+          {/* 3. قنوات الإشعارات والتواصل */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-              <MessageCircle className="w-3.5 h-3.5" /> 3. قنوات الإشعارات والربط
+              <MessageCircle className="w-3.5 h-3.5" /> 3. قنوات الإشعارات والتواصل (قناة واحدة لكل قسم)
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -348,20 +409,23 @@ export default function DashboardPage() {
               {/* Telegram */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-200">تليجرام (Telegram Bot)</span>
+                  <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    تليجرام (Telegram Bot)
+                    {settings.lockedChannels.telegram && <Lock className="w-3 h-3 text-amber-400" title="مبتة مجاناً" />}
+                  </span>
                   <button
                     type="button"
                     onClick={() => handleUpgradeService('telegram')}
                     className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3" />
-                    ترقية القناة <ArrowUpRight className="w-3 h-3" />
+                    ترقية لقنوات متعددة <ArrowUpRight className="w-3 h-3" />
                   </button>
                 </div>
                 <input 
                   type="text"
                   value={settings.telegramToken}
-                  onChange={(e) => setSettings({...settings, telegramToken: e.target.value})}
+                  onChange={(e) => handleFieldChange('telegramToken', e.target.value, 'telegram', 'telegram')}
                   placeholder="Telegram Bot Token"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                   dir="ltr"
@@ -369,7 +433,7 @@ export default function DashboardPage() {
                 <input 
                   type="text"
                   value={settings.telegramChatId}
-                  onChange={(e) => setSettings({...settings, telegramChatId: e.target.value})}
+                  onChange={(e) => handleFieldChange('telegramChatId', e.target.value, 'telegram', 'telegram')}
                   placeholder="Chat ID (-100...)"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                   dir="ltr"
@@ -379,20 +443,23 @@ export default function DashboardPage() {
               {/* Discord */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-200">ديسكورد (Discord Webhook)</span>
+                  <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    ديسكورد (Discord Webhook)
+                    {settings.lockedChannels.discord && <Lock className="w-3 h-3 text-amber-400" title="مثبتة مجاناً" />}
+                  </span>
                   <button
                     type="button"
                     onClick={() => handleUpgradeService('discord')}
                     className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3" />
-                    ترقية القناة <ArrowUpRight className="w-3 h-3" />
+                    ترقية لسيرفرات متعددة <ArrowUpRight className="w-3 h-3" />
                   </button>
                 </div>
                 <input 
                   type="text"
                   value={settings.discordWebhook}
-                  onChange={(e) => setSettings({...settings, discordWebhook: e.target.value})}
+                  onChange={(e) => handleFieldChange('discordWebhook', e.target.value, 'discord', 'discord')}
                   placeholder="Discord Webhook URL"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                   dir="ltr"
@@ -402,7 +469,10 @@ export default function DashboardPage() {
               {/* WhatsApp */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-200">خدمة واتساب (WhatsApp API)</span>
+                  <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    خدمة واتساب (WhatsApp API)
+                    {settings.lockedChannels.whatsapp && <Lock className="w-3 h-3 text-amber-400" title="مثبتة مجاناً" />}
+                  </span>
                   <button
                     type="button"
                     onClick={() => handleUpgradeService('whatsapp')}
@@ -415,7 +485,7 @@ export default function DashboardPage() {
                 <input 
                   type="text"
                   value={settings.whatsappApiUrl}
-                  onChange={(e) => setSettings({...settings, whatsappApiUrl: e.target.value})}
+                  onChange={(e) => handleFieldChange('whatsappApiUrl', e.target.value, 'whatsapp', 'whatsapp')}
                   placeholder="WhatsApp API Endpoint"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                   dir="ltr"
@@ -425,7 +495,10 @@ export default function DashboardPage() {
               {/* Email & SMS */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-200">البريد الإلكتروني والرسائل القصيرة</span>
+                  <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    البريد الإلكتروني والرسائل القصيرة
+                    {settings.lockedChannels.emailSms && <Lock className="w-3 h-3 text-amber-400" title="مثبتة مجاناً" />}
+                  </span>
                   <button
                     type="button"
                     onClick={() => handleUpgradeService('email_sms')}
@@ -438,7 +511,7 @@ export default function DashboardPage() {
                 <input 
                   type="email"
                   value={settings.emailTo}
-                  onChange={(e) => setSettings({...settings, emailTo: e.target.value})}
+                  onChange={(e) => handleFieldChange('emailTo', e.target.value, 'email_sms', 'emailSms')}
                   placeholder="alerts@domain.com"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                   dir="ltr"
@@ -470,7 +543,7 @@ export default function DashboardPage() {
                 <input 
                   type="text"
                   value={settings.corporateName}
-                  onChange={(e) => setSettings({...settings, corporateName: e.target.value})}
+                  onChange={(e) => handleFieldChange('corporateName', e.target.value, 'corporate', 'corporate')}
                   placeholder="مثال: شركة سمو الأرقام للتقنية"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-100"
                 />
@@ -481,7 +554,7 @@ export default function DashboardPage() {
                 <input 
                   type="text"
                   value={settings.corporateApiKey}
-                  onChange={(e) => setSettings({...settings, corporateApiKey: e.target.value})}
+                  onChange={(e) => handleFieldChange('corporateApiKey', e.target.value, 'corporate', 'corporate')}
                   placeholder="corp_live_xxxxxxxxxx"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-100 font-mono"
                   dir="ltr"
@@ -493,7 +566,7 @@ export default function DashboardPage() {
                 <input 
                   type="text"
                   value={settings.corporateEndpoint}
-                  onChange={(e) => setSettings({...settings, corporateEndpoint: e.target.value})}
+                  onChange={(e) => handleFieldChange('corporateEndpoint', e.target.value, 'corporate', 'corporate')}
                   placeholder="https://api.yourcompany.com/v1/hook"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-100 font-mono"
                   dir="ltr"
