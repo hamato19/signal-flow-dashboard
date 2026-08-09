@@ -1,4 +1,5 @@
 "use client";
+
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -9,7 +10,9 @@ import {
   Loader2, 
   CreditCard, 
   Lock,
-  Zap
+  Zap,
+  CheckCircle2,
+  Infinity as InfinityIcon
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -20,7 +23,7 @@ function UpgradeContent() {
 
   const [slug, setSlug] = useState('');
   const [selectedService, setSelectedService] = useState(serviceParam);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly' | 'lifetime'>('monthly');
   const [isProcessing, setIsProcessing] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -39,6 +42,35 @@ function UpgradeContent() {
       setSelectedService(serviceParam);
     }
   }, [serviceParam]);
+
+  // قائمة تفاصيل الخدمات بحسب الباقة المختارة
+  const getPlanFeatures = () => {
+    switch (billingCycle) {
+      case 'monthly':
+        return [
+          "تفعيل وربط الخدمة المختارة لفترة شهر كامل",
+          "دعم فني أساسي عبر النظام",
+          "تحديثات أمان وتصحيحات فورية",
+          "معالجة فورية للإشارات (Trading/Webhooks)"
+        ];
+      case 'yearly':
+        return [
+          "تفعيل شامل لمدة 12 شهراً (توفير 20%)",
+          "دعم فني ذو أولوية متقدمة",
+          "وصول كامل لكافة قنوات التنبيه (تليجرام، ديسكورد، واتساب)",
+          "تقارير أداء ومراقبة يومية للعمليات"
+        ];
+      case 'lifetime':
+        return [
+          "تفعيل نهائي ودائم [باقة مدى الحياة] بدون أي رسوم تجديد مستقبلية",
+          "دعم فني خاص ومباشر (VIP Support)",
+          "تطوير وتفعيل كافة الخدمات الحالية والمستقبلية مجاناً",
+          "صلاحيات مطلقة وسرعة قصوى في معالجة الأوامر والويب هوك"
+        ];
+      default:
+        return [];
+    }
+  };
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +110,7 @@ function UpgradeContent() {
   };
 
   return (
-    <div className="relative w-full max-w-lg bg-slate-900/80 border border-slate-800/80 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
+    <div className="relative w-full max-w-xl bg-slate-900/80 border border-slate-800/80 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
       
       {/* زر العودة */}
       <button 
@@ -137,35 +169,71 @@ function UpgradeContent() {
           </select>
         </div>
 
-        {/* دورة الفوترة */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* دورة الفوترة والباقات */}
+        <div className="grid grid-cols-3 gap-2.5">
           <button
             type="button"
             onClick={() => setBillingCycle('monthly')}
-            className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
+            className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col justify-between ${
               billingCycle === 'monthly'
                 ? 'bg-blue-600/20 border-blue-500/50 text-blue-300 shadow-lg shadow-blue-500/10'
                 : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:border-slate-700'
             }`}
           >
             <div className="text-xs font-bold">اشتراك شهري</div>
-            <div className="text-[10px] text-slate-400 mt-1">9$ / شهرياً</div>
+            <div className="text-[10px] text-slate-400 mt-2">9$ / شهرياً</div>
           </button>
 
           <button
             type="button"
             onClick={() => setBillingCycle('yearly')}
-            className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
+            className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col justify-between ${
               billingCycle === 'yearly'
                 ? 'bg-blue-600/20 border-blue-500/50 text-blue-300 shadow-lg shadow-blue-500/10'
                 : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:border-slate-700'
             }`}
           >
-            <div className="text-xs font-bold flex items-center justify-center gap-1">
-              اشتراك سنوي <span className="text-[9px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full">توفير 20%</span>
+            <div>
+              <div className="text-xs font-bold">اشتراك سنوي</div>
+              <span className="inline-block text-[9px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full mt-1">توفير 20%</span>
             </div>
-            <div className="text-[10px] text-slate-400 mt-1">85$ / سنوياً</div>
+            <div className="text-[10px] text-slate-400 mt-2">85$ / سنوياً</div>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setBillingCycle('lifetime')}
+            className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden ${
+              billingCycle === 'lifetime'
+                ? 'bg-gradient-to-br from-amber-600/30 to-indigo-600/30 border-amber-500/60 text-amber-200 shadow-lg shadow-amber-500/15'
+                : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:border-slate-700'
+            }`}
+          >
+            <div className="absolute -top-6 -left-6 w-12 h-12 bg-amber-500/10 rounded-full blur-md" />
+            <div>
+              <div className="text-xs font-bold flex items-center justify-center gap-1">
+                <InfinityIcon className="w-3.5 h-3.5 text-amber-400" /> مدى الحياة
+              </div>
+              <span className="inline-block text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full mt-1">دفع لمرة واحدة</span>
+            </div>
+            <div className="text-[10px] text-amber-400 font-semibold mt-2">199$ / للأبد</div>
+          </button>
+        </div>
+
+        {/* صندوق توضيح الخدمات والمميزات للباقة المختارة */}
+        <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-2.5">
+          <div className="text-xs font-bold text-slate-200 flex items-center gap-2">
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <span>الخدمات والمميزات التي سيتم تفعيلها فوراً:</span>
+          </div>
+          <ul className="space-y-1.5 text-[11px] text-slate-300">
+            {getPlanFeatures().map((feature, idx) => (
+              <li key={idx} className="flex items-start gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <span>{feature}</span>
+              </li>
+            ))}
+          </ul>
         </div>
 
         {/* بيانات الدفع */}
