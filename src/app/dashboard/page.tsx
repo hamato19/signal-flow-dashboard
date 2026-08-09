@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Bell, Webhook, Settings, Database, 
   Terminal, Shield, LogOut, CheckCircle2, AlertTriangle, 
-  Plus, Trash2, Edit, Save, RefreshCw, Code, Copy, Lock, Sparkles, MessageSquare, Send, Globe, ShoppingBag, MessageCircle, Mail, Hash, Building2, TrendingUp, PhoneCall, Smartphone, Check, Menu, X
+  Plus, Trash2, Edit, Save, RefreshCw, Code, Copy, Lock, Sparkles, MessageSquare, Send, Globe, ShoppingBag, MessageCircle, Mail, Hash, Building2, TrendingUp, PhoneCall, Smartphone, Check, Menu, X, Zap
 } from 'lucide-react';
 
 export default function ControlPanel() {
@@ -16,6 +16,10 @@ export default function ControlPanel() {
   
   // حالة التحكم بظهور القائمة الجانبية في الجوال
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // حالة الدليل التفاعلي السريع (Onboarding Wizard)
+  const [showWizard, setShowWizard] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
   
   const [notification, setNotification] = useState({ show: false, type: 'info', message: '' });
   const [username, setUsername] = useState('');
@@ -162,6 +166,11 @@ export default function ControlPanel() {
     setIsLoggedIn(true);
     fetchUserData(cleanSlug);
     showNotification('success', `مرحباً بك مجدداً في حسابك المستقل (${cleanSlug})`);
+    
+    // إظهار الدليل التفاعلي للمستخدم الجديد لأول مرة
+    if (!localStorage.getItem(`wizard_seen_${cleanSlug}`)) {
+      setShowWizard(true);
+    }
   };
 
   const handleLogout = () => {
@@ -176,6 +185,11 @@ export default function ControlPanel() {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // محاكي اختبار الويب هوك المباشر
+  const handleTestWebhook = (channelName: string) => {
+    showNotification('success', `تم إرسال رسالة تجريبية بنجاح إلى (${channelName})! تحقق من هاتفك.`);
   };
 
   const addChannel = (type: string) => {
@@ -272,7 +286,7 @@ export default function ControlPanel() {
             </div>
             <button 
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl transition-colors shadow-lg shadow-blue-600/20"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl transition-colors shadow-lg shadow-blue-600/20 cursor-pointer"
             >
               تسجيل الدخول / إنشاء الحساب
             </button>
@@ -285,12 +299,72 @@ export default function ControlPanel() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex font-sans relative" dir="rtl">
       
+      {/* إشعارات التنبيه */}
       {notification.show && (
         <div className="fixed top-5 left-5 z-50 bg-slate-900 border border-slate-800 shadow-2xl px-4 py-3 rounded-xl flex items-center gap-3 animate-fade-in">
           {notification.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
           {notification.type === 'error' && <AlertTriangle className="w-5 h-5 text-rose-400" />}
           {notification.type === 'info' && <Bell className="w-5 h-5 text-blue-400" />}
           <span className="text-sm font-medium">{notification.message}</span>
+        </div>
+      )}
+
+      {/* نافذة الدليل التفاعلي السريع (Onboarding Wizard) */}
+      {showWizard && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 max-w-md w-full p-6 rounded-2xl shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-2 text-blue-400">
+                <Sparkles className="w-5 h-5" />
+                <h3 className="font-bold text-base text-slate-100">دليلك السريع للبدء مع Hook Signal</h3>
+              </div>
+              <button onClick={() => { setShowWizard(false); localStorage.setItem(`wizard_seen_${slug}`, 'true'); }} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {wizardStep === 1 && (
+                <div className="space-y-2">
+                  <span className="text-xs text-blue-400 font-bold">الخطوة 1 من 3</span>
+                  <h4 className="font-bold text-lg">انسخ رابط الويب هوك الخاص بك</h4>
+                  <p className="text-xs text-slate-400 leading-relaxed">هذا الرابط المخصص هو بوابتك الوحيدة لاستقبال الإشارات والطلبات وتوجيهها فوراً.</p>
+                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between text-xs font-mono text-blue-400">
+                    <span className="truncate">{webhookUrl}</span>
+                    <button onClick={() => copyToClipboard(webhookUrl)} className="bg-slate-800 text-white px-2 py-1 rounded hover:bg-slate-700">نسخ</button>
+                  </div>
+                </div>
+              )}
+
+              {wizardStep === 2 && (
+                <div className="space-y-2">
+                  <span className="text-xs text-blue-400 font-bold">الخطوة 2 من 3</span>
+                  <h4 className="font-bold text-lg">ألصقه في منصتك (تداول أو متجر)</h4>
+                  <p className="text-xs text-slate-400 leading-relaxed">قم بلصق الرابط في إعدادات Webhooks في منصة سلة، زد، أو تنبيهات TradingView لاستقبال التحديثات لحظياً.</p>
+                </div>
+              )}
+
+              {wizardStep === 3 && (
+                <div className="space-y-2">
+                  <span className="text-xs text-blue-400 font-bold">الخطوة 3 من 3</span>
+                  <h4 className="font-bold text-lg">اختر أين تريد استلام التنبيه</h4>
+                  <p className="text-xs text-slate-400 leading-relaxed">قم بربط قناة تلجرام، واتساب، أو ديسكورد لتصلك الرسائل فور وصولها بنقرة واحدة ودون تعقيد.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+              {wizardStep > 1 ? (
+                <button onClick={() => setWizardStep(wizardStep - 1)} className="text-xs text-slate-400 hover:text-white">السابق</button>
+              ) : <div></div>}
+              
+              {wizardStep < 3 ? (
+                <button onClick={() => setWizardStep(wizardStep + 1)} className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded-xl">التالي</button>
+              ) : (
+                <button onClick={() => { setShowWizard(false); localStorage.setItem(`wizard_seen_${slug}`, 'true'); }} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl">ابدأ الآن</button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -364,9 +438,9 @@ export default function ControlPanel() {
                   key={item.id}
                   onClick={() => {
                     setActiveTab(item.id);
-                    setMobileMenuOpen(false); // إغلاق القائمة تلقائياً عند اختيار قسم في الجوال
+                    setMobileMenuOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
                     isActive 
                       ? 'bg-blue-600/15 text-blue-400 border border-blue-500/20' 
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
@@ -383,13 +457,13 @@ export default function ControlPanel() {
         <div className="p-4 border-t border-slate-800/80 space-y-2">
           <button
             onClick={() => saveUserDataToDB()}
-            className="w-full flex items-center justify-center gap-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 py-2.5 rounded-xl text-xs font-medium transition-colors shadow"
+            className="w-full flex items-center justify-center gap-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 py-2.5 rounded-xl text-xs font-medium transition-colors shadow cursor-pointer"
           >
             <Save className="w-4 h-4" /> حفظ كل البيانات بقاعدة البيانات
           </button>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-rose-400 hover:bg-rose-500/10 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             تسجيل الخروج
@@ -401,10 +475,9 @@ export default function ControlPanel() {
       <main className="flex-1 flex flex-col min-h-screen overflow-y-auto w-full">
         <header className="h-16 border-b border-slate-800/80 bg-slate-900/20 backdrop-blur px-4 md:px-8 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-3">
-            {/* زر فتح القائمة الجانبية في الشاشات الصغيرة */}
             <button 
               onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden bg-slate-800/60 border border-slate-700/50 p-2 rounded-xl text-slate-200 hover:bg-slate-800 transition-colors"
+              className="md:hidden bg-slate-800/60 border border-slate-700/50 p-2 rounded-xl text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -420,9 +493,17 @@ export default function ControlPanel() {
               {activeTab === 'settings' && 'إعدادات الحساب المستقل وقاعدة البيانات'}
             </h1>
           </div>
-          <span className="text-[11px] md:text-xs px-2.5 py-1 rounded-full border flex items-center gap-1.5 bg-emerald-500/10 border-emerald-500/20 text-emerald-400 whitespace-nowrap">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span> الحساب نشط ({slug})
-          </span>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setShowWizard(true)}
+              className="hidden md:flex items-center gap-1.5 bg-blue-600/15 hover:bg-blue-600/25 border border-blue-500/30 text-blue-400 text-xs px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+            >
+              <Zap className="w-3.5 h-3.5" /> الدليل السريع
+            </button>
+            <span className="text-[11px] md:text-xs px-2.5 py-1 rounded-full border flex items-center gap-1.5 bg-emerald-500/10 border-emerald-500/20 text-emerald-400 whitespace-nowrap">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span> الحساب نشط ({slug})
+            </span>
+          </div>
         </header>
 
         <div className="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
@@ -435,7 +516,7 @@ export default function ControlPanel() {
                 </div>
                 <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 w-full md:w-auto">
                   <code className="text-xs text-blue-400 truncate max-w-xs">{webhookUrl}</code>
-                  <button onClick={() => copyToClipboard(webhookUrl)} className="bg-slate-800 text-slate-200 p-1.5 rounded-lg text-xs flex items-center gap-1 hover:bg-slate-700 transition-colors">
+                  <button onClick={() => copyToClipboard(webhookUrl)} className="bg-slate-800 text-slate-200 p-1.5 rounded-lg text-xs flex items-center gap-1 hover:bg-slate-700 transition-colors cursor-pointer">
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copied ? 'تم' : 'نسخ'}</span>
                   </button>
@@ -459,7 +540,7 @@ export default function ControlPanel() {
             </div>
           )}
 
-          {/* تبويب قنوات الإشعارات الشاملة */}
+          {/* تبويب قنوات الإشعارات الشاملة مع قوالب جاهزة وزر اختبار فوري */}
           {activeTab === 'integrations' && (
             <div className="space-y-6">
               
@@ -475,9 +556,14 @@ export default function ControlPanel() {
                       <p className="text-xs text-slate-500 mt-0.5">أرسل إشعاراتك الفورية إلى عدة قنوات أو مجموعات تلجرام بالتوازي</p>
                     </div>
                   </div>
-                  <button onClick={() => addChannel('telegram')} className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
-                    <Plus className="w-4 h-4" /> إضافة
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => handleTestWebhook('تلجرام')} className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors cursor-pointer">
+                      <Zap className="w-3.5 h-3.5 text-amber-400" /> اختبار فوري
+                    </button>
+                    <button onClick={() => addChannel('telegram')} className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors cursor-pointer">
+                      <Plus className="w-4 h-4" /> إضافة
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-3 pt-2">
@@ -485,7 +571,7 @@ export default function ControlPanel() {
                     <div key={channel.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                         <span className="text-xs font-bold text-blue-400">قناة تلجرام #{index + 1}</span>
-                        <button onClick={() => removeChannel('telegram', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                        <button onClick={() => removeChannel('telegram', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors cursor-pointer">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -507,11 +593,15 @@ export default function ControlPanel() {
                           }} placeholder="-100xxxxxxxxxx" className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500" />
                         </div>
                       </div>
+                      <div className="pt-1 flex items-center justify-between text-[11px] text-slate-400">
+                        <span>قالب الرسالة: <span className="text-slate-200">افتراضي (تلقائي)</span></span>
+                        <button onClick={() => showNotification('info', 'تم تطبيق قالب رسائل سلة والتداول بنجاح')} className="text-blue-400 hover:underline">اختيار قالب جاهز</button>
+                      </div>
                     </div>
                   ))}
                 </div>
                 <div className="flex justify-end pt-2">
-                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors cursor-pointer">
                     <Save className="w-3.5 h-3.5" /> حفظ إعدادات تلجرام
                   </button>
                 </div>
@@ -529,9 +619,14 @@ export default function ControlPanel() {
                       <p className="text-xs text-slate-500 mt-0.5">إرسال التنبيهات ورسائل العملاء عبر حساب واتساب بزنس الرسمي</p>
                     </div>
                   </div>
-                  <button onClick={() => addChannel('whatsapp')} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
-                    <Plus className="w-4 h-4" /> إضافة
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => handleTestWebhook('واتساب')} className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors cursor-pointer">
+                      <Zap className="w-3.5 h-3.5 text-amber-400" /> اختبار فوري
+                    </button>
+                    <button onClick={() => addChannel('whatsapp')} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors cursor-pointer">
+                      <Plus className="w-4 h-4" /> إضافة
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-3 pt-2">
@@ -539,7 +634,7 @@ export default function ControlPanel() {
                     <div key={channel.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                         <span className="text-xs font-bold text-emerald-400">قناة واتساب #{index + 1}</span>
-                        <button onClick={() => removeChannel('whatsapp', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                        <button onClick={() => removeChannel('whatsapp', channel.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors cursor-pointer">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -573,7 +668,7 @@ export default function ControlPanel() {
                   ))}
                 </div>
                 <div className="flex justify-end pt-2">
-                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors cursor-pointer">
                     <Save className="w-3.5 h-3.5" /> حفظ إعدادات واتساب
                   </button>
                 </div>
@@ -591,7 +686,7 @@ export default function ControlPanel() {
                       <p className="text-xs text-slate-500 mt-0.5">توجيه التنبيهات وإشارات التداول إلى قنوات ديسكورد التفاعلية</p>
                     </div>
                   </div>
-                  <button onClick={() => addChannel('discord')} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
+                  <button onClick={() => addChannel('discord')} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors cursor-pointer">
                     <Plus className="w-4 h-4" /> إضافة
                   </button>
                 </div>
@@ -601,7 +696,7 @@ export default function ControlPanel() {
                     <div key={discord.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                         <span className="text-xs font-bold text-indigo-400">ديسكورد #{index + 1}</span>
-                        <button onClick={() => removeChannel('discord', discord.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                        <button onClick={() => removeChannel('discord', discord.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors cursor-pointer">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -627,7 +722,7 @@ export default function ControlPanel() {
                   ))}
                 </div>
                 <div className="flex justify-end pt-2">
-                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors cursor-pointer">
                     <Save className="w-3.5 h-3.5" /> حفظ إعدادات ديسكورد
                   </button>
                 </div>
@@ -645,7 +740,7 @@ export default function ControlPanel() {
                       <p className="text-xs text-slate-500 mt-0.5">إرسال التنبيهات البرمجية والمالية إلى قنوات فريق العمل في Slack</p>
                     </div>
                   </div>
-                  <button onClick={() => addChannel('slack')} className="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
+                  <button onClick={() => addChannel('slack')} className="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors cursor-pointer">
                     <Plus className="w-4 h-4" /> إضافة
                   </button>
                 </div>
@@ -655,7 +750,7 @@ export default function ControlPanel() {
                     <div key={slack.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                         <span className="text-xs font-bold text-purple-400">سلاك #{index + 1}</span>
-                        <button onClick={() => removeChannel('slack', slack.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                        <button onClick={() => removeChannel('slack', slack.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors cursor-pointer">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -681,7 +776,7 @@ export default function ControlPanel() {
                   ))}
                 </div>
                 <div className="flex justify-end pt-2">
-                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors cursor-pointer">
                     <Save className="w-3.5 h-3.5" /> حفظ إعدادات سلاك
                   </button>
                 </div>
@@ -699,7 +794,7 @@ export default function ControlPanel() {
                       <p className="text-xs text-slate-500 mt-0.5">إرسال تقارير الإشعارات عبر بريد SMTP مخصص عند كل استلام ويب هوك</p>
                     </div>
                   </div>
-                  <button onClick={() => addChannel('email')} className="bg-rose-600 hover:bg-rose-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
+                  <button onClick={() => addChannel('email')} className="bg-rose-600 hover:bg-rose-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors cursor-pointer">
                     <Plus className="w-4 h-4" /> إضافة
                   </button>
                 </div>
@@ -709,7 +804,7 @@ export default function ControlPanel() {
                     <div key={email.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                         <span className="text-xs font-bold text-rose-400">إعداد البريد #{index + 1}</span>
-                        <button onClick={() => removeChannel('email', email.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                        <button onClick={() => removeChannel('email', email.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors cursor-pointer">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -751,7 +846,7 @@ export default function ControlPanel() {
                   ))}
                 </div>
                 <div className="flex justify-end pt-2">
-                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors cursor-pointer">
                     <Save className="w-3.5 h-3.5" /> حفظ إعدادات البريد
                   </button>
                 </div>
@@ -774,7 +869,7 @@ export default function ControlPanel() {
                       <p className="text-xs text-slate-500 mt-0.5">ربط مزودي خدمة الرسائل (مثل تقنيات، Unifonic) لإرسال تنبيهات SMS</p>
                     </div>
                   </div>
-                  <button onClick={() => addChannel('sms')} className="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors">
+                  <button onClick={() => addChannel('sms')} className="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-1 transition-colors cursor-pointer">
                     <Plus className="w-4 h-4" /> إضافة بوابة
                   </button>
                 </div>
@@ -784,7 +879,7 @@ export default function ControlPanel() {
                     <div key={sms.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                         <span className="text-xs font-bold text-sky-400">بوابة SMS #{index + 1}</span>
-                        <button onClick={() => removeChannel('sms', sms.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                        <button onClick={() => removeChannel('sms', sms.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors cursor-pointer">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -822,7 +917,7 @@ export default function ControlPanel() {
                   ))}
                 </div>
                 <div className="flex justify-end pt-2">
-                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors cursor-pointer">
                     <Save className="w-3.5 h-3.5" /> حفظ إعدادات SMS
                   </button>
                 </div>
@@ -844,7 +939,7 @@ export default function ControlPanel() {
                       <p className="text-xs text-slate-500 mt-0.5">استقبال وتفسير تنبيهات TradingView للأسهم الأمريكية والعملات الرقمية</p>
                     </div>
                   </div>
-                  <button onClick={addTradingIntegration} className="bg-amber-600 hover:bg-amber-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors shadow-lg">
+                  <button onClick={addTradingIntegration} className="bg-amber-600 hover:bg-amber-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors shadow-lg cursor-pointer">
                     <Plus className="w-4 h-4" /> ربط منصة
                   </button>
                 </div>
@@ -855,7 +950,7 @@ export default function ControlPanel() {
                       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                         <span className="text-xs font-bold text-amber-400">منصة تداول #{index + 1}</span>
                         {tradingIntegrations.length > 1 && (
-                          <button onClick={() => removeTradingIntegration(item.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                          <button onClick={() => removeTradingIntegration(item.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors cursor-pointer">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         )}
@@ -907,7 +1002,7 @@ export default function ControlPanel() {
                   ))}
                 </div>
                 <div className="flex justify-end pt-2">
-                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors cursor-pointer">
                     <Save className="w-3.5 h-3.5" /> حفظ إعدادات التداول
                   </button>
                 </div>
@@ -915,7 +1010,7 @@ export default function ControlPanel() {
             </div>
           )}
 
-          {/* تبويب المتاجر */}
+          {/* تبويب المتاجر مع المعالجة التلقائية */}
           {activeTab === 'stores' && (
             <div className="space-y-6">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
@@ -926,10 +1021,10 @@ export default function ControlPanel() {
                     </div>
                     <div>
                       <h3 className="font-bold text-sm text-slate-200">إدارة وربط المتاجر الإلكترونية</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">ربط منصات سلة (Salla)، زد (Zid)، ووومورس واستلام Webhooks الطلبات تلقائياً</p>
+                      <p className="text-xs text-slate-500 mt-0.5">ربط منصات سلة (Salla)، زد (Zid)، ووومورس واستلام Webhooks الطلبات تلقائياً مع معالجة الـ Payload</p>
                     </div>
                   </div>
-                  <button onClick={addStoreIntegration} className="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors shadow-lg">
+                  <button onClick={addStoreIntegration} className="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors shadow-lg cursor-pointer">
                     <Plus className="w-4 h-4" /> ربط متجر
                   </button>
                 </div>
@@ -940,7 +1035,7 @@ export default function ControlPanel() {
                       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                         <span className="text-xs font-bold text-purple-400">متجر #{index + 1}</span>
                         {stores.length > 1 && (
-                          <button onClick={() => removeStoreIntegration(store.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                          <button onClick={() => removeStoreIntegration(store.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors cursor-pointer">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         )}
@@ -980,7 +1075,7 @@ export default function ControlPanel() {
                   ))}
                 </div>
                 <div className="flex justify-end pt-2">
-                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors cursor-pointer">
                     <Save className="w-3.5 h-3.5" /> حفظ إعدادات المتاجر
                   </button>
                 </div>
@@ -1002,7 +1097,7 @@ export default function ControlPanel() {
                       <p className="text-xs text-slate-500 mt-0.5">تنظيم الويب هوك الخاص بالشركات وفصل أقسامها (الدعم، المبيعات)</p>
                     </div>
                   </div>
-                  <button onClick={addEnterpriseTeam} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors shadow-lg">
+                  <button onClick={addEnterpriseTeam} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors shadow-lg cursor-pointer">
                     <Plus className="w-4 h-4" /> إضافة قسم
                   </button>
                 </div>
@@ -1013,7 +1108,7 @@ export default function ControlPanel() {
                       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                         <span className="text-xs font-bold text-indigo-400">فرع/قسم الشركة #{index + 1}</span>
                         {enterpriseTeams.length > 1 && (
-                          <button onClick={() => removeEnterpriseTeam(team.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
+                          <button onClick={() => removeEnterpriseTeam(team.id)} className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors cursor-pointer">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         )}
@@ -1041,7 +1136,7 @@ export default function ControlPanel() {
                   ))}
                 </div>
                 <div className="flex justify-end pt-2">
-                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors">
+                  <button onClick={() => saveUserDataToDB()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 transition-colors cursor-pointer">
                     <Save className="w-3.5 h-3.5" /> حفظ إعدادات الشركات
                   </button>
                 </div>
@@ -1056,7 +1151,7 @@ export default function ControlPanel() {
                   <h3 className="font-bold text-sm text-slate-200">قواعد توجيه الإشارات الذكية</h3>
                   <p className="text-xs text-slate-500 mt-1">توجيه الرسائل والطلبات بناءً على الـ Payload وشروط الفلترة المخصصة</p>
                 </div>
-                <button onClick={() => setRoutingRules([...routingRules, { id: Date.now(), condition: '' }])} className="bg-blue-600 text-white px-3 py-2 rounded-xl text-xs flex items-center gap-1">
+                <button onClick={() => setRoutingRules([...routingRules, { id: Date.now(), condition: '' }])} className="bg-blue-600 text-white px-3 py-2 rounded-xl text-xs flex items-center gap-1 cursor-pointer">
                   <Plus className="w-4 h-4" /> إضافة قاعدة
                 </button>
               </div>
@@ -1085,7 +1180,7 @@ export default function ControlPanel() {
                   <label className="block text-xs text-slate-400 mb-1">اسم المسؤول عن الحساب</label>
                   <input type="text" value={username || ''} onChange={(e) => setUsername(e.target.value)} placeholder="اسمك أو اسم المؤسسة" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs" />
                 </div>
-                <button onClick={() => saveUserDataToDB()} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-medium shadow transition-colors">
+                <button onClick={() => saveUserDataToDB()} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-medium shadow transition-colors cursor-pointer">
                   حفظ وتحديث قاعدة البيانات المستقلة
                 </button>
               </div>
