@@ -18,7 +18,10 @@ import {
   Building2,
   Lock,
   Plus,
-  AlertTriangle
+  AlertTriangle,
+  Calendar,
+  Clock,
+  Award
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -31,10 +34,13 @@ export default function DashboardPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // هيكل البيانات الشامل
+  // هيكل البيانات الشامل مع إضافة حقول الاشتراك ومدة الاشتراك ومدى الحياة
   const [settings, setSettings] = useState({
     username: '',
     userPlan: 'free' as string,
+    subscriptionStatus: 'active' as string,
+    subscriptionExpiry: '' as string,
+    lifetimeAccess: false as boolean,
     tradingviewWebhook: '',
     binanceWebhook: '',
     metaTraderWebhook: '',
@@ -119,6 +125,9 @@ export default function DashboardPage() {
         setSettings({
           username: data.username || '',
           userPlan: data.user_plan || 'free',
+          subscriptionStatus: data.subscription_status || 'active',
+          subscriptionExpiry: data.subscription_expiry ? data.subscription_expiry.split('T')[0] : '',
+          lifetimeAccess: data.lifetime_access || false,
           tradingviewWebhook: data.tradingview_webhook || '',
           binanceWebhook: data.binance_webhook || '',
           metaTraderWebhook: data.metatrader_webhook || '',
@@ -147,11 +156,10 @@ export default function DashboardPage() {
     }
   };
 
-  // التحكم الصارم بقناة مجانية واحدة فقط (تم إصلاح خطأ TypeScript بنجاح)
-  const handleFieldChange = (field: string, value: string, category: string) => {
+  const handleFieldChange = (field: string, value: any, category: string = '') => {
     const isFree = settings.userPlan === 'free';
 
-    if (isFree && value.trim() !== '') {
+    if (category && isFree && value.trim() !== '') {
       if (settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== category) {
         router.push(`/upgrade?service=all_channels`);
         return;
@@ -164,7 +172,7 @@ export default function DashboardPage() {
     }
 
     let updatedGlobal = { ...settings.lockedGlobalChannel };
-    if (isFree && !updatedGlobal.identifier && value.trim() !== '') {
+    if (category && isFree && !updatedGlobal.identifier && value.trim() !== '') {
       updatedGlobal = { category, identifier: value };
     }
 
@@ -189,7 +197,27 @@ export default function DashboardPage() {
       const res = await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, ...settings }),
+        body: JSON.stringify({ 
+          slug, 
+          username: settings.username,
+          user_plan: settings.userPlan,
+          subscription_status: settings.subscriptionStatus,
+          subscription_expiry: settings.subscriptionExpiry || null,
+          lifetime_access: settings.lifetimeAccess,
+          telegram_token: settings.telegramToken,
+          discord_webhook: settings.discordWebhook,
+          tradingview_webhook: settings.tradingviewWebhook,
+          binance_webhook: settings.binanceWebhook,
+          metatrader_webhook: settings.metaTraderWebhook,
+          whatsapp_api_url: settings.whatsappApiUrl,
+          whatsapp_token: settings.whatsappToken,
+          email_to: settings.emailTo,
+          sms_endpoint: settings.smsEndpoint,
+          corporate_name: settings.corporateName,
+          corporate_api_key: settings.corporateApiKey,
+          corporate_endpoint: settings.corporateEndpoint,
+          upgraded_services: settings.upgradedServices
+        }),
       });
 
       if (!res.ok) {
@@ -199,7 +227,7 @@ export default function DashboardPage() {
       const result = await res.json();
 
       if (result.success) {
-        setSuccessMsg('تم حفظ وتحديث الإعدادات بنجاح في قاعدة البيانات وسيتم استرجاعها دائماً!');
+        setSuccessMsg('تم حفظ وتحديث الإعدادات والاشتراكات بنجاح في قاعدة البيانات!');
         setTimeout(() => setSuccessMsg(''), 4000);
       } else {
         setErrorMsg(result.error || 'حدث خطأ أثناء الحفظ');
@@ -321,48 +349,80 @@ export default function DashboardPage() {
           
           <div className="flex items-center gap-2 border-b border-slate-800 pb-4">
             <Settings className="w-5 h-5 text-blue-400" />
-            <h2 className="text-sm font-bold text-slate-200">إعدادات المنصات والقنوات</h2>
+            <h2 className="text-sm font-bold text-slate-200">إعدادات الحساب والاشتراكات والقنوات</h2>
           </div>
 
           <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 p-4 rounded-2xl text-xs flex items-start gap-3 shadow-lg">
             <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-400 mt-0.5" />
             <div className="space-y-1">
-              <strong className="block text-amber-200 font-bold">قاعدة الباقة المجانية:</strong>
+              <strong className="block text-amber-200 font-bold">معلومات إدارة الاشتراكات:</strong>
               <p className="text-amber-300/90 leading-relaxed">
-                يُسمح لك بقناة واحدة فقط مجاناً لإجمالي الأقسام. سيتم حفظ بياناتك دائماً في قاعدة البيانات واسترجاعها تلقائياً عند تسجيل الدخول في أي وقت.
+                يمكنك التحكم بخطة حسابك، وتحديد تاريخ انتهاء الصلاحية، أو تفعيل خيار (اشتراك مدى الحياة) لتظل الخدمة نشطة بلا توقف.
               </p>
             </div>
           </div>
 
+          {/* 1. معلومات الحساب والاشتراك */}
           <div className="space-y-4">
-            <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider">1. معلومات الحساب الأساسية</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
+              <Award className="w-3.5 h-3.5" /> 1. معلومات الحساب وإدارة الاشتراكات
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300">اسم المستخدم أو اللقب</label>
                 <input 
                   type="text"
                   value={settings.username}
-                  onChange={(e) => setSettings({...settings, username: e.target.value})}
+                  onChange={(e) => handleFieldChange('username', e.target.value)}
                   placeholder="أدخل اسمك"
                   className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500 transition-all"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">نوع الخطة العامة</label>
+                <label className="text-xs font-medium text-slate-300">نوع الخطة (الباقة)</label>
                 <select
                   value={settings.userPlan}
-                  onChange={(e) => setSettings({...settings, userPlan: e.target.value})}
+                  onChange={(e) => handleFieldChange('userPlan', e.target.value)}
                   className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition-all"
                 >
-                  <option value="free">المجانية (قناة واحدة فقط لجميع الأقسام)</option>
-                  <option value="pro">المتقدمة (Pro - قنوات غير محدودة)</option>
+                  <option value="free">المجانية (قناة واحدة)</option>
+                  <option value="pro">المتقدمة (Pro)</option>
                   <option value="enterprise">الشركات (Enterprise)</option>
                 </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-blue-400" /> تاريخ انتهاء الاشتراك
+                </label>
+                <input 
+                  type="date"
+                  value={settings.subscriptionExpiry}
+                  disabled={settings.lifetimeAccess}
+                  onChange={(e) => handleFieldChange('subscriptionExpiry', e.target.value)}
+                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition-all disabled:opacity-40"
+                />
+              </div>
+
+              <div className="space-y-1.5 flex flex-col justify-end">
+                <label className="flex items-center gap-2.5 bg-slate-950/80 border border-slate-800 hover:border-amber-500/40 px-4 py-2.5 rounded-xl cursor-pointer transition-all">
+                  <input 
+                    type="checkbox"
+                    checked={settings.lifetimeAccess}
+                    onChange={(e) => handleFieldChange('lifetimeAccess', e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-700 text-amber-500 focus:ring-amber-500 bg-slate-900 cursor-pointer"
+                  />
+                  <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" /> اشتراك مدى الحياة
+                  </span>
+                </label>
               </div>
             </div>
           </div>
 
+          {/* 2. منصات التداول */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
@@ -381,7 +441,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>TradingView Webhook</span>
-                  {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'trading_platforms' && <Lock className="w-3 h-3 text-amber-400" />}
+                  {settings.userPlan === 'free' && !settings.lifetimeAccess && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'trading_platforms' && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
@@ -396,7 +456,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>Binance Execution Hook</span>
-                  {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'trading_platforms' && <Lock className="w-3 h-3 text-amber-400" />}
+                  {settings.userPlan === 'free' && !settings.lifetimeAccess && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'trading_platforms' && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
@@ -411,7 +471,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>MetaTrader Bridge Hook</span>
-                  {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'trading_platforms' && <Lock className="w-3 h-3 text-amber-400" />}
+                  {settings.userPlan === 'free' && !settings.lifetimeAccess && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'trading_platforms' && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
@@ -425,6 +485,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* 3. قنوات الإشعارات والتواصل */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
               <MessageCircle className="w-3.5 h-3.5" /> 3. قنوات الإشعارات والتواصل
@@ -436,7 +497,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     تليجرام (Bot Token فقط)
-                    {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'telegram' && <Lock className="w-3 h-3 text-amber-400" />}
+                    {settings.userPlan === 'free' && !settings.lifetimeAccess && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'telegram' && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
@@ -469,7 +530,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     ديسكورد (Discord Webhook)
-                    {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'discord' && <Lock className="w-3 h-3 text-amber-400" />}
+                    {settings.userPlan === 'free' && !settings.lifetimeAccess && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'discord' && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
@@ -493,7 +554,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     خدمة واتساب (WhatsApp API)
-                    {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'whatsapp' && <Lock className="w-3 h-3 text-amber-400" />}
+                    {settings.userPlan === 'free' && !settings.lifetimeAccess && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'whatsapp' && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
@@ -517,7 +578,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     البريد الإلكتروني والرسائل
-                    {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'email_sms' && <Lock className="w-3 h-3 text-amber-400" />}
+                    {settings.userPlan === 'free' && !settings.lifetimeAccess && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'email_sms' && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
@@ -540,6 +601,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* 4. باقة الشركات والمؤسسات */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
