@@ -129,12 +129,10 @@ export default function DashboardPage() {
     const lockedVal = settings.lockedChannels[lockedKey];
 
     if (isFree && lockedVal && lockedVal !== '' && value !== lockedVal) {
-      // حاول المستخدم تعديل القناة المثبتة أو إضافة قناة جديدة
       router.push(`/upgrade?service=${category}`);
       return;
     }
 
-    // إذا كانت القناة فارغة وتمت كتابتها لأول مرة في الباقة المجانية، نقوم بتثبيتها
     let updatedLocked = { ...settings.lockedChannels };
     if (isFree && !lockedVal && value.trim() !== '') {
       updatedLocked[lockedKey] = value;
@@ -296,7 +294,6 @@ export default function DashboardPage() {
             <h2 className="text-sm font-bold text-slate-200">إعدادات المنصات، القنوات، وقسم الشركات</h2>
           </div>
 
-          {/* تنبيه الباقة المجانية الدائمة */}
           {settings.userPlan === 'free' && (
             <div className="bg-blue-500/10 border border-blue-500/20 text-blue-300 p-3.5 rounded-2xl text-xs flex items-center gap-3">
               <Sparkles className="w-4 h-4 flex-shrink-0 text-blue-400" />
@@ -354,7 +351,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>TradingView Webhook</span>
-                  {settings.lockedChannels.trading === settings.tradingviewWebhook && settings.tradingviewWebhook && <Lock className="w-3 h-3 text-amber-400" title="قناة مجانية مثبتة" />}
+                  {settings.lockedChannels.trading === settings.tradingviewWebhook && settings.tradingviewWebhook && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
@@ -369,7 +366,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>Binance Execution Hook</span>
-                  {settings.lockedChannels.trading === settings.binanceWebhook && settings.binanceWebhook && <Lock className="w-3 h-3 text-amber-400" title="قناة مجانية مثبتة" />}
+                  {settings.lockedChannels.trading === settings.binanceWebhook && settings.binanceWebhook && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
@@ -384,7 +381,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>MetaTrader Bridge Hook</span>
-                  {settings.lockedChannels.trading === settings.metaTraderWebhook && settings.metaTraderWebhook && <Lock className="w-3 h-3 text-amber-400" title="قناة مجانية مثبتة" />}
+                  {settings.lockedChannels.trading === settings.metaTraderWebhook && settings.metaTraderWebhook && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
@@ -411,7 +408,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     تليجرام (Telegram Bot)
-                    {settings.lockedChannels.telegram && <Lock className="w-3 h-3 text-amber-400" title="مبتة مجاناً" />}
+                    {settings.lockedChannels.telegram && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
@@ -445,7 +442,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     ديسكورد (Discord Webhook)
-                    {settings.lockedChannels.discord && <Lock className="w-3 h-3 text-amber-400" title="مثبتة مجاناً" />}
+                    {settings.lockedChannels.discord && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
@@ -471,7 +468,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     خدمة واتساب (WhatsApp API)
-                    {settings.lockedChannels.whatsapp && <Lock className="w-3 h-3 text-amber-400" title="مثبتة مجاناً" />}
+                    {settings.lockedChannels.whatsapp && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
@@ -497,7 +494,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     البريد الإلكتروني والرسائل القصيرة
-                    {settings.lockedChannels.emailSms && <Lock className="w-3 h-3 text-amber-400" title="مثبتة مجاناً" />}
+                    {settings.lockedChannels.emailSms && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
