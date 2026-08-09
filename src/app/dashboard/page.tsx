@@ -15,9 +15,12 @@ import {
   MessageCircle,
   Mail,
   Smartphone,
-  Hash,
   Globe,
-  Sparkles
+  Sparkles,
+  TrendingUp,
+  Building2,
+  Lock,
+  ArrowUpRight
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -30,10 +33,15 @@ export default function DashboardPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // هيكل البيانات الشامل لجميع قنوات الإشعارات والإعدادات
+  // هيكل البيانات الشامل لجميع الخدمات ومنصات التداول والشركات
   const [settings, setSettings] = useState({
     username: '',
     userPlan: 'free',
+    // منصات التداول والرسوم البيانية
+    tradingviewWebhook: '',
+    binanceWebhook: '',
+    metaTraderWebhook: '',
+    // قنوات التواصل
     telegramToken: '',
     telegramChatId: '',
     discordWebhook: '',
@@ -42,9 +50,14 @@ export default function DashboardPage() {
     whatsappToken: '',
     emailTo: '',
     smsEndpoint: '',
+    // قسم الشركات
+    corporateName: '',
+    corporateApiKey: '',
+    corporateEndpoint: '',
+    // تفعيل الخدمات الفردية (الخطة المجانية)
+    upgradedServices: [] as string[],
   });
 
-  // التحقق من الجلسة وجلب البيانات من قاعدة البيانات عند التحميل
   useEffect(() => {
     const loggedIn = localStorage.getItem('isLoggedIn');
     const userSlug = localStorage.getItem('user_slug');
@@ -68,6 +81,9 @@ export default function DashboardPage() {
         setSettings({
           username: data.username || '',
           userPlan: data.user_plan || 'free',
+          tradingviewWebhook: data.tradingview_webhook || '',
+          binanceWebhook: data.binance_webhook || '',
+          metaTraderWebhook: data.metatrader_webhook || '',
           telegramToken: data.telegram_token || '',
           telegramChatId: data.telegram_chat_id || '',
           discordWebhook: data.discord_webhook || '',
@@ -76,6 +92,10 @@ export default function DashboardPage() {
           whatsappToken: data.whatsapp_token || '',
           emailTo: data.email_to || '',
           smsEndpoint: data.sms_endpoint || '',
+          corporateName: data.corporate_name || '',
+          corporateApiKey: data.corporate_api_key || '',
+          corporateEndpoint: data.corporate_endpoint || '',
+          upgradedServices: data.upgraded_services || [],
         });
       }
     } catch (error) {
@@ -96,25 +116,13 @@ export default function DashboardPage() {
       const res = await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          slug,
-          username: settings.username,
-          userPlan: settings.userPlan,
-          telegramToken: settings.telegramToken,
-          telegramChatId: settings.telegramChatId,
-          discordWebhook: settings.discordWebhook,
-          slackWebhook: settings.slackWebhook,
-          whatsappApiUrl: settings.whatsappApiUrl,
-          whatsappToken: settings.whatsappToken,
-          emailTo: settings.emailTo,
-          smsEndpoint: settings.smsEndpoint,
-        }),
+        body: JSON.stringify({ slug, ...settings }),
       });
 
       const result = await res.json();
 
       if (result.success) {
-        setSuccessMsg('تم حفظ جميع الإعدادات بنجاح في قاعدة البيانات!');
+        setSuccessMsg('تم حفظ وتحديث الإعدادات بنجاح في قاعدة البيانات!');
         setTimeout(() => setSuccessMsg(''), 4000);
       } else {
         setErrorMsg(result.error || 'حدث خطأ أثناء الحفظ');
@@ -124,6 +132,15 @@ export default function DashboardPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleUpgradeService = (serviceKey: string) => {
+    // محاكاة عملية ترقية خدمة أو قناة واحدة ضمن الخطة المجانية
+    const updated = settings.upgradedServices.includes(serviceKey)
+      ? settings.upgradedServices.filter(s => s !== serviceKey)
+      : [...settings.upgradedServices, serviceKey];
+    
+    setSettings({ ...settings, upgradedServices: updated });
   };
 
   const handleLogout = () => {
@@ -164,7 +181,7 @@ export default function DashboardPage() {
               <Webhook className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-slate-200">لوحة تحكم الإشارات الشاملة</h1>
+              <h1 className="text-sm font-bold text-slate-200">لوحة تحكم الإشارات الاحترافية</h1>
               <span className="text-[10px] text-blue-400 font-mono">Slug: @{slug}</span>
             </div>
           </div>
@@ -188,7 +205,6 @@ export default function DashboardPage() {
       {/* المحتوى الرئيسي */}
       <main className="max-w-6xl mx-auto px-4 mt-8 space-y-6">
 
-        {/* رسائل التنبيه والنجاح */}
         {successMsg && (
           <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-2xl text-xs flex items-center gap-3">
             <ShieldCheck className="w-5 h-5 flex-shrink-0" />
@@ -211,11 +227,11 @@ export default function DashboardPage() {
               رابط الويب هوك الموحد (Webhook Endpoint)
             </h2>
             <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-full font-mono">
-              متوافق مع TradingView والمنصات الخارجية
+              متوافق مع TradingView، Binance وغيرها
             </span>
           </div>
           <p className="text-xs text-slate-400 mb-4">
-            قم بلصق هذا الرابط في تنبيهات التداول، وسيقوم النظام تلقائياً بتوجيه الإشارة إلى جميع القنوات المفعلة أدناه.
+            قم بلصق هذا الرابط في منصات التداول لاستقبال التنبيهات وإرسالها فورياً للقنوات المفعلة.
           </p>
 
           <div className="flex items-center gap-2">
@@ -236,15 +252,15 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* نموذج الإعدادات وقنوات الربط */}
+        {/* نموذج الإعدادات الشامل */}
         <form onSubmit={handleSave} className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 shadow-xl backdrop-blur-md space-y-8">
           
           <div className="flex items-center gap-2 border-b border-slate-800 pb-4">
             <Settings className="w-5 h-5 text-blue-400" />
-            <h2 className="text-sm font-bold text-slate-200">إعدادات الحساب وقنوات التنبيه الشاملة</h2>
+            <h2 className="text-sm font-bold text-slate-200">إعدادات المنصات، الخدمات، وقسم الشركات</h2>
           </div>
 
-          {/* القسم الأول: البيانات العامة */}
+          {/* 1. معلومات الحساب الأساسية */}
           <div className="space-y-4">
             <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider">1. معلومات الحساب الأساسية</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -260,141 +276,256 @@ export default function DashboardPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">نوع الخطة</label>
+                <label className="text-xs font-medium text-slate-300">نوع الخطة العامة</label>
                 <select
                   value={settings.userPlan}
                   onChange={(e) => setSettings({...settings, userPlan: e.target.value})}
                   className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition-all"
                 >
-                  <option value="free">المجانية (Free)</option>
-                  <option value="pro">المتقدمة (Pro)</option>
+                  <option value="free">المجانية (Free) مع إمكانية ترقية خدمات منفردة</option>
+                  <option value="pro">المتقدمة (Pro - شاملة)</option>
                   <option value="enterprise">الشركات (Enterprise)</option>
                 </select>
               </div>
             </div>
           </div>
 
-          {/* القسم الثاني: تليجرام وديسكورد */}
+          {/* 2. منصات التداول والرسوم البيانية (TradingView, Binance, MetaTrader) */}
+          <div className="space-y-4 pt-4 border-t border-slate-800/80">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
+                <TrendingUp className="w-3.5 h-3.5" /> 2. منصات التداول والرسوم البيانية (TradingView & Binance)
+              </h3>
+              <button
+                type="button"
+                onClick={() => handleUpgradeService('trading_platforms')}
+                className={`text-[10px] px-3 py-1 rounded-lg border transition-all flex items-center gap-1 ${
+                  settings.upgradedServices.includes('trading_platforms')
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                    : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
+                }`}
+              >
+                <Sparkles className="w-3 h-3" />
+                {settings.upgradedServices.includes('trading_platforms') ? 'الخدمة مميزة (مدفوعة فردياً)' : 'ترقية هذه الخدمة فقط'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-300">TradingView Alert Webhook</label>
+                <input 
+                  type="text"
+                  value={settings.tradingviewWebhook}
+                  onChange={(e) => setSettings({...settings, tradingviewWebhook: e.target.value})}
+                  placeholder="Custom secret or token"
+                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
+                  dir="ltr"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-300">Binance Execution Hook</label>
+                <input 
+                  type="text"
+                  value={settings.binanceWebhook}
+                  onChange={(e) => setSettings({...settings, binanceWebhook: e.target.value})}
+                  placeholder="Binance API key/secret ID"
+                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
+                  dir="ltr"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-300">MetaTrader Bridge Hook</label>
+                <input 
+                  type="text"
+                  value={settings.metaTraderWebhook}
+                  onChange={(e) => setSettings({...settings, metaTraderWebhook: e.target.value})}
+                  placeholder="MT4/MT5 Endpoint ID"
+                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 3. قنوات التواصل (تليجرام، ديسكورد، سلاك، واتساب، البريد، SMS) مع زر ترقية لكل خدمة */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-              <Send className="w-3.5 h-3.5" /> 2. قنوات تليجرام وديسكورد
+              <MessageCircle className="w-3.5 h-3.5" /> 3. قنوات الإشعارات (مع خيار ترقية قناة واحدة ضمن الخطة المجانية)
             </h3>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">توكن بوت تليجرام (Telegram Bot Token)</label>
+              
+              {/* Telegram */}
+              <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-200">تليجرام (Telegram)</span>
+                  <button
+                    type="button"
+                    onClick={() => handleUpgradeService('telegram')}
+                    className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${
+                      settings.upgradedServices.includes('telegram')
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
+                    }`}
+                  >
+                    <Sparkles className="w-3 h3" />
+                    {settings.upgradedServices.includes('telegram') ? 'مفعل ومميز' : 'ترقية هذه القناة فقط'}
+                  </button>
+                </div>
                 <input 
                   type="text"
                   value={settings.telegramToken}
                   onChange={(e) => setSettings({...settings, telegramToken: e.target.value})}
-                  placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
+                  placeholder="Telegram Bot Token"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                   dir="ltr"
                 />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">معرف المحادثة/القناة (Telegram Chat ID)</label>
                 <input 
                   type="text"
                   value={settings.telegramChatId}
                   onChange={(e) => setSettings({...settings, telegramChatId: e.target.value})}
-                  placeholder="-100xxxxxxxxxx"
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
+                  placeholder="Chat ID (-100...)"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                   dir="ltr"
                 />
               </div>
 
-              <div className="space-y-1.5 md:col-span-2">
-                <label className="text-xs font-medium text-slate-300">رابط ديسكورد ويب هوك (Discord Webhook URL)</label>
+              {/* Discord */}
+              <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-200">ديسكورد (Discord)</span>
+                  <button
+                    type="button"
+                    onClick={() => handleUpgradeService('discord')}
+                    className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${
+                      settings.upgradedServices.includes('discord')
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {settings.upgradedServices.includes('discord') ? 'مفعل ومميز' : 'ترقية هذه القناة فقط'}
+                  </button>
+                </div>
                 <input 
                   type="text"
                   value={settings.discordWebhook}
                   onChange={(e) => setSettings({...settings, discordWebhook: e.target.value})}
-                  placeholder="https://discord.com/api/webhooks/..."
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
-                  dir="ltr"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* القسم الثالث: سلاك وواتساب */}
-          <div className="space-y-4 pt-4 border-t border-slate-800/80">
-            <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-              <MessageCircle className="w-3.5 h-3.5" /> 3. قنوات سلاك (Slack) وواتساب (WhatsApp)
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="space-y-1.5 md:col-span-2">
-                <label className="text-xs font-medium text-slate-300">رابط سلاك ويب هوك (Slack Webhook URL)</label>
-                <input 
-                  type="text"
-                  value={settings.slackWebhook}
-                  onChange={(e) => setSettings({...settings, slackWebhook: e.target.value})}
-                  placeholder="https://hooks.slack.com/services/..."
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
+                  placeholder="Discord Webhook URL"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                   dir="ltr"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">رابط واجهة برمجة واتساب (WhatsApp API URL)</label>
+              {/* WhatsApp */}
+              <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-200">واتساب (WhatsApp API)</span>
+                  <button
+                    type="button"
+                    onClick={() => handleUpgradeService('whatsapp')}
+                    className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${
+                      settings.upgradedServices.includes('whatsapp')
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {settings.upgradedServices.includes('whatsapp') ? 'مفعل ومميز' : 'ترقية هذه القناة فقط'}
+                  </button>
+                </div>
                 <input 
                   type="text"
                   value={settings.whatsappApiUrl}
                   onChange={(e) => setSettings({...settings, whatsappApiUrl: e.target.value})}
-                  placeholder="https://api.whatsapp-gateway.com/send"
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
+                  placeholder="WhatsApp API Endpoint"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                   dir="ltr"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">توكن مصادقة واتساب (WhatsApp Token)</label>
-                <input 
-                  type="text"
-                  value={settings.whatsappToken}
-                  onChange={(e) => setSettings({...settings, whatsappToken: e.target.value})}
-                  placeholder="Bearer token or API key"
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
-                  dir="ltr"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* القسم الرابع: البريد الإلكتروني والـ SMS */}
-          <div className="space-y-4 pt-4 border-t border-slate-800/80">
-            <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-              <Mail className="w-3.5 h-3.5" /> 4. البريد الإلكتروني (Email) والرسائل القصيرة (SMS)
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">البريد المستقبل للإشارات (Email Destination)</label>
+              {/* Email & SMS */}
+              <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-200">البريد و SMS</span>
+                  <button
+                    type="button"
+                    onClick={() => handleUpgradeService('email_sms')}
+                    className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${
+                      settings.upgradedServices.includes('email_sms')
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {settings.upgradedServices.includes('email_sms') ? 'مفعل ومميز' : 'ترقية هذه الخدمة فقط'}
+                  </button>
+                </div>
                 <input 
                   type="email"
                   value={settings.emailTo}
                   onChange={(e) => setSettings({...settings, emailTo: e.target.value})}
-                  placeholder="alerts@yourdomain.com"
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500 transition-all"
+                  placeholder="alerts@domain.com"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
+                  dir="ltr"
+                />
+              </div>
+
+            </div>
+          </div>
+
+          {/* 4. قسم الشركات (Corporate Webhooks & Enterprise Settings) */}
+          <div className="space-y-4 pt-4 border-t border-slate-800/80">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
+                <Building2 className="w-3.5 h-3.5" /> 4. قسم الشركات والمؤسسات (Corporate & Enterprise)
+              </h3>
+              <span className="text-[10px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-0.5 rounded-full">
+                إدارة الصلاحيات المتقدمة
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 bg-slate-950/30 border border-slate-800/60 p-5 rounded-2xl">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-300">اسم الشركة أو المؤسسة</label>
+                <input 
+                  type="text"
+                  value={settings.corporateName}
+                  onChange={(e) => setSettings({...settings, corporateName: e.target.value})}
+                  placeholder="مثال: شركة سمو الأرقام للتقنية"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-100"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-300">مفتاح المصادقة (Corporate API Key)</label>
+                <input 
+                  type="text"
+                  value={settings.corporateApiKey}
+                  onChange={(e) => setSettings({...settings, corporateApiKey: e.target.value})}
+                  placeholder="corp_live_xxxxxxxxxx"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-100 font-mono"
                   dir="ltr"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">نقطة نهاية خدمة SMS (SMS API Endpoint)</label>
+                <label className="text-xs font-medium text-slate-300">رابط السيرفر المخصص (Enterprise URL)</label>
                 <input 
                   type="text"
-                  value={settings.smsEndpoint}
-                  onChange={(e) => setSettings({...settings, smsEndpoint: e.target.value})}
-                  placeholder="https://api.sms-provider.com/v1/send"
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
+                  value={settings.corporateEndpoint}
+                  onChange={(e) => setSettings({...settings, corporateEndpoint: e.target.value})}
+                  placeholder="https://api.yourcompany.com/v1/hook"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-100 font-mono"
                   dir="ltr"
                 />
               </div>
             </div>
           </div>
 
-          {/* زر الحفظ */}
+          {/* زر الحفظ النهائي */}
           <div className="pt-6 border-t border-slate-800 flex justify-end">
             <button 
               type="submit"
@@ -403,7 +534,7 @@ export default function DashboardPage() {
             >
               {isSaving ? (
                 <>
-                  جاري الحفظ في قاعدة البيانات <Loader2 className="w-4 h-4 animate-spin" />
+                  جاري الحفظ وتحديث قاعدة البيانات <Loader2 className="w-4 h-4 animate-spin" />
                 </>
               ) : (
                 <>
@@ -419,4 +550,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
