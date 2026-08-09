@@ -34,11 +34,11 @@ export default function DashboardPage() {
   // هيكل البيانات الشامل
   const [settings, setSettings] = useState({
     username: '',
-    userPlan: 'free',
+    userPlan: 'free' as string,
     tradingviewWebhook: '',
     binanceWebhook: '',
     metaTraderWebhook: '',
-    telegramToken: '', // الاعتماد على توكن البوت فقط لتليجرام
+    telegramToken: '', 
     discordWebhook: '',
     slackWebhook: '',
     whatsappApiUrl: '',
@@ -79,7 +79,6 @@ export default function DashboardPage() {
     }
   }, [router]);
 
-  // جلب إعدادات المستخدم من قاعدة البيانات واسترجاعها بدقة عند العودة أو تسجيل الدخول
   const fetchUserSettings = async (currentSlug: string) => {
     try {
       const res = await fetch(`/api/settings?slug=${currentSlug}`, {
@@ -108,7 +107,6 @@ export default function DashboardPage() {
         const initialEmailSms = data.email_to || '';
         const initialCorporate = data.corporate_name || '';
 
-        // تحديد القناة المسجلة مسبقاً لتثبيت القيد المجاني عند التحميل
         let globalLockedCat = '';
         let globalLockedVal = '';
         if (initialTrading) { globalLockedCat = 'trading_platforms'; globalLockedVal = initialTrading; }
@@ -149,9 +147,9 @@ export default function DashboardPage() {
     }
   };
 
-  // التحكم الصارم بقناة مجانية واحدة فقط لإجمالي المنصات
+  // التحكم الصارم بقناة مجانية واحدة فقط (تم إصلاح خطأ TypeScript بنجاح)
   const handleFieldChange = (field: string, value: string, category: string) => {
-    const isFree = settings.userPlan === 'free' && settings.userPlan !== 'pro' && settings.userPlan !== 'enterprise';
+    const isFree = settings.userPlan === 'free';
 
     if (isFree && value.trim() !== '') {
       if (settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== category) {
@@ -181,7 +179,6 @@ export default function DashboardPage() {
     router.push(`/upgrade?service=${category}`);
   };
 
-  // حفظ البيانات في قاعدة البيانات
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -244,7 +241,6 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-16" dir="rtl">
       
-      {/* شريط التنقل العلوي */}
       <header className="border-b border-slate-800/80 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -273,7 +269,6 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* المحتوى الرئيسي */}
       <main className="max-w-6xl mx-auto px-4 mt-8 space-y-6">
 
         {successMsg && (
@@ -290,7 +285,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* صندوق رابط الويب هوك */}
         <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 shadow-xl backdrop-blur-md">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
@@ -323,7 +317,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* نموذج الإعدادات */}
         <form onSubmit={handleSave} className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 shadow-xl backdrop-blur-md space-y-8">
           
           <div className="flex items-center gap-2 border-b border-slate-800 pb-4">
@@ -341,7 +334,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* معلومات الحساب الأساسية */}
           <div className="space-y-4">
             <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider">1. معلومات الحساب الأساسية</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -371,7 +363,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 2. منصات التداول والرسوم البيانية */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
@@ -434,7 +425,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 3. قنوات الإشعارات والتواصل */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
               <MessageCircle className="w-3.5 h-3.5" /> 3. قنوات الإشعارات والتواصل
@@ -442,7 +432,6 @@ export default function DashboardPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               
-              {/* Telegram (باستخدام التوكن فقط مع الخيارات) */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
@@ -476,7 +465,6 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Discord */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
@@ -501,7 +489,6 @@ export default function DashboardPage() {
                 />
               </div>
 
-              {/* WhatsApp */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
@@ -526,7 +513,6 @@ export default function DashboardPage() {
                 />
               </div>
 
-              {/* Email & SMS */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
@@ -554,7 +540,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 4. قسم الشركات (Enterprise) */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
@@ -607,7 +592,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* زر الحفظ النهائي */}
           <div className="pt-6 border-t border-slate-800 flex justify-end">
             <button 
               type="submit"
