@@ -71,11 +71,32 @@ export default function DashboardPage() {
 
     setSlug(userSlug);
     fetchUserSettings(userSlug);
+
+    // التحقق مما إذا كان المستخدم عائدًا من صفحة الترقية بنجاح
+    const queryParams = new URLSearchParams(window.location.search);
+    const upgradedService = queryParams.get('service');
+    if (upgradedService) {
+      setSettings(prev => ({
+        ...prev,
+        upgradedServices: [...new Set([...prev.upgradedServices, upgradedService])]
+      }));
+      setSuccessMsg(`تم تفعيل خدمة (${upgradedService}) بنجاح بعد الاشتراك! يمكنك الآن إضافة قنواتك الجديدة.`);
+      setTimeout(() => setSuccessMsg(''), 5000);
+    }
   }, [router]);
 
   const fetchUserSettings = async (currentSlug: string) => {
     try {
-      const res = await fetch(`/api/settings?slug=${currentSlug}`);
+      const res = await fetch(`/api/settings?slug=${currentSlug}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      // التحقق من سلامة استجابة الخادم
+      if (!res.ok) {
+        throw new Error(`خطأ في الخادم: ${res.status} ${res.statusText}`);
+      }
+
       const result = await res.json();
       
       if (result.success && result.data) {
@@ -107,10 +128,13 @@ export default function DashboardPage() {
             corporate: data.corporate_name || ''
           }
         });
+      } else {
+        // إذا لم تقم الخوادم بإنشاء سجل بعد، نقوم بتهيئة القيم الافتراضية بصمت دون إظهار خطأ مزعج
+        console.warn('لم يتم العثور على إعدادات سابقة، سيتم إنشاء إعدادات جديدة عند الحفظ.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching settings:', error);
-      setErrorMsg('فشل في جلب الإعدادات من قاعدة البيانات');
+      setErrorMsg('فشل في جلب الإعدادات من قاعدة البيانات: ' + (error.message || 'خطأ غير معروف'));
     } finally {
       setIsLoading(false);
     }
@@ -157,6 +181,10 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slug, ...settings }),
       });
+
+      if (!res.ok) {
+        throw new Error(`فشل الاتصال بالخادم برمز: ${res.status}`);
+      }
 
       const result = await res.json();
 
@@ -337,21 +365,23 @@ export default function DashboardPage() {
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
                 <TrendingUp className="w-3.5 h-3.5" /> 2. منصات التداول والرسوم البيانية
               </h3>
-              <button
-                type="button"
-                onClick={() => handleUpgradeService('trading_platforms')}
-                className="text-[10px] px-3 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
-              >
-                <Sparkles className="w-3 h-3" />
-                ترقية لفتح منصات متعددة <ArrowUpRight className="w-3 h-3" />
-              </button>
+              {!isUpgraded('trading_platforms') && (
+                <button
+                  type="button"
+                  onClick={() => handleUpgradeService('trading_platforms')}
+                  className="text-[10px] px-3 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  ترقية لفتح منصات متعددة <ArrowUpRight className="w-3 h-3" />
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>TradingView Webhook</span>
-                  {settings.lockedChannels.trading === settings.tradingviewWebhook && settings.tradingviewWebhook && <Lock className="w-3 h-3 text-amber-400" />}
+                  {!isUpgraded('trading_platforms') && settings.lockedChannels.trading === settings.tradingviewWebhook && settings.tradingviewWebhook && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
@@ -366,7 +396,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>Binance Execution Hook</span>
-                  {settings.lockedChannels.trading === settings.binanceWebhook && settings.binanceWebhook && <Lock className="w-3 h-3 text-amber-400" />}
+                  {!isUpgraded('trading_platforms') && settings.lockedChannels.trading === settings.binanceWebhook && settings.binanceWebhook && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
@@ -381,7 +411,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>MetaTrader Bridge Hook</span>
-                  {settings.lockedChannels.trading === settings.metaTraderWebhook && settings.metaTraderWebhook && <Lock className="w-3 h-3 text-amber-400" />}
+                  {!isUpgraded('trading_platforms') && settings.lockedChannels.trading === settings.metaTraderWebhook && settings.metaTraderWebhook && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
@@ -398,7 +428,7 @@ export default function DashboardPage() {
           {/* 3. قنوات الإشعارات والتواصل */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-              <MessageCircle className="w-3.5 h-3.5" /> 3. قنوات الإشعارات والتواصل (قناة واحدة لكل قسم)
+              <MessageCircle className="w-3.5 h-3.5" /> 3. قنوات الإشعارات والتواصل
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -408,16 +438,18 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     تليجرام (Telegram Bot)
-                    {settings.lockedChannels.telegram && <Lock className="w-3 h-3 text-amber-400" />}
+                    {!isUpgraded('telegram') && settings.lockedChannels.telegram && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => handleUpgradeService('telegram')}
-                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    ترقية لقنوات متعددة <ArrowUpRight className="w-3 h-3" />
-                  </button>
+                  {!isUpgraded('telegram') && (
+                    <button
+                      type="button"
+                      onClick={() => handleUpgradeService('telegram')}
+                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      ترقية لقنوات متعددة <ArrowUpRight className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
                 <input 
                   type="text"
@@ -442,16 +474,18 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     ديسكورد (Discord Webhook)
-                    {settings.lockedChannels.discord && <Lock className="w-3 h-3 text-amber-400" />}
+                    {!isUpgraded('discord') && settings.lockedChannels.discord && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => handleUpgradeService('discord')}
-                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    ترقية لسيرفرات متعددة <ArrowUpRight className="w-3 h-3" />
-                  </button>
+                  {!isUpgraded('discord') && (
+                    <button
+                      type="button"
+                      onClick={() => handleUpgradeService('discord')}
+                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      ترقية لسيرفرات متعددة <ArrowUpRight className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
                 <input 
                   type="text"
@@ -468,16 +502,18 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     خدمة واتساب (WhatsApp API)
-                    {settings.lockedChannels.whatsapp && <Lock className="w-3 h-3 text-amber-400" />}
+                    {!isUpgraded('whatsapp') && settings.lockedChannels.whatsapp && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => handleUpgradeService('whatsapp')}
-                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    ترقية الخدمة <ArrowUpRight className="w-3 h-3" />
-                  </button>
+                  {!isUpgraded('whatsapp') && (
+                    <button
+                      type="button"
+                      onClick={() => handleUpgradeService('whatsapp')}
+                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      ترقية الخدمة <ArrowUpRight className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
                 <input 
                   type="text"
@@ -494,16 +530,18 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     البريد الإلكتروني والرسائل القصيرة
-                    {settings.lockedChannels.emailSms && <Lock className="w-3 h-3 text-amber-400" />}
+                    {!isUpgraded('email_sms') && settings.lockedChannels.emailSms && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => handleUpgradeService('email_sms')}
-                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    ترقية الخدمة <ArrowUpRight className="w-3 h-3" />
-                  </button>
+                  {!isUpgraded('email_sms') && (
+                    <button
+                      type="button"
+                      onClick={() => handleUpgradeService('email_sms')}
+                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      ترقية الخدمة <ArrowUpRight className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
                 <input 
                   type="email"
@@ -524,14 +562,16 @@ export default function DashboardPage() {
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
                 <Building2 className="w-3.5 h-3.5" /> 4. باقة الشركات والمؤسسات الكاملة (Enterprise)
               </h3>
-              <button
-                type="button"
-                onClick={() => handleUpgradeService('corporate')}
-                className="text-[10px] px-3 py-1 rounded-lg border bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20 transition-all flex items-center gap-1 cursor-pointer"
-              >
-                <Sparkles className="w-3 h-3" />
-                ترقية باقة الشركات <ArrowUpRight className="w-3 h-3" />
-              </button>
+              {!isUpgraded('corporate') && (
+                <button
+                  type="button"
+                  onClick={() => handleUpgradeService('corporate')}
+                  className="text-[10px] px-3 py-1 rounded-lg border bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  ترقية باقة الشركات <ArrowUpRight className="w-3 h-3" />
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 bg-slate-950/30 border border-slate-800/60 p-5 rounded-2xl">
@@ -597,3 +637,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
