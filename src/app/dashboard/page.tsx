@@ -134,13 +134,9 @@ export default function DashboardPage() {
     }
   };
 
+  // التوجيه إلى صفحة الترقية والدفع عند الضغط على زر الترقية الخاص بأي خدمة
   const handleUpgradeService = (serviceKey: string) => {
-    // محاكاة عملية ترقية خدمة أو قناة واحدة ضمن الخطة المجانية
-    const updated = settings.upgradedServices.includes(serviceKey)
-      ? settings.upgradedServices.filter(s => s !== serviceKey)
-      : [...settings.upgradedServices, serviceKey];
-    
-    setSettings({ ...settings, upgradedServices: updated });
+    router.push(`/upgrade?service=${serviceKey}`);
   };
 
   const handleLogout = () => {
@@ -299,14 +295,10 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => handleUpgradeService('trading_platforms')}
-                className={`text-[10px] px-3 py-1 rounded-lg border transition-all flex items-center gap-1 ${
-                  settings.upgradedServices.includes('trading_platforms')
-                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                    : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
-                }`}
+                className="text-[10px] px-3 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
               >
                 <Sparkles className="w-3 h-3" />
-                {settings.upgradedServices.includes('trading_platforms') ? 'الخدمة مميزة (مدفوعة فردياً)' : 'ترقية هذه الخدمة فقط'}
+                ترقية هذه الخدمة فقط <ArrowUpRight className="w-3 h-3" />
               </button>
             </div>
 
@@ -364,14 +356,10 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => handleUpgradeService('telegram')}
-                    className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${
-                      settings.upgradedServices.includes('telegram')
-                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
-                    }`}
+                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
                   >
-                    <Sparkles className="w-3 h3" />
-                    {settings.upgradedServices.includes('telegram') ? 'مفعل ومميز' : 'ترقية هذه القناة فقط'}
+                    <Sparkles className="w-3 h-3" />
+                    ترقية هذه القناة فقط <ArrowUpRight className="w-3 h-3" />
                   </button>
                 </div>
                 <input 
@@ -399,14 +387,10 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => handleUpgradeService('discord')}
-                    className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${
-                      settings.upgradedServices.includes('discord')
-                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
-                    }`}
+                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3" />
-                    {settings.upgradedServices.includes('discord') ? 'مفعل ومميز' : 'ترقية هذه القناة فقط'}
+                    ترقية هذه القناة فقط <ArrowUpRight className="w-3 h-3" />
                   </button>
                 </div>
                 <input 
@@ -426,14 +410,10 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => handleUpgradeService('whatsapp')}
-                    className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${
-                      settings.upgradedServices.includes('whatsapp')
-                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
-                    }`}
+                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3" />
-                    {settings.upgradedServices.includes('whatsapp') ? 'مفعل ومميز' : 'ترقية هذه القناة فقط'}
+                    ترقية هذه القناة فقط <ArrowUpRight className="w-3 h-3" />
                   </button>
                 </div>
                 <input 
@@ -453,14 +433,10 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => handleUpgradeService('email_sms')}
-                    className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${
-                      settings.upgradedServices.includes('email_sms')
-                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
-                    }`}
+                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3" />
-                    {settings.upgradedServices.includes('email_sms') ? 'مفعل ومميز' : 'ترقية هذه الخدمة فقط'}
+                    ترقية هذه الخدمة فقط <ArrowUpRight className="w-3 h-3" />
                   </button>
                 </div>
                 <input 
@@ -482,9 +458,14 @@ export default function DashboardPage() {
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
                 <Building2 className="w-3.5 h-3.5" /> 4. قسم الشركات والمؤسسات (Corporate & Enterprise)
               </h3>
-              <span className="text-[10px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-0.5 rounded-full">
-                إدارة الصلاحيات المتقدمة
-              </span>
+              <button
+                type="button"
+                onClick={() => handleUpgradeService('corporate')}
+                className="text-[10px] px-3 py-1 rounded-lg border bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20 transition-all flex items-center gap-1 cursor-pointer"
+              >
+                <Sparkles className="w-3 h-3" />
+                ترقية باقة الشركات <ArrowUpRight className="w-3 h-3" />
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 bg-slate-950/30 border border-slate-800/60 p-5 rounded-2xl">
