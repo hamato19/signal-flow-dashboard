@@ -16,9 +16,9 @@ import {
   Sparkles,
   TrendingUp,
   Building2,
-  ArrowUpRight,
   Lock,
-  Plus
+  Plus,
+  AlertTriangle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -50,7 +50,7 @@ export default function DashboardPage() {
     corporateApiKey: '',
     corporateEndpoint: '',
     upgradedServices: [] as string[],
-    // تخزين القنوات المجانية الأولى المثبتة (Locked First Channels)
+    // تخزين القنوات المجانية الأولى المثبتة (Locked First Channels) لمنع تعديلها أو حذفها
     lockedChannels: {
       trading: '',
       telegram: '',
@@ -73,7 +73,6 @@ export default function DashboardPage() {
     setSlug(userSlug);
     fetchUserSettings(userSlug);
 
-    // التحقق مما إذا كان المستخدم عائدًا من صفحة الترقية بنجاح
     const queryParams = new URLSearchParams(window.location.search);
     const upgradedService = queryParams.get('service');
     if (upgradedService) {
@@ -93,21 +92,26 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      // معالجة خطأ 404 (سجل جديد لم يتم إنشاؤه بعد) بدون تعطيل التطبيق
       if (res.status === 404) {
-        console.info('لا توجد إعدادات سابقة مسجلة لهذا الحساب، سيتم إنشاؤها عند أول حفظ.');
         setIsLoading(false);
         return;
       }
 
       if (!res.ok) {
-        throw new Error(`خطأ في الخادم: ${res.status} ${res.statusText}`);
+        throw new Error(`خطأ في الخادم: ${res.status}`);
       }
 
       const result = await res.json();
       
       if (result.success && result.data) {
         const data = result.data;
+        const initialTrading = data.tradingview_webhook || data.binance_webhook || data.metatrader_webhook || '';
+        const initialTelegram = data.telegram_token || '';
+        const initialDiscord = data.discord_webhook || '';
+        const initialWhatsapp = data.whatsapp_api_url || '';
+        const initialEmailSms = data.email_to || '';
+        const initialCorporate = data.corporate_name || '';
+
         setSettings({
           username: data.username || '',
           userPlan: data.user_plan || 'free',
@@ -127,41 +131,42 @@ export default function DashboardPage() {
           corporateEndpoint: data.corporate_endpoint || '',
           upgradedServices: data.upgraded_services || [],
           lockedChannels: data.locked_channels || {
-            trading: data.tradingview_webhook || data.binance_webhook || data.metatrader_webhook || '',
-            telegram: data.telegram_token || '',
-            discord: data.discord_webhook || '',
-            whatsapp: data.whatsapp_api_url || '',
-            emailSms: data.email_to || '',
-            corporate: data.corporate_name || ''
+            trading: initialTrading,
+            telegram: initialTelegram,
+            discord: initialDiscord,
+            whatsapp: initialWhatsapp,
+            emailSms: initialEmailSms,
+            corporate: initialCorporate
           }
         });
       }
     } catch (error: any) {
       console.error('Error fetching settings:', error);
-      setErrorMsg('فشل في جلب الإعدادات من قاعدة البيانات: ' + (error.message || 'خطأ غير معروف'));
+      setErrorMsg('فشل في جلب الإعدادات من قاعدة البيانات.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // التحقق مما إذا كان القسم مُترقىً
   const isUpgraded = (serviceKey: string) => {
     return settings.userPlan === 'pro' || 
            settings.userPlan === 'enterprise' || 
            settings.upgradedServices.includes(serviceKey);
   };
 
-  // دالة التعامل مع التغيير مع قفل القناة الأولى المجانية وعدم السماح بتعديلها أو إضافة ثانية إلا بالترقية
+  // التحكم الصارم بمنع الحذف، التعديل، أو إضافة قناة ثانية للمستخدم المجاني
   const handleFieldChange = (field: string, value: string, category: string, lockedKey: keyof typeof settings.lockedChannels) => {
     const isFree = settings.userPlan === 'free' && !isUpgraded(category);
     const lockedVal = settings.lockedChannels[lockedKey];
 
+    // إذا كانت القناة موجودة مسبقاً (تم تعبئتها وحفظها)، يمنع الحذف أو التعديل ويطلب اشتراك فوراً
     if (isFree && lockedVal && lockedVal !== '' && value !== lockedVal) {
       router.push(`/upgrade?service=${category}`);
       return;
     }
 
     let updatedLocked = { ...settings.lockedChannels };
+    // أول مرة يقوم المستخدم بإدخال قناة مجانية، يتم تثبيتها كقناة أولى وحيدة
     if (isFree && !lockedVal && value.trim() !== '') {
       updatedLocked[lockedKey] = value;
     }
@@ -173,12 +178,12 @@ export default function DashboardPage() {
     });
   };
 
-  // دالة التعامل مع زر إضافة قناة جديدة لكل قسم
+  // عند الضغط على زر إضافة قناة جديدة، يطلب اشتراك مباشرة إذا لم تكن الباقة مترقية
   const handleAddChannelClick = (category: string) => {
     if (!isUpgraded(category)) {
       router.push(`/upgrade?service=${category}`);
     } else {
-      setSuccessMsg(`الحساب مُترقى! يمكنك الآن إضافة وتعبئة بيانات القناة الجديدة في الحقول أدناه.`);
+      setSuccessMsg(`الحساب مُترقى! يمكنك الآن إضافة قنوات إضافية.`);
       setTimeout(() => setSuccessMsg(''), 4000);
     }
   };
@@ -213,10 +218,6 @@ export default function DashboardPage() {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const handleUpgradeService = (serviceKey: string) => {
-    router.push(`/upgrade?service=${serviceKey}`);
   };
 
   const handleLogout = () => {
@@ -303,7 +304,7 @@ export default function DashboardPage() {
               رابط الويب هوك الموحد (Webhook Endpoint)
             </h2>
             <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-full font-mono">
-              متوافق مع TradingView، Binance وغيرها
+              متوافق مع المنصات المختلفة
             </span>
           </div>
           <p className="text-xs text-slate-400 mb-4">
@@ -328,22 +329,33 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* نموذج الإعدادات الشامل */}
+        {/* نموذج الإعدادات */}
         <form onSubmit={handleSave} className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 shadow-xl backdrop-blur-md space-y-8">
           
           <div className="flex items-center gap-2 border-b border-slate-800 pb-4">
             <Settings className="w-5 h-5 text-blue-400" />
-            <h2 className="text-sm font-bold text-slate-200">إعدادات المنصات، القنوات، وقسم الشركات</h2>
+            <h2 className="text-sm font-bold text-slate-200">إعدادات المنصات والقنوات</h2>
+          </div>
+
+          {/* تنبيه تأكيد البيانات وعدم إمكانية تعديلها عند الحفظ */}
+          <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 p-4 rounded-2xl text-xs flex items-start gap-3 shadow-lg">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-400 mt-0.5" />
+            <div className="space-y-1">
+              <strong className="block text-amber-200 font-bold">تنبيه هام جداً للمستخدمين:</strong>
+              <p className="text-amber-300/90 leading-relaxed">
+                الرجاء التأكد تماماً من صحة البيانات المضافة قبل الحفظ. في الباقة المجانية، <strong>لن يمكنك تعديل أو حذف القناة</strong> بعد حفظها لأول مرة، وأي محاولة لتغييرها لاحقاً ستتطلب الترقية إلى الباقة المدفوعة.
+              </p>
+            </div>
           </div>
 
           {settings.userPlan === 'free' && (
             <div className="bg-blue-500/10 border border-blue-500/20 text-blue-300 p-3.5 rounded-2xl text-xs flex items-center gap-3">
               <Sparkles className="w-4 h-4 flex-shrink-0 text-blue-400" />
-              <span>الباقة المجانية تتيح لك <strong>قناة واحدة مجانية مدى الحياة</strong> في كل قسم. عند حفظ القناة الأولى يتم تثبيتها، ولإضافة قناة جديدة يتطلب تفعيل الاشتراك.</span>
+              <span>الباقة المجانية تتيح لك <strong>قناة واحدة مجانية فقط</strong> لكل قسم. وإضافة قناة جديدة تتطلب الترقية.</span>
             </div>
           )}
 
-          {/* 1. معلومات الحساب الأساسية */}
+          {/* معلومات الحساب الأساسية */}
           <div className="space-y-4">
             <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider">1. معلومات الحساب الأساسية</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -365,8 +377,8 @@ export default function DashboardPage() {
                   onChange={(e) => setSettings({...settings, userPlan: e.target.value})}
                   className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition-all"
                 >
-                  <option value="free">المجانية (قناة واحدة لكل قسم - مثبتة)</option>
-                  <option value="pro">المتقدمة (Pro - شاملة)</option>
+                  <option value="free">المجانية (قناة واحدة ثابتة لكل قسم)</option>
+                  <option value="pro">المتقدمة (Pro - قنوات غير محدودة)</option>
                   <option value="enterprise">الشركات (Enterprise)</option>
                 </select>
               </div>
@@ -385,18 +397,8 @@ export default function DashboardPage() {
                   onClick={() => handleAddChannelClick('trading_platforms')}
                   className="text-[10px] px-3 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
                 >
-                  <Plus className="w-3 h-3" /> إضافة قناة تداول جديدة
+                  <Plus className="w-3 h-3" /> إضافة قناة جديدة (يتطلب اشتراك)
                 </button>
-                {!isUpgraded('trading_platforms') && (
-                  <button
-                    type="button"
-                    onClick={() => handleUpgradeService('trading_platforms')}
-                    className="text-[10px] px-3 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    تفعيل الاشتراك <ArrowUpRight className="w-3 h-3" />
-                  </button>
-                )}
               </div>
             </div>
 
@@ -404,13 +406,13 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>TradingView Webhook</span>
-                  {!isUpgraded('trading_platforms') && settings.lockedChannels.trading === settings.tradingviewWebhook && settings.tradingviewWebhook && <Lock className="w-3 h-3 text-amber-400" />}
+                  {!isUpgraded('trading_platforms') && settings.lockedChannels.trading && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
                   value={settings.tradingviewWebhook}
                   onChange={(e) => handleFieldChange('tradingviewWebhook', e.target.value, 'trading_platforms', 'trading')}
-                  placeholder="Custom secret or token"
+                  placeholder="Webhook URL or Secret"
                   className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-blue-500 transition-all"
                   dir="ltr"
                 />
@@ -419,7 +421,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>Binance Execution Hook</span>
-                  {!isUpgraded('trading_platforms') && settings.lockedChannels.trading === settings.binanceWebhook && settings.binanceWebhook && <Lock className="w-3 h-3 text-amber-400" />}
+                  {!isUpgraded('trading_platforms') && settings.lockedChannels.trading && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
@@ -434,7 +436,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>MetaTrader Bridge Hook</span>
-                  {!isUpgraded('trading_platforms') && settings.lockedChannels.trading === settings.metaTraderWebhook && settings.metaTraderWebhook && <Lock className="w-3 h-3 text-amber-400" />}
+                  {!isUpgraded('trading_platforms') && settings.lockedChannels.trading && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
@@ -463,24 +465,13 @@ export default function DashboardPage() {
                     تليجرام (Telegram Bot)
                     {!isUpgraded('telegram') && settings.lockedChannels.telegram && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleAddChannelClick('telegram')}
-                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
-                    >
-                      <Plus className="w-3 h-3" /> إضافة قناة
-                    </button>
-                    {!isUpgraded('telegram') && (
-                      <button
-                        type="button"
-                        onClick={() => handleUpgradeService('telegram')}
-                        className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
-                      >
-                        <Sparkles className="w-3 h-3" /> تفعيل الاشتراك <ArrowUpRight className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleAddChannelClick('telegram')}
+                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
+                  >
+                    <Plus className="w-3 h-3" /> إضافة قناة جديدة
+                  </button>
                 </div>
                 <input 
                   type="text"
@@ -507,24 +498,13 @@ export default function DashboardPage() {
                     ديسكورد (Discord Webhook)
                     {!isUpgraded('discord') && settings.lockedChannels.discord && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleAddChannelClick('discord')}
-                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
-                    >
-                      <Plus className="w-3 h-3" /> إضافة قناة
-                    </button>
-                    {!isUpgraded('discord') && (
-                      <button
-                        type="button"
-                        onClick={() => handleUpgradeService('discord')}
-                        className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
-                      >
-                        <Sparkles className="w-3 h-3" /> تفعيل الاشتراك <ArrowUpRight className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleAddChannelClick('discord')}
+                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
+                  >
+                    <Plus className="w-3 h-3" /> إضافة قناة جديدة
+                  </button>
                 </div>
                 <input 
                   type="text"
@@ -543,24 +523,13 @@ export default function DashboardPage() {
                     خدمة واتساب (WhatsApp API)
                     {!isUpgraded('whatsapp') && settings.lockedChannels.whatsapp && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleAddChannelClick('whatsapp')}
-                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
-                    >
-                      <Plus className="w-3 h-3" /> إضافة قناة
-                    </button>
-                    {!isUpgraded('whatsapp') && (
-                      <button
-                        type="button"
-                        onClick={() => handleUpgradeService('whatsapp')}
-                        className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
-                      >
-                        <Sparkles className="w-3 h-3" /> تفعيل الاشتراك <ArrowUpRight className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleAddChannelClick('whatsapp')}
+                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
+                  >
+                    <Plus className="w-3 h-3" /> إضافة قناة جديدة
+                  </button>
                 </div>
                 <input 
                   type="text"
@@ -576,27 +545,16 @@ export default function DashboardPage() {
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                    البريد الإلكتروني والرسائل القصيرة
+                    البريد الإلكتروني والرسائل
                     {!isUpgraded('email_sms') && settings.lockedChannels.emailSms && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleAddChannelClick('email_sms')}
-                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
-                    >
-                      <Plus className="w-3 h-3" /> إضافة قناة
-                    </button>
-                    {!isUpgraded('email_sms') && (
-                      <button
-                        type="button"
-                        onClick={() => handleUpgradeService('email_sms')}
-                        className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
-                      >
-                        <Sparkles className="w-3 h-3" /> تفعيل الاشتراك <ArrowUpRight className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleAddChannelClick('email_sms')}
+                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
+                  >
+                    <Plus className="w-3 h-3" /> إضافة قناة جديدة
+                  </button>
                 </div>
                 <input 
                   type="email"
@@ -617,25 +575,13 @@ export default function DashboardPage() {
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
                 <Building2 className="w-3.5 h-3.5" /> 4. باقة الشركات والمؤسسات الكاملة (Enterprise)
               </h3>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleAddChannelClick('corporate')}
-                  className="text-[10px] px-3 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
-                >
-                  <Plus className="w-3 h-3" /> إضافة مؤسسة جديدة
-                </button>
-                {!isUpgraded('corporate') && (
-                  <button
-                    type="button"
-                    onClick={() => handleUpgradeService('corporate')}
-                    className="text-[10px] px-3 py-1 rounded-lg border bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20 transition-all flex items-center gap-1 cursor-pointer"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    تفعيل باقة الشركات <ArrowUpRight className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={() => handleAddChannelClick('corporate')}
+                className="text-[10px] px-3 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
+              >
+                <Plus className="w-3 h-3" /> إضافة مؤسسة جديدة (يتطلب اشتراك)
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 bg-slate-950/30 border border-slate-800/60 p-5 rounded-2xl">
@@ -651,7 +597,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">مفتاح المصادقة (Corporate API Key)</label>
+                <label className="text-xs font-medium text-slate-300">مفتاح المصادقة (API Key)</label>
                 <input 
                   type="text"
                   value={settings.corporateApiKey}
@@ -663,7 +609,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">رابط السيرفر المخصص (Enterprise URL)</label>
+                <label className="text-xs font-medium text-slate-300">رابط السيرفر المخصص</label>
                 <input 
                   type="text"
                   value={settings.corporateEndpoint}
@@ -689,7 +635,7 @@ export default function DashboardPage() {
                 </>
               ) : (
                 <>
-                  حفظ جميع التعديلات <Save className="w-4 h-4" />
+                  حفظ التعديلات <Save className="w-4 h-4" />
                 </>
               )}
             </button>
