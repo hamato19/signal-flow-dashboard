@@ -9,17 +9,13 @@ import {
   Save, 
   Loader2, 
   Settings, 
-  Send, 
   Database,
   ShieldCheck,
   MessageCircle,
-  Mail,
-  Smartphone,
   Globe,
   Sparkles,
   TrendingUp,
   Building2,
-  Lock,
   ArrowUpRight
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -54,7 +50,7 @@ export default function DashboardPage() {
     corporateName: '',
     corporateApiKey: '',
     corporateEndpoint: '',
-    // تفعيل الخدمات الفردية (الخطة المجانية)
+    // تفعيل الخدمات الفردية
     upgradedServices: [] as string[],
   });
 
@@ -134,7 +130,7 @@ export default function DashboardPage() {
     }
   };
 
-  // التوجيه إلى صفحة الترقية والدفع عند الضغط على زر الترقية الخاص بأي خدمة
+  // التوجيه إلى صفحة الترقية والدفع مع تمرير اسم الخدمة
   const handleUpgradeService = (serviceKey: string) => {
     router.push(`/upgrade?service=${serviceKey}`);
   };
@@ -286,7 +282,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 2. منصات التداول والرسوم البيانية (TradingView, Binance, MetaTrader) */}
+          {/* 2. منصات التداول والرسوم البيانية */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
@@ -298,7 +294,7 @@ export default function DashboardPage() {
                 className="text-[10px] px-3 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
               >
                 <Sparkles className="w-3 h-3" />
-                ترقية هذه الخدمة فقط <ArrowUpRight className="w-3 h-3" />
+                ترقية هذه الخدمة (شهري، سنوي، مدى الحياة) <ArrowUpRight className="w-3 h-3" />
               </button>
             </div>
 
@@ -341,10 +337,10 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 3. قنوات التواصل (تليجرام، ديسكورد، سلاك، واتساب، البريد، SMS) مع زر ترقية لكل خدمة */}
+          {/* 3. قنوات التواصل (تليجرام، ديسكورد، واتساب، البريد والـ SMS) */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-              <MessageCircle className="w-3.5 h-3.5" /> 3. قنوات الإشعارات (مع خيار ترقية قناة واحدة ضمن الخطة المجانية)
+              <MessageCircle className="w-3.5 h-3.5" /> 3. قنوات الإشعارات والربط
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -352,14 +348,14 @@ export default function DashboardPage() {
               {/* Telegram */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-200">تليجرام (Telegram)</span>
+                  <span className="text-xs font-bold text-slate-200">تليجرام (Telegram Bot)</span>
                   <button
                     type="button"
                     onClick={() => handleUpgradeService('telegram')}
                     className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3" />
-                    ترقية هذه القناة فقط <ArrowUpRight className="w-3 h-3" />
+                    ترقية القناة <ArrowUpRight className="w-3 h-3" />
                   </button>
                 </div>
                 <input 
@@ -383,14 +379,14 @@ export default function DashboardPage() {
               {/* Discord */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-200">ديسكورد (Discord)</span>
+                  <span className="text-xs font-bold text-slate-200">ديسكورد (Discord Webhook)</span>
                   <button
                     type="button"
                     onClick={() => handleUpgradeService('discord')}
                     className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3" />
-                    ترقية هذه القناة فقط <ArrowUpRight className="w-3 h-3" />
+                    ترقية القناة <ArrowUpRight className="w-3 h-3" />
                   </button>
                 </div>
                 <input 
@@ -406,14 +402,14 @@ export default function DashboardPage() {
               {/* WhatsApp */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-200">واتساب (WhatsApp API)</span>
+                  <span className="text-xs font-bold text-slate-200">خدمة واتساب (WhatsApp API)</span>
                   <button
                     type="button"
                     onClick={() => handleUpgradeService('whatsapp')}
                     className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3" />
-                    ترقية هذه القناة فقط <ArrowUpRight className="w-3 h-3" />
+                    ترقية الخدمة <ArrowUpRight className="w-3 h-3" />
                   </button>
                 </div>
                 <input 
@@ -429,14 +425,14 @@ export default function DashboardPage() {
               {/* Email & SMS */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-200">البريد و SMS</span>
+                  <span className="text-xs font-bold text-slate-200">البريد الإلكتروني والرسائل القصيرة</span>
                   <button
                     type="button"
                     onClick={() => handleUpgradeService('email_sms')}
                     className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3" />
-                    ترقية هذه الخدمة فقط <ArrowUpRight className="w-3 h-3" />
+                    ترقية الخدمة <ArrowUpRight className="w-3 h-3" />
                   </button>
                 </div>
                 <input 
@@ -452,11 +448,11 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 4. قسم الشركات (Corporate Webhooks & Enterprise Settings) */}
+          {/* 4. قسم الشركات (Enterprise) */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-                <Building2 className="w-3.5 h-3.5" /> 4. قسم الشركات والمؤسسات (Corporate & Enterprise)
+                <Building2 className="w-3.5 h-3.5" /> 4. باقة الشركات والمؤسسات الكاملة (Enterprise)
               </h3>
               <button
                 type="button"
