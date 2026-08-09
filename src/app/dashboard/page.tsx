@@ -17,7 +17,8 @@ import {
   TrendingUp,
   Building2,
   ArrowUpRight,
-  Lock
+  Lock,
+  Plus
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -92,7 +93,13 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      // التحقق من سلامة استجابة الخادم
+      // معالجة خطأ 404 (سجل جديد لم يتم إنشاؤه بعد) بدون تعطيل التطبيق
+      if (res.status === 404) {
+        console.info('لا توجد إعدادات سابقة مسجلة لهذا الحساب، سيتم إنشاؤها عند أول حفظ.');
+        setIsLoading(false);
+        return;
+      }
+
       if (!res.ok) {
         throw new Error(`خطأ في الخادم: ${res.status} ${res.statusText}`);
       }
@@ -128,9 +135,6 @@ export default function DashboardPage() {
             corporate: data.corporate_name || ''
           }
         });
-      } else {
-        // إذا لم تقم الخوادم بإنشاء سجل بعد، نقوم بتهيئة القيم الافتراضية بصمت دون إظهار خطأ مزعج
-        console.warn('لم يتم العثور على إعدادات سابقة، سيتم إنشاء إعدادات جديدة عند الحفظ.');
       }
     } catch (error: any) {
       console.error('Error fetching settings:', error);
@@ -167,6 +171,16 @@ export default function DashboardPage() {
       [field]: value,
       lockedChannels: updatedLocked
     });
+  };
+
+  // دالة التعامل مع زر إضافة قناة جديدة لكل قسم
+  const handleAddChannelClick = (category: string) => {
+    if (!isUpgraded(category)) {
+      router.push(`/upgrade?service=${category}`);
+    } else {
+      setSuccessMsg(`الحساب مُترقى! يمكنك الآن إضافة وتعبئة بيانات القناة الجديدة في الحقول أدناه.`);
+      setTimeout(() => setSuccessMsg(''), 4000);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -325,7 +339,7 @@ export default function DashboardPage() {
           {settings.userPlan === 'free' && (
             <div className="bg-blue-500/10 border border-blue-500/20 text-blue-300 p-3.5 rounded-2xl text-xs flex items-center gap-3">
               <Sparkles className="w-4 h-4 flex-shrink-0 text-blue-400" />
-              <span>الباقة المجانية تتيح لك <strong>قناة واحدة مجانية مدى الحياة</strong> في كل قسم. عند حفظ القناة الأولى يتم تثبيتها، وستحتاج للترقية لإضافة قناة ثانية أو تعديلها.</span>
+              <span>الباقة المجانية تتيح لك <strong>قناة واحدة مجانية مدى الحياة</strong> في كل قسم. عند حفظ القناة الأولى يتم تثبيتها، ولإضافة قناة جديدة يتطلب تفعيل الاشتراك.</span>
             </div>
           )}
 
@@ -361,20 +375,29 @@ export default function DashboardPage() {
 
           {/* 2. منصات التداول والرسوم البيانية */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
                 <TrendingUp className="w-3.5 h-3.5" /> 2. منصات التداول والرسوم البيانية
               </h3>
-              {!isUpgraded('trading_platforms') && (
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => handleUpgradeService('trading_platforms')}
-                  className="text-[10px] px-3 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                  onClick={() => handleAddChannelClick('trading_platforms')}
+                  className="text-[10px] px-3 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
                 >
-                  <Sparkles className="w-3 h-3" />
-                  ترقية لفتح منصات متعددة <ArrowUpRight className="w-3 h-3" />
+                  <Plus className="w-3 h-3" /> إضافة قناة تداول جديدة
                 </button>
-              )}
+                {!isUpgraded('trading_platforms') && (
+                  <button
+                    type="button"
+                    onClick={() => handleUpgradeService('trading_platforms')}
+                    className="text-[10px] px-3 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    تفعيل الاشتراك <ArrowUpRight className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -435,21 +458,29 @@ export default function DashboardPage() {
               
               {/* Telegram */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     تليجرام (Telegram Bot)
                     {!isUpgraded('telegram') && settings.lockedChannels.telegram && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
-                  {!isUpgraded('telegram') && (
+                  <div className="flex items-center gap-1.5">
                     <button
                       type="button"
-                      onClick={() => handleUpgradeService('telegram')}
-                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                      onClick={() => handleAddChannelClick('telegram')}
+                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
                     >
-                      <Sparkles className="w-3 h-3" />
-                      ترقية لقنوات متعددة <ArrowUpRight className="w-3 h-3" />
+                      <Plus className="w-3 h-3" /> إضافة قناة
                     </button>
-                  )}
+                    {!isUpgraded('telegram') && (
+                      <button
+                        type="button"
+                        onClick={() => handleUpgradeService('telegram')}
+                        className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <Sparkles className="w-3 h-3" /> تفعيل الاشتراك <ArrowUpRight className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <input 
                   type="text"
@@ -471,21 +502,29 @@ export default function DashboardPage() {
 
               {/* Discord */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     ديسكورد (Discord Webhook)
                     {!isUpgraded('discord') && settings.lockedChannels.discord && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
-                  {!isUpgraded('discord') && (
+                  <div className="flex items-center gap-1.5">
                     <button
                       type="button"
-                      onClick={() => handleUpgradeService('discord')}
-                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                      onClick={() => handleAddChannelClick('discord')}
+                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
                     >
-                      <Sparkles className="w-3 h-3" />
-                      ترقية لسيرفرات متعددة <ArrowUpRight className="w-3 h-3" />
+                      <Plus className="w-3 h-3" /> إضافة قناة
                     </button>
-                  )}
+                    {!isUpgraded('discord') && (
+                      <button
+                        type="button"
+                        onClick={() => handleUpgradeService('discord')}
+                        className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <Sparkles className="w-3 h-3" /> تفعيل الاشتراك <ArrowUpRight className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <input 
                   type="text"
@@ -499,21 +538,29 @@ export default function DashboardPage() {
 
               {/* WhatsApp */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     خدمة واتساب (WhatsApp API)
                     {!isUpgraded('whatsapp') && settings.lockedChannels.whatsapp && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
-                  {!isUpgraded('whatsapp') && (
+                  <div className="flex items-center gap-1.5">
                     <button
                       type="button"
-                      onClick={() => handleUpgradeService('whatsapp')}
-                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                      onClick={() => handleAddChannelClick('whatsapp')}
+                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
                     >
-                      <Sparkles className="w-3 h-3" />
-                      ترقية الخدمة <ArrowUpRight className="w-3 h-3" />
+                      <Plus className="w-3 h-3" /> إضافة قناة
                     </button>
-                  )}
+                    {!isUpgraded('whatsapp') && (
+                      <button
+                        type="button"
+                        onClick={() => handleUpgradeService('whatsapp')}
+                        className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <Sparkles className="w-3 h-3" /> تفعيل الاشتراك <ArrowUpRight className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <input 
                   type="text"
@@ -527,21 +574,29 @@ export default function DashboardPage() {
 
               {/* Email & SMS */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     البريد الإلكتروني والرسائل القصيرة
                     {!isUpgraded('email_sms') && settings.lockedChannels.emailSms && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
-                  {!isUpgraded('email_sms') && (
+                  <div className="flex items-center gap-1.5">
                     <button
                       type="button"
-                      onClick={() => handleUpgradeService('email_sms')}
-                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                      onClick={() => handleAddChannelClick('email_sms')}
+                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
                     >
-                      <Sparkles className="w-3 h-3" />
-                      ترقية الخدمة <ArrowUpRight className="w-3 h-3" />
+                      <Plus className="w-3 h-3" /> إضافة قناة
                     </button>
-                  )}
+                    {!isUpgraded('email_sms') && (
+                      <button
+                        type="button"
+                        onClick={() => handleUpgradeService('email_sms')}
+                        className="text-[10px] px-2.5 py-1 rounded-lg border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <Sparkles className="w-3 h-3" /> تفعيل الاشتراك <ArrowUpRight className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <input 
                   type="email"
@@ -558,20 +613,29 @@ export default function DashboardPage() {
 
           {/* 4. قسم الشركات (Enterprise) */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
                 <Building2 className="w-3.5 h-3.5" /> 4. باقة الشركات والمؤسسات الكاملة (Enterprise)
               </h3>
-              {!isUpgraded('corporate') && (
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => handleUpgradeService('corporate')}
-                  className="text-[10px] px-3 py-1 rounded-lg border bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                  onClick={() => handleAddChannelClick('corporate')}
+                  className="text-[10px] px-3 py-1 rounded-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer font-medium"
                 >
-                  <Sparkles className="w-3 h-3" />
-                  ترقية باقة الشركات <ArrowUpRight className="w-3 h-3" />
+                  <Plus className="w-3 h-3" /> إضافة مؤسسة جديدة
                 </button>
-              )}
+                {!isUpgraded('corporate') && (
+                  <button
+                    type="button"
+                    onClick={() => handleUpgradeService('corporate')}
+                    className="text-[10px] px-3 py-1 rounded-lg border bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    تفعيل باقة الشركات <ArrowUpRight className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 bg-slate-950/30 border border-slate-800/60 p-5 rounded-2xl">
@@ -637,4 +701,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
