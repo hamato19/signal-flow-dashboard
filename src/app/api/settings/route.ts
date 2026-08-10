@@ -10,11 +10,13 @@ export async function GET(request: Request) {
   let client;
   try {
     const { searchParams } = new URL(request.url);
-    const slug = searchParams.get('slug');
+    const slugParam = searchParams.get('slug');
 
-    if (!slug) {
+    if (!slugParam) {
       return NextResponse.json({ success: false, error: 'Slug is required' }, { status: 400 });
     }
+
+    const slug = slugParam.trim().toLowerCase();
 
     client = await pool.connect();
     const result = await client.query('SELECT * FROM user_settings WHERE slug = $1', [slug]);
@@ -53,8 +55,34 @@ export async function POST(request: Request) {
   let client;
   try {
     const body = await request.json();
+    const rawSlug = body.slug;
+
+    if (!rawSlug) {
+      return NextResponse.json({ success: false, error: 'Slug is required' }, { status: 400 });
+    }
+
+    // تنظيف الـ Slug وتحويله لأحرف صغرى
+    const slug = rawSlug.trim().toLowerCase();
+
+    // التحقق من أن الـ Slug احترافي (أقل من 3 أحرف مرفوض، أو يحتوي على رموز خاصة ممنوعة)
+    const slugRegex = /^[a-z0-9-]+$/;
+    if (slug.length < 3 || !slugRegex.test(slug)) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Invalid slug. Must be at least 3 characters and contain only English letters, numbers, and hyphens (-) without spaces.' 
+      }, { status: 400 });
+    }
+
+    // قائمة الكلمات المحجوزة في النظام
+    const reservedSlugs = ['admin', 'api', 'login', 'settings', 'dashboard', 'auth', 'webhook'];
+    if (reservedSlugs.includes(slug)) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'This slug is reserved and cannot be used.' 
+      }, { status: 400 });
+    }
+
     const { 
-      slug, 
       user_plan,
       telegramChannels,
       discord_webhook,
@@ -68,10 +96,6 @@ export async function POST(request: Request) {
       corporate_endpoint,
       upgraded_services 
     } = body;
-
-    if (!slug) {
-      return NextResponse.json({ success: false, error: 'Slug is required' }, { status: 400 });
-    }
 
     client = await pool.connect();
 
@@ -115,7 +139,7 @@ export async function POST(request: Request) {
       JSON.stringify(upgraded_services || [])
     ]);
 
-    return NextResponse.json({ success: true, message: 'Saved successfully' });
+    return NextResponse.json({ success: true, message: 'Saved successfully', slug });
   } catch (error: any) {
     console.error('[API POST Error]:', error.message);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -123,3 +147,4 @@ export async function POST(request: Request) {
     if (client) client.release();
   }
 }
+
