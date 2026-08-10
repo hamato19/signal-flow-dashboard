@@ -157,7 +157,7 @@ export async function POST(request: Request) {
       JSON.stringify(stores || []),
       JSON.stringify(tradingIntegrations || []),
       JSON.stringify(enterpriseTeams || []),
-      JSON.stringify(upgradedServices || [])
+      JSON.stringify(upgraded_services || []) // تم التعديل هنا لتتوافق مع المتغير الصحيح
     ]);
 
     return NextResponse.json({ success: true, message: 'Saved successfully' });
