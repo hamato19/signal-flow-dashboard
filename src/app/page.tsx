@@ -1,29 +1,30 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Webhook, ArrowRight, ShieldCheck, Zap, Cpu, Terminal, MessageSquare, Send, Radio } from 'lucide-react';
+import { Webhook, ArrowRight, ShieldCheck, Zap, Cpu, Terminal, MessageSquare, Send, Radio, CheckCircle2, Activity, Globe, Lock, Sparkles } from 'lucide-react';
 
 export default function LandingPage() {
   const router = useRouter();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'tradingview' | 'webhook' | 'alert'>('tradingview');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
   const handleStartFree = () => {
     router.push('/dashboard');
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden" dir="rtl">
+    <div className="min-h-screen bg-[#07090e] text-slate-100 font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden" dir="rtl">
       
-      {/* خلفية تفاعلية بصرية متقدمة (Webhooks Grid Network) */}
+      {/* خلفية تفاعلية بصرية متقدمة بنظام الشبكة المتوهجة */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b12_1px,transparent_1px),linear-gradient(to_bottom,#1e293b12_1px,transparent_1px)] bg-[size:4rem_4rem]" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[450px] bg-blue-600/10 rounded-full blur-[140px]" />
-        <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b0d_1px,transparent_1px),linear-gradient(to_bottom,#1e293b0d_1px,transparent_1px)] bg-[size:4rem_4rem]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[500px] bg-blue-600/10 rounded-full blur-[160px]" />
+        <div className="absolute top-1/2 right-10 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[140px]" />
       </div>
 
       {/* الهيدر العلوي */}
-      <header className="relative z-20 max-w-7xl mx-auto px-6 py-6 flex justify-between items-center border-b border-slate-800/60 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 max-w-7xl mx-auto px-6 py-4 flex justify-between items-center border-b border-slate-800/60 bg-[#07090e]/80 backdrop-blur-xl">
         
         {/* الشعار المدمج */}
         <div onClick={handleStartFree} className="flex items-center gap-3 cursor-pointer group">
@@ -36,14 +37,22 @@ export default function LandingPage() {
             <span className="font-extrabold text-base tracking-tight text-white flex items-center gap-1.5">
               Hook<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Signal</span>
             </span>
-            <span className="text-[10px] text-slate-400 tracking-wider uppercase font-medium">إشارات فورية مدى الحياة</span>
+            <span className="text-[10px] text-slate-400 tracking-wider uppercase font-medium">المنظومة الذكية لإدارة الويب هوك</span>
           </div>
         </div>
+
+        {/* الروابط الوسطى (اختياري للشاشات الكبيرة) */}
+        <nav className="hidden md:flex items-center gap-8 text-xs font-medium text-slate-300">
+          <a href="#features" className="hover:text-blue-400 transition">المميزات</a>
+          <a href="#how-it-works" className="hover:text-blue-400 transition">آلية العمل</a>
+          <a href="#demo" className="hover:text-blue-400 transition">المحاكي</a>
+          <a href="#pricing" className="hover:text-blue-400 transition">الباقات</a>
+        </nav>
 
         <div className="flex items-center gap-4">
           <button
             onClick={handleStartFree}
-            className="hidden sm:inline-flex text-xs font-semibold text-slate-300 hover:text-white transition"
+            className="hidden sm:inline-flex text-xs font-semibold text-slate-300 hover:text-white transition cursor-pointer"
           >
             تسجيل الدخول
           </button>
@@ -51,7 +60,7 @@ export default function LandingPage() {
             onClick={handleStartFree}
             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-medium transition shadow-lg shadow-blue-600/25 border border-blue-500/30 flex items-center gap-2 cursor-pointer"
           >
-            <span>دخول لوحة التحكم</span>
+            <span>لوحة التحكم</span>
             <ArrowRight className="w-3.5 h-3.5 rotate-180" />
           </button>
         </div>
@@ -59,97 +68,187 @@ export default function LandingPage() {
 
       {/* القسم الرئيسي (Hero Section) */}
       <section className="relative z-10 max-w-5xl mx-auto px-6 pt-24 pb-16 text-center space-y-6">
-        <div className="inline-flex items-center gap-2 bg-blue-950/60 border border-blue-800/50 px-4 py-1.5 rounded-full text-blue-400 text-xs font-medium shadow-inner backdrop-blur-sm">
-          <span className="flex h-2 w-2 rounded-full bg-blue-400 animate-pulse" />
-          <span>المنظومة الأقوى لإدارة وتوجيه إشارات الويب هوك وتنبيهات واتساب وتليجرام</span>
+        <div className="inline-flex items-center gap-2.5 bg-blue-950/60 border border-blue-800/50 px-4 py-1.5 rounded-full text-blue-400 text-xs font-medium shadow-inner backdrop-blur-sm">
+          <Sparkles className="w-3.5 h-3.5 text-blue-400 animate-spin" />
+          <span>المعيار الجديد لمعالجة وتوجيه إشارات التداول والويب هوك اللحظية</span>
         </div>
         
-        <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.15]">
-          اربط منصات التداول الخاصة بك <br />
+        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.15]">
+          حوّل تنبيهات منصاتك المالية إلى <br />
           <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-300 bg-clip-text text-transparent">
-            بقنوات التواصل اللحظية فوراً
+            إجراءات فورية عبر قنواتك
           </span>
         </h1>
         
         <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-          نظام متكامل يتيح لك استقبال تنبيهات TradingView وغيرها، ومعالجتها بدقة وتوجيهها مباشرة إلى بوتات تيليجرام وديسكورد ورسائل واتساب الشخصية أو القنوات بكفاءة عالية.
+          اربط منصات الرسوم البيانية مثل TradingView بأحدث قنوات واتساب، تليجرام، وديسكورد عبر بوابات ويب هوك عالية الأداء، مؤمنة بالكامل، وبزمن استجابة يقدر بجزء من الألف من الثانية.
         </p>
 
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
             onClick={handleStartFree}
-            className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white px-8 py-4 rounded-2xl font-bold text-sm sm:text-base transition shadow-xl shadow-blue-600/30 transform hover:-translate-y-0.5 border border-blue-400/20 cursor-pointer"
+            className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white px-8 py-4 rounded-2xl font-bold text-sm sm:text-base transition shadow-xl shadow-blue-600/30 transform hover:-translate-y-0.5 border border-blue-400/20 cursor-pointer flex items-center justify-center gap-2"
           >
-            ابدأ مجاناً الآن 🚀
+            <span>ابدأ مجاناً الآن</span>
+            <ArrowRight className="w-4 h-4 rotate-180" />
           </button>
           <a
             href="#how-it-works"
-            className="w-full sm:w-auto bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white px-6 py-4 rounded-2xl font-semibold text-sm transition"
+            className="w-full sm:w-auto bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white px-6 py-4 rounded-2xl font-semibold text-sm transition text-center"
           >
-            تعرف على آلية العمل ↓
+            اكتشف البنية التحتية
           </a>
+        </div>
+
+        {/* مؤشرات حية للإحصائيات */}
+        <div className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto border-t border-slate-800/60 mt-12">
+          <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800/50 backdrop-blur">
+            <div className="text-2xl sm:text-3xl font-extrabold text-blue-400 mb-1">99.99%</div>
+            <div className="text-xs text-slate-400">معدل الاستقرار (Uptime)</div>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800/50 backdrop-blur">
+            <div className="text-2xl sm:text-3xl font-extrabold text-indigo-400 mb-1">&lt; 15ms</div>
+            <div className="text-xs text-slate-400">سرعة المعالجة والإرسال</div>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800/50 backdrop-blur">
+            <div className="text-2xl sm:text-3xl font-extrabold text-cyan-400 mb-1">10M+</div>
+            <div className="text-xs text-slate-400">إشارة مُعالجة بنجاح</div>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800/50 backdrop-blur">
+            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-400 mb-1">24/7</div>
+            <div className="text-xs text-slate-400">مراقبة وتأمين مستمر</div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================== */}
+      {/* قسم الميزات بنظام Bento Grid الحديث */}
+      {/* ========================================== */}
+      <section id="features" className="relative z-10 max-w-6xl mx-auto px-6 py-20 border-t border-slate-800/40">
+        <div className="text-center mb-14">
+          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">لماذا يختار المحترفون HookSignal؟</h2>
+          <p className="text-slate-400 text-xs sm:text-sm">مصم خصيصاً ليتناسب مع احتياجات المطورين والمتداولين الذين لا يقبلون بأقل من الكمال</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          {/* ميزة 1: السرعة الفائقة */}
+          <div className="md:col-span-2 bg-gradient-to-br from-slate-900/80 to-slate-950/80 border border-slate-800/80 p-8 rounded-3xl backdrop-blur flex flex-col justify-between relative overflow-hidden group hover:border-blue-500/50 transition-all duration-300">
+            <div className="absolute top-0 left-0 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-600/25 transition duration-500" />
+            <div className="relative z-10">
+              <div className="w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/30 flex items-center justify-center text-blue-400 mb-6 shadow-inner">
+                <Zap className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">معالجة لحظية بدون أي تأخير زمني</h3>
+              <p className="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-lg">
+                بنية تحتية موزعة عالمياً تضمن استقبال وتنفيذ وتوجيه إشارات الويب هوك فور صدورها من المنصات المصدرية لتصلك في أجزاء من الثانية.
+              </p>
+            </div>
+            <div className="mt-8 pt-4 border-t border-slate-800/60 flex items-center gap-2 text-xs text-blue-400 font-semibold relative z-10">
+              <Activity className="w-4 h-4" />
+              <span>أداء فائق الاستقرار في أوقات الذروة</span>
+            </div>
+          </div>
+
+          {/* ميزة 2: الأمان العالي */}
+          <div className="bg-gradient-to-br from-slate-900/80 to-slate-950/80 border border-slate-800/80 p-8 rounded-3xl backdrop-blur flex flex-col justify-between relative overflow-hidden group hover:border-indigo-500/50 transition-all duration-300">
+            <div className="relative z-10">
+              <div className="w-14 h-14 rounded-2xl bg-indigo-600/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-6 shadow-inner">
+                <ShieldCheck className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">تشفير وأمان مطلق</h3>
+              <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
+                حماية كاملة للروابط والبيانات المنقولة عبر شهادات SSL متقدمة وأنظمة مصادقة صارمة تمنع أي وصول غير مرغوب فيه.
+              </p>
+            </div>
+            <div className="mt-8 pt-4 border-t border-slate-800/60 flex items-center gap-2 text-xs text-indigo-400 font-semibold">
+              <Lock className="w-4 h-4" />
+              <span>بياناتك محمية بالكامل</span>
+            </div>
+          </div>
+
+          {/* ميزة 3: التوافقية الواسعة */}
+          <div className="bg-gradient-to-br from-slate-900/80 to-slate-950/80 border border-slate-800/80 p-8 rounded-3xl backdrop-blur flex flex-col justify-between relative overflow-hidden group hover:border-cyan-500/50 transition-all duration-300">
+            <div className="relative z-10">
+              <div className="w-14 h-14 rounded-2xl bg-cyan-600/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-6 shadow-inner">
+                <Globe className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">ربط شامل متعدد المنصات</h3>
+              <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
+                تكامل تام مع تليجرام، واتساب، ديسكورد، سلاك، وباقي خدمات الويب هوك المخصصة بنقرة زر واحدة.
+              </p>
+            </div>
+            <div className="mt-8 pt-4 border-t border-slate-800/60 flex items-center gap-2 text-xs text-cyan-400 font-semibold">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>جاهز للربط الفوري</span>
+            </div>
+          </div>
+
+          {/* ميزة 4: التنسيق الذكي */}
+          <div className="md:col-span-2 bg-gradient-to-br from-slate-900/80 to-slate-950/80 border border-slate-800/80 p-8 rounded-3xl backdrop-blur flex flex-col justify-between relative overflow-hidden group hover:border-purple-500/50 transition-all duration-300">
+            <div className="absolute top-0 right-0 w-72 h-72 bg-purple-600/10 rounded-full blur-3xl pointer-events-none group-hover:bg-purple-600/25 transition duration-500" />
+            <div className="relative z-10">
+              <div className="w-14 h-14 rounded-2xl bg-purple-600/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-6 shadow-inner">
+                <Terminal className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">محرك قوالب وقواعد مخصص</h3>
+              <p className="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-lg">
+                تحكم كامل في صياغة شكل الرسائل المستقبلية باستخدام متغيرات مخصصة تضمن عرض المعلومات بشكل احترافي ومنسق حسب رغبتك.
+              </p>
+            </div>
+            <div className="mt-8 pt-4 border-t border-slate-800/60 flex items-center gap-2 text-xs text-purple-400 font-semibold relative z-10">
+              <Cpu className="w-4 h-4" />
+              <span>مرونة عالية في التخصيص</span>
+            </div>
+          </div>
+
         </div>
       </section>
 
       {/* ========================================== */}
       {/* قسم طريقة العمل */}
       {/* ========================================== */}
-      <section id="how-it-works" className="relative z-10 max-w-5xl mx-auto px-6 py-16 border-t border-slate-800/40">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">كيف تعمل المنظومة؟</h2>
-          <p className="text-slate-400 text-xs sm:text-sm">3 خطوات بسيطة ومصفوفة لربط تنبيهاتك واستلامها فوراً بدون تعقيد</p>
+      <section id="how-it-works" className="relative z-10 max-w-5xl mx-auto px-6 py-20 border-t border-slate-800/40">
+        <div className="text-center mb-14">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">آلية العمل بثلاث خطوات بسطية</h2>
+          <p className="text-slate-400 text-xs sm:text-sm">ابدأ بإرسال أول تنبيه ناجح خلال أقل من دقيقتين</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* المربع الأول */}
-          <div className="bg-slate-900/50 border border-slate-800/80 p-7 rounded-2xl backdrop-blur flex flex-col justify-between hover:border-blue-500/50 hover:bg-slate-900/80 transition-all duration-300 group">
+          <div className="bg-slate-900/50 border border-slate-800/80 p-7 rounded-2xl backdrop-blur flex flex-col justify-between hover:border-blue-500/50 transition duration-300">
             <div>
-              <div className="w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-base mb-5 group-hover:scale-110 transition duration-300 shadow-inner">
+              <div className="w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-base mb-5 shadow-inner">
                 01
               </div>
-              <h3 className="text-lg font-bold text-white mb-3">استقبال التنبيه (Webhook)</h3>
+              <h3 className="text-lg font-bold text-white mb-3">إنشاء رابط Webhook</h3>
               <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
-                أنشئ رابط ويب هوك مخصص لك في ثوانٍ معدودة، وقم بربطه مباشرة مع منصات الرسوم البيانية مثل TradingView أو أي مصدر تداول آخر.
+                قم بتوليد رابط ويب هوك فريد من لوحة التحكم الخاصة بك واستخدمه مباشرة في تنبيهات TradingView أو منصتك.
               </p>
-            </div>
-            <div className="mt-8 pt-4 border-t border-slate-800/60 flex items-center gap-2 text-xs text-blue-400 font-medium">
-              <Zap className="w-3.5 h-3.5" />
-              <span>اتصال فوري وآمن 100%</span>
             </div>
           </div>
 
-          {/* المربع الثاني */}
-          <div className="bg-slate-900/50 border border-slate-800/80 p-7 rounded-2xl backdrop-blur flex flex-col justify-between hover:border-indigo-500/50 hover:bg-slate-900/80 transition-all duration-300 group">
+          <div className="bg-slate-900/50 border border-slate-800/80 p-7 rounded-2xl backdrop-blur flex flex-col justify-between hover:border-indigo-500/50 transition duration-300">
             <div>
-              <div className="w-12 h-12 rounded-xl bg-indigo-600/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-base mb-5 group-hover:scale-110 transition duration-300 shadow-inner">
+              <div className="w-12 h-12 rounded-xl bg-indigo-600/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-base mb-5 shadow-inner">
                 02
               </div>
-              <h3 className="text-lg font-bold text-white mb-3">المعالجة والتنسيق الذكي</h3>
+              <h3 className="text-lg font-bold text-white mb-3">المعالجة الفورية</h3>
               <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
-                يقوم النظام بتحليل البيانات الواردة تلقائياً وترتيبها بالشكل الاحترافي الذي تفضله لتكون واضحة وجاهزة للتوجيه السريع.
+                يتلقى النظام حزمة البيانات، ويقوم بتحليلها وتنسيقها تلقائياً بالصيغة المطلوبة وتمريرها نحو الوجهة المحددة.
               </p>
-            </div>
-            <div className="mt-8 pt-4 border-t border-slate-800/60 flex items-center gap-2 text-xs text-indigo-400 font-medium">
-              <Cpu className="w-3.5 h-3.5" />
-              <span>معالجة في جزء من الألف من الثانية</span>
             </div>
           </div>
 
-          {/* المربع الثالث */}
-          <div className="bg-slate-900/50 border border-slate-800/80 p-7 rounded-2xl backdrop-blur flex flex-col justify-between hover:border-cyan-500/50 hover:bg-slate-900/80 transition-all duration-300 group">
+          <div className="bg-slate-900/50 border border-slate-800/80 p-7 rounded-2xl backdrop-blur flex flex-col justify-between hover:border-cyan-500/50 transition duration-300">
             <div>
-              <div className="w-12 h-12 rounded-xl bg-cyan-600/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-base mb-5 group-hover:scale-110 transition duration-300 shadow-inner">
+              <div className="w-12 h-12 rounded-xl bg-cyan-600/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-base mb-5 shadow-inner">
                 03
               </div>
-              <h3 className="text-lg font-bold text-white mb-3">التوجيه اللحظي للوجهة</h3>
+              <h3 className="text-lg font-bold text-white mb-3">الاستلام على قناتك</h3>
               <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
-                توجيه الإشارة فوراً إلى تطبيقك المفضل (تليجرام، واتساب، ديسكورد، أو سلاك) لتصلك أينما كنت بدون أي تأخير زمني.
+                تصلك الرسالة منسقة وجاهزة على بوت تيليجرام أو رسائل واتساب الشخصية أو مجموعتك المفضلة بدون تأخير.
               </p>
-            </div>
-            <div className="mt-8 pt-4 border-t border-slate-800/60 flex items-center gap-2 text-xs text-cyan-400 font-medium">
-              <Radio className="w-3.5 h-3.5" />
-              <span>وصول لحظي ومستقر 24/7</span>
             </div>
           </div>
 
@@ -159,14 +258,13 @@ export default function LandingPage() {
       {/* ========================================== */}
       {/* محاكي النظام التفاعلي */}
       {/* ========================================== */}
-      <section className="relative z-10 max-w-4xl mx-auto px-6 py-12">
+      <section id="demo" className="relative z-10 max-w-4xl mx-auto px-6 py-16">
         <div className="text-center mb-10">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">معاينة حية لطريقة عمل الإشارات</h2>
-          <p className="text-slate-400 text-xs sm:text-sm">شاهد كيف يتحول التنبيه الخام إلى رسالة منسقة واحترافية في وجهتك المفضلة</p>
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">المحاكي المباشر لتدفق الإشارات</h2>
+          <p className="text-slate-400 text-xs sm:text-sm">شاهد بالتفصيل رحلة تحول الإشارة من المنصة المصدرية حتى وصولها لرسائل واتساب وتليجرام</p>
         </div>
 
         <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-5 sm:p-7 shadow-2xl shadow-blue-600/10 backdrop-blur-xl">
-          {/* شريط علوي للمحاكي */}
           <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-800/80">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-rose-500/80" />
@@ -178,28 +276,27 @@ export default function LandingPage() {
                 onClick={() => setActiveTab('tradingview')}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer ${activeTab === 'tradingview' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'bg-slate-950/60 text-slate-400 hover:bg-slate-800'}`}
               >
-                1. مصدر التنبيه
+                1. المصدر
               </button>
               <button 
                 onClick={() => setActiveTab('webhook')}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer ${activeTab === 'webhook' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'bg-slate-950/60 text-slate-400 hover:bg-slate-800'}`}
               >
-                2. الويب هوك
+                2. المعالجة
               </button>
               <button 
                 onClick={() => setActiveTab('alert')}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer ${activeTab === 'alert' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'bg-slate-950/60 text-slate-400 hover:bg-slate-800'}`}
               >
-                3. النتيجة (الوجهة)
+                3. المستقبل
               </button>
             </div>
           </div>
 
-          {/* محتوى التبويبات التفاعلية */}
           <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-6 font-mono text-xs sm:text-sm min-h-[200px] flex items-center justify-center text-center">
             {activeTab === 'tradingview' && (
               <div className="space-y-3 text-right w-full">
-                <span className="text-xs text-blue-400 font-sans font-semibold block mb-1">📌 إعداد التنبيه في TradingView (مثال):</span>
+                <span className="text-xs text-blue-400 font-sans font-semibold block mb-1">📌 إعداد التنبيه في TradingView:</span>
                 <p className="text-slate-300 bg-slate-900/90 p-4 rounded-xl border border-slate-800 text-xs space-y-1.5">
                   <div><span className="text-amber-400 font-bold">Alert Name:</span> BTCUSDT Breakout</div>
                   <div><span className="text-emerald-400 font-bold">Condition:</span> RSI Oversold & EMA Cross</div>
@@ -241,10 +338,10 @@ export default function LandingPage() {
       </section>
 
       {/* قسم المنصات المدعومة */}
-      <section className="relative z-10 max-w-5xl mx-auto px-6 py-12">
+      <section className="relative z-10 max-w-5xl mx-auto px-6 py-16 border-t border-slate-800/40">
         <div className="text-center mb-10">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">المنصات المدعومة للربط بشكل كامل</h2>
-          <p className="text-slate-400 text-xs sm:text-sm">قم بربط قنواتك ومنصاتك المفضلة بضغطة زر واحدة بكل سهولة ومرونة</p>
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">تكامل تام مع أهم التطبيقات والمنصات</h2>
+          <p className="text-slate-400 text-xs sm:text-sm">ربط مرن يتيح لك توجيه رسائلك لأي وجهة تفضلها بكل سهولة</p>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
@@ -275,14 +372,78 @@ export default function LandingPage() {
 
           <div className="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl flex flex-col items-center justify-center gap-3 backdrop-blur hover:border-amber-500/50 hover:bg-amber-500/10 transition group">
             <Zap className="w-8 h-8 text-amber-400 group-hover:scale-110 transition duration-300" />
-            <span className="text-xs font-semibold text-slate-300">Custom Webhook</span>
+            <span className="text-xs font-semibold text-slate-300">Custom API</span>
           </div>
         </div>
       </section>
 
+      {/* ========================================== */}
+      {/* قسم الأسعار والباقات (Pricing Section) */}
+      {/* ========================================== */}
+      <section id="pricing" className="relative z-10 max-w-5xl mx-auto px-6 py-20 border-t border-slate-800/40">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">باقات تناسب جميع الاحتياجات</h2>
+          <p className="text-slate-400 text-xs sm:text-sm">اختر الباقة المناسبة لمستوى نشاطك وتداولك</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+          
+          {/* الباقة المجانية */}
+          <div className="bg-slate-900/50 border border-slate-800/80 p-8 rounded-3xl backdrop-blur flex flex-col justify-between hover:border-slate-700 transition">
+            <div>
+              <div className="text-sm font-semibold text-slate-400 mb-2">الباقة التجريبية</div>
+              <div className="text-3xl font-extrabold text-white mb-6">مجاناً <span className="text-xs text-slate-500 font-normal">/ مدى الحياة</span></div>
+              <ul className="space-y-3.5 text-xs text-slate-300 mb-8">
+                <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-400" /> 1 رابط Webhook نشط</li>
+                <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-400" /> حتى 500 إشارة شهرياً</li>
+                <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-400" /> ربط بوت تليجرام</li>
+                <li className="flex items-center gap-2.5 text-slate-500"><span className="w-4 h-4 text-slate-600 flex items-center justify-center font-bold">✕</span> دعم واتساب المباشر</li>
+              </ul>
+            </div>
+            <button
+              onClick={handleStartFree}
+              className="w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl font-semibold text-xs transition cursor-pointer"
+            >
+              البدء مجاناً
+            </button>
+          </div>
+
+          {/* الباقة الاحترافية */}
+          <div className="bg-gradient-to-br from-blue-950/40 via-slate-900/80 to-slate-950 border-2 border-blue-500/50 p-8 rounded-3xl backdrop-blur flex flex-col justify-between relative shadow-2xl shadow-blue-600/10">
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-3.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase shadow">
+              الأكثر طلباً
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-blue-400 mb-2">الباقة الاحترافية (Pro)</div>
+              <div className="text-3xl font-extrabold text-white mb-6">29$ <span className="text-xs text-slate-400 font-normal">/ شهرياً</span></div>
+              <ul className="space-y-3.5 text-xs text-slate-200 mb-8">
+                <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-400" /> روابط Webhook غير محدودة</li>
+                <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-400" /> إشارات غير محدودة (Unlimited)</li>
+                <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-400" /> ربط واتساب، تليجرام، وديسكورد</li>
+                <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-400" /> أولوية مطلقة في السرعة والدعم</li>
+              </ul>
+            </div>
+            <button
+              onClick={handleStartFree}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white py-3 rounded-xl font-bold text-xs transition shadow-lg shadow-blue-600/25 cursor-pointer"
+            >
+              ترقية الباقة الآن 🚀
+            </button>
+          </div>
+
+        </div>
+      </section>
+
       {/* التذييل */}
-      <footer className="relative z-10 border-t border-slate-800/60 mt-20 py-8 text-center text-xs text-slate-500">
-        <p>جميع الحقوق محفوظة © 2026 - نظام إدارة إشارات الويب هوك والقنوات المذكورة</p>
+      <footer className="relative z-10 border-t border-slate-800/60 mt-20 py-10 text-center text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p>جميع الحقوق محفوظة © 2026 - نظام HookSignal لإدارة الويب هوك والإشارات اللحظية</p>
+          <div className="flex gap-6 text-slate-400">
+            <a href="#" className="hover:text-white transition">سياسة الخصوصية</a>
+            <a href="#" className="hover:text-white transition">شروط الاستخدام</a>
+            <a href="#" className="hover:text-white transition">الدعم الفني</a>
+          </div>
+        </div>
       </footer>
 
       {/* ========================================== */}
@@ -341,3 +502,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
