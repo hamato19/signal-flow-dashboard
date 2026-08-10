@@ -3,7 +3,51 @@ import { Pool, neonConfig } from '@neondatabase/serverless';
 import ws from 'ws';
 
 neonConfig.webSocketConstructor = ws;
+
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+export async function GET(request: Request) {
+  let client;
+  try {
+    const { searchParams } = new URL(request.url);
+    const slug = searchParams.get('slug');
+
+    if (!slug) {
+      return NextResponse.json({ success: false, error: 'Slug is required' }, { status: 400 });
+    }
+
+    client = await pool.connect();
+    const result = await client.query('SELECT * FROM user_settings WHERE slug = $1', [slug]);
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ 
+        success: true, 
+        data: {
+          slug: slug,
+          user_plan: 'free',
+          telegram_channels: [],
+          discord_webhook: '',
+          tradingview_webhook: '',
+          binance_webhook: '',
+          metatrader_webhook: '',
+          whatsapp_api_url: '',
+          email_to: '',
+          corporate_name: '',
+          corporate_api_key: '',
+          corporate_endpoint: '',
+          upgraded_services: []
+        } 
+      });
+    }
+
+    return NextResponse.json({ success: true, data: result.rows[0] });
+  } catch (error: any) {
+    console.error('[API GET Error]:', error.message);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } finally {
+    if (client) client.release();
+  }
+}
 
 export async function POST(request: Request) {
   let client;
@@ -31,7 +75,6 @@ export async function POST(request: Request) {
 
     client = await pool.connect();
 
-    // حفظ البيانات مع دعم مصفوفة قنوات تليجرام كـ JSONB
     await client.query(`
       INSERT INTO user_settings (
         slug, user_plan, telegram_channels, discord_webhook, 
