@@ -7,7 +7,6 @@ export default function LandingPage() {
   const router = useRouter();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'tradingview' | 'webhook' | 'alert'>('tradingview');
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
   const handleStartFree = () => {
     router.push('/dashboard');
@@ -41,17 +40,17 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* الروابط الوسطى (اختياري للشاشات الكبيرة) */}
+        {/* الروابط الوسطى */}
         <nav className="hidden md:flex items-center gap-8 text-xs font-medium text-slate-300">
           <a href="#features" className="hover:text-blue-400 transition">المميزات</a>
           <a href="#how-it-works" className="hover:text-blue-400 transition">آلية العمل</a>
           <a href="#demo" className="hover:text-blue-400 transition">المحاكي</a>
-          <a href="#pricing" className="hover:text-blue-400 transition">الباقات</a>
+          <a href="#cta-section" className="hover:text-blue-400 transition">البدء الفوري</a>
         </nav>
 
         <div className="flex items-center gap-4">
           <button
-            onClick={handleStartFree}
+            onClick={() => router.push('/login')}
             className="hidden sm:inline-flex text-xs font-semibold text-slate-300 hover:text-white transition cursor-pointer"
           >
             تسجيل الدخول
@@ -127,7 +126,7 @@ export default function LandingPage() {
       <section id="features" className="relative z-10 max-w-6xl mx-auto px-6 py-20 border-t border-slate-800/40">
         <div className="text-center mb-14">
           <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">لماذا يختار المحترفون HookSignal؟</h2>
-          <p className="text-slate-400 text-xs sm:text-sm">مصم خصيصاً ليتناسب مع احتياجات المطورين والمتداولين الذين لا يقبلون بأقل من الكمال</p>
+          <p className="text-slate-400 text-xs sm:text-sm">مصمم خصيصاً ليتناسب مع احتياجات المطورين والمتداولين الذين لا يقبلون بأقل من الكمال</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -210,7 +209,7 @@ export default function LandingPage() {
       {/* ========================================== */}
       <section id="how-it-works" className="relative z-10 max-w-5xl mx-auto px-6 py-20 border-t border-slate-800/40">
         <div className="text-center mb-14">
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">آلية العمل بثلاث خطوات بسطية</h2>
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">آلية العمل بثلاث خطوات بسيطة</h2>
           <p className="text-slate-400 text-xs sm:text-sm">ابدأ بإرسال أول تنبيه ناجح خلال أقل من دقيقتين</p>
         </div>
 
@@ -378,57 +377,42 @@ export default function LandingPage() {
       </section>
 
       {/* ========================================== */}
-      {/* قسم الأسعار والباقات (Pricing Section) */}
+      {/* قسم ابدأ الآن مجاناً (Call to Action البديل) */}
       {/* ========================================== */}
-      <section id="pricing" className="relative z-10 max-w-5xl mx-auto px-6 py-20 border-t border-slate-800/40">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">باقات تناسب جميع الاحتياجات</h2>
-          <p className="text-slate-400 text-xs sm:text-sm">اختر الباقة المناسبة لمستوى نشاطك وتداولك</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+      <section id="cta-section" className="relative z-10 max-w-4xl mx-auto px-6 py-20 border-t border-slate-800/40 text-center">
+        <div className="bg-gradient-to-br from-blue-950/40 via-slate-900/90 to-slate-950 border border-blue-500/30 p-10 sm:p-14 rounded-3xl backdrop-blur-xl shadow-2xl shadow-blue-600/20 relative overflow-hidden">
           
-          {/* الباقة المجانية */}
-          <div className="bg-slate-900/50 border border-slate-800/80 p-8 rounded-3xl backdrop-blur flex flex-col justify-between hover:border-slate-700 transition">
-            <div>
-              <div className="text-sm font-semibold text-slate-400 mb-2">الباقة التجريبية</div>
-              <div className="text-3xl font-extrabold text-white mb-6">مجاناً <span className="text-xs text-slate-500 font-normal">/ مدى الحياة</span></div>
-              <ul className="space-y-3.5 text-xs text-slate-300 mb-8">
-                <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-400" /> 1 رابط Webhook نشط</li>
-                <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-400" /> حتى 500 إشارة شهرياً</li>
-                <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-400" /> ربط بوت تليجرام</li>
-                <li className="flex items-center gap-2.5 text-slate-500"><span className="w-4 h-4 text-slate-600 flex items-center justify-center font-bold">✕</span> دعم واتساب المباشر</li>
-              </ul>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10 space-y-6 max-w-2xl mx-auto">
+            <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 px-3.5 py-1 rounded-full text-blue-400 text-xs font-medium">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>انضم إلى آلاف المتداولين والمطورين الناجحين</span>
             </div>
-            <button
-              onClick={handleStartFree}
-              className="w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl font-semibold text-xs transition cursor-pointer"
-            >
-              البدء مجاناً
-            </button>
-          </div>
 
-          {/* الباقة الاحترافية */}
-          <div className="bg-gradient-to-br from-blue-950/40 via-slate-900/80 to-slate-950 border-2 border-blue-500/50 p-8 rounded-3xl backdrop-blur flex flex-col justify-between relative shadow-2xl shadow-blue-600/10">
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-3.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase shadow">
-              الأكثر طلباً
+            <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
+              جاهز لتجربة <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">السرعة المطلقة</span> في إدارة تنبيهاتك؟
+            </h2>
+
+            <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+              لا تكاليف خفية، لا بطاقة ائتمانية مطلوبة. أنشئ حسابك المجاني الآن وابدأ بتوجيه أول إشارة تداول أو ويب هوك خلال أقل من دقيقتين.
+            </p>
+
+            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                onClick={handleStartFree}
+                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white px-8 py-4 rounded-2xl font-bold text-sm sm:text-base transition shadow-xl shadow-blue-600/30 transform hover:-translate-y-0.5 border border-blue-400/20 cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>ابدأ مجاناً الآن 🚀</span>
+                <ArrowRight className="w-4 h-4 rotate-180" />
+              </button>
             </div>
-            <div>
-              <div className="text-sm font-semibold text-blue-400 mb-2">الباقة الاحترافية (Pro)</div>
-              <div className="text-3xl font-extrabold text-white mb-6">29$ <span className="text-xs text-slate-400 font-normal">/ شهرياً</span></div>
-              <ul className="space-y-3.5 text-xs text-slate-200 mb-8">
-                <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-400" /> روابط Webhook غير محدودة</li>
-                <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-400" /> إشارات غير محدودة (Unlimited)</li>
-                <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-400" /> ربط واتساب، تليجرام، وديسكورد</li>
-                <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-400" /> أولوية مطلقة في السرعة والدعم</li>
-              </ul>
+
+            <div className="flex flex-wrap items-center justify-center gap-6 pt-4 text-xs text-slate-400">
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> إعداد فوري بدون تعقيد</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> دعم فني مباشر متواجد دائماً</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> مجاني تماماً للبدء</span>
             </div>
-            <button
-              onClick={handleStartFree}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white py-3 rounded-xl font-bold text-xs transition shadow-lg shadow-blue-600/25 cursor-pointer"
-            >
-              ترقية الباقة الآن 🚀
-            </button>
           </div>
 
         </div>
@@ -502,4 +486,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
