@@ -296,11 +296,11 @@ export default function LandingPage() {
             {activeTab === 'tradingview' && (
               <div className="space-y-3 text-right w-full">
                 <span className="text-xs text-blue-400 font-sans font-semibold block mb-1">📌 إعداد التنبيه في TradingView:</span>
-                <p className="text-slate-300 bg-slate-900/90 p-4 rounded-xl border border-slate-800 text-xs space-y-1.5">
+                <div className="text-slate-300 bg-slate-900/90 p-4 rounded-xl border border-slate-800 text-xs space-y-1.5 text-right">
                   <div><span className="text-amber-400 font-bold">Alert Name:</span> BTCUSDT Breakout</div>
                   <div><span className="text-emerald-400 font-bold">Condition:</span> RSI Oversold & EMA Cross</div>
                   <div><span className="text-purple-400 font-bold">Action:</span> Send Webhook to HookSignal URL</div>
-                </p>
+                </div>
               </div>
             )}
 
@@ -440,7 +440,7 @@ export default function LandingPage() {
             
             {/* زر واتساب */}
             <a
-              href="https://wa.me/966500000000"
+              href="https://wa.me/966508928219"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-full shadow-lg shadow-emerald-600/30 text-xs font-semibold transition group cursor-pointer"
@@ -453,7 +453,7 @@ export default function LandingPage() {
 
             {/* زر تليجرام */}
             <a
-              href="https://t.me/YourUsername"
+              href="https://t.me/DigiHub0"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2.5 bg-sky-600 hover:bg-sky-500 text-white px-4 py-2.5 rounded-full shadow-lg shadow-sky-600/30 text-xs font-semibold transition group cursor-pointer"
