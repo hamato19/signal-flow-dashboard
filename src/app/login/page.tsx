@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Webhook, ArrowRight, Loader2, AlertCircle, User, ShieldCheck, Cpu, Network } from 'lucide-react';
+import { Webhook, ArrowRight, Loader2, AlertCircle, User, ShieldCheck, Cpu, Network, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -55,6 +55,11 @@ export default function LoginPage() {
     }
   };
 
+  // دالة العودة للصفحة الرئيسية
+  const handleBackToHome = () => {
+    router.push('/'); // أو المسار المخصص للرئيسية إذا كان مختلفاً
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 font-sans selection:bg-blue-500 selection:text-white relative overflow-hidden" dir="rtl">
       
@@ -79,6 +84,22 @@ export default function LoginPage() {
       {/* صندوق تسجيل الدخول الرئيسي */}
       <div className="relative w-full max-w-md bg-slate-900/70 border border-slate-800/80 rounded-3xl p-8 shadow-2xl backdrop-blur-2xl">
         
+        {/* زر العودة للصفحة الرئيسية في أعلى الصندوق */}
+        <div className="mb-6 flex items-center justify-between">
+          <button
+            onClick={handleBackToHome}
+            className="inline-flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 px-3 py-1.5 rounded-xl transition cursor-pointer"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>الرئيسية</span>
+          </button>
+          
+          <div className="flex items-center gap-1.5 font-mono text-[10px] text-slate-500">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Gateway Online</span>
+          </div>
+        </div>
+
         {/* رأس الصفحة والأيقونة */}
         <div className="text-center space-y-3 mb-8">
           <div className="inline-flex relative">
@@ -156,3 +177,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
