@@ -62,8 +62,13 @@ export async function POST(
           })
         });
 
+        const tgData = await tgRes.json();
+
         if (tgRes.ok) {
           sentSuccessfully = true;
+          console.log(`[Telegram Success] Message sent successfully to chat_id: ${channel.chatId}`);
+        } else {
+          console.error(`[Telegram Error] Failed to send to chat_id ${channel.chatId}:`, tgData);
         }
       }
     }
@@ -75,7 +80,13 @@ export async function POST(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: `🔔 إشعار جديد:\n\`\`\`json\n${JSON.stringify(body, null, 2)}\n\`\`\`` })
       });
-      if (dcRes.ok) sentSuccessfully = true;
+      if (dcRes.ok) {
+        sentSuccessfully = true;
+        console.log(`[Discord Success] Message sent successfully.`);
+      } else {
+        const dcData = await dcRes.json().catch(() => ({}));
+        console.error(`[Discord Error] Failed to send:`, dcData);
+      }
     }
 
     if (!sentSuccessfully) {
