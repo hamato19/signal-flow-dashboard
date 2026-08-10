@@ -18,10 +18,7 @@ import {
   Building2,
   Lock,
   Plus,
-  AlertTriangle,
-  Calendar,
-  Clock,
-  Award
+  AlertTriangle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -34,17 +31,14 @@ export default function DashboardPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // هيكل البيانات الشامل مع إضافة حقول الاشتراك ومدة الاشتراك ومدى الحياة
+  // هيكل البيانات بعد حذف الحقول المطلوبة وإضافة telegramChatId
   const [settings, setSettings] = useState({
-    username: '',
     userPlan: 'free' as string,
-    subscriptionStatus: 'active' as string,
-    subscriptionExpiry: '' as string,
-    lifetimeAccess: false as boolean,
     tradingviewWebhook: '',
     binanceWebhook: '',
     metaTraderWebhook: '',
     telegramToken: '', 
+    telegramChatId: '',
     discordWebhook: '',
     slackWebhook: '',
     whatsappApiUrl: '',
@@ -122,16 +116,19 @@ export default function DashboardPage() {
         else if (initialEmailSms) { globalLockedCat = 'email_sms'; globalLockedVal = initialEmailSms; }
         else if (initialCorporate) { globalLockedCat = 'corporate'; globalLockedVal = initialCorporate; }
 
+        // استخراج الـ Chat ID من قنوات تليجرام المخزنة إن وجدت
+        let tChatId = data.telegram_chat_id || '';
+        if (!tChatId && data.telegram_channels && Array.isArray(data.telegram_channels) && data.telegram_channels.length > 0) {
+          tChatId = data.telegram_channels[0].chatId || data.telegram_channels[0].chat_id || '';
+        }
+
         setSettings({
-          username: data.username || '',
           userPlan: data.user_plan || 'free',
-          subscriptionStatus: data.subscription_status || 'active',
-          subscriptionExpiry: data.subscription_expiry ? data.subscription_expiry.split('T')[0] : '',
-          lifetimeAccess: data.lifetime_access || false,
           tradingviewWebhook: data.tradingview_webhook || '',
           binanceWebhook: data.binance_webhook || '',
           metaTraderWebhook: data.metatrader_webhook || '',
           telegramToken: data.telegram_token || '',
+          telegramChatId: tChatId,
           discordWebhook: data.discord_webhook || '',
           slackWebhook: data.slack_webhook || '',
           whatsappApiUrl: data.whatsapp_api_url || '',
@@ -199,12 +196,10 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           slug, 
-          username: settings.username,
           user_plan: settings.userPlan,
-          subscription_status: settings.subscriptionStatus,
-          subscription_expiry: settings.subscriptionExpiry || null,
-          lifetime_access: settings.lifetimeAccess,
           telegram_token: settings.telegramToken,
+          telegram_chat_id: settings.telegramChatId,
+          telegramChannels: [{ token: settings.telegramToken, chatId: settings.telegramChatId }],
           discord_webhook: settings.discordWebhook,
           tradingview_webhook: settings.tradingviewWebhook,
           binance_webhook: settings.binanceWebhook,
@@ -227,7 +222,7 @@ export default function DashboardPage() {
       const result = await res.json();
 
       if (result.success) {
-        setSuccessMsg('تم حفظ وتحديث الإعدادات والاشتراكات بنجاح في قاعدة البيانات!');
+        setSuccessMsg('تم حفظ وتحديث الإعدادات بنجاح في قاعدة البيانات!');
         setTimeout(() => setSuccessMsg(''), 4000);
       } else {
         setErrorMsg(result.error || 'حدث خطأ أثناء الحفظ');
@@ -349,84 +344,14 @@ export default function DashboardPage() {
           
           <div className="flex items-center gap-2 border-b border-slate-800 pb-4">
             <Settings className="w-5 h-5 text-blue-400" />
-            <h2 className="text-sm font-bold text-slate-200">إعدادات الحساب والاشتراكات والقنوات</h2>
+            <h2 className="text-sm font-bold text-slate-200">إعدادات قنوات الإرسال والتنبيهات</h2>
           </div>
 
-          <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 p-4 rounded-2xl text-xs flex items-start gap-3 shadow-lg">
-            <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-400 mt-0.5" />
-            <div className="space-y-1">
-              <strong className="block text-amber-200 font-bold">معلومات إدارة الاشتراكات:</strong>
-              <p className="text-amber-300/90 leading-relaxed">
-                يمكنك التحكم بخطة حسابك، وتحديد تاريخ انتهاء الصلاحية، أو تفعيل خيار (اشتراك مدى الحياة) لتظل الخدمة نشطة بلا توقف.
-              </p>
-            </div>
-          </div>
-
-          {/* 1. معلومات الحساب والاشتراك */}
+          {/* 1. منصات التداول */}
           <div className="space-y-4">
-            <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-              <Award className="w-3.5 h-3.5" /> 1. معلومات الحساب وإدارة الاشتراكات
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">اسم المستخدم أو اللقب</label>
-                <input 
-                  type="text"
-                  value={settings.username}
-                  onChange={(e) => handleFieldChange('username', e.target.value)}
-                  placeholder="أدخل اسمك"
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500 transition-all"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">نوع الخطة (الباقة)</label>
-                <select
-                  value={settings.userPlan}
-                  onChange={(e) => handleFieldChange('userPlan', e.target.value)}
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition-all"
-                >
-                  <option value="free">المجانية (قناة واحدة)</option>
-                  <option value="pro">المتقدمة (Pro)</option>
-                  <option value="enterprise">الشركات (Enterprise)</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-blue-400" /> تاريخ انتهاء الاشتراك
-                </label>
-                <input 
-                  type="date"
-                  value={settings.subscriptionExpiry}
-                  disabled={settings.lifetimeAccess}
-                  onChange={(e) => handleFieldChange('subscriptionExpiry', e.target.value)}
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition-all disabled:opacity-40"
-                />
-              </div>
-
-              <div className="space-y-1.5 flex flex-col justify-end">
-                <label className="flex items-center gap-2.5 bg-slate-950/80 border border-slate-800 hover:border-amber-500/40 px-4 py-2.5 rounded-xl cursor-pointer transition-all">
-                  <input 
-                    type="checkbox"
-                    checked={settings.lifetimeAccess}
-                    onChange={(e) => handleFieldChange('lifetimeAccess', e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-700 text-amber-500 focus:ring-amber-500 bg-slate-900 cursor-pointer"
-                  />
-                  <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" /> اشتراك مدى الحياة
-                  </span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* 2. منصات التداول */}
-          <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-                <TrendingUp className="w-3.5 h-3.5" /> 2. منصات التداول والرسوم البيانية
+                <TrendingUp className="w-3.5 h-3.5" /> 1. منصات التداول والرسوم البيانية
               </h3>
               <button
                 type="button"
@@ -441,7 +366,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>TradingView Webhook</span>
-                  {settings.userPlan === 'free' && !settings.lifetimeAccess && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'trading_platforms' && <Lock className="w-3 h-3 text-amber-400" />}
+                  {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'trading_platforms' && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
@@ -456,7 +381,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>Binance Execution Hook</span>
-                  {settings.userPlan === 'free' && !settings.lifetimeAccess && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'trading_platforms' && <Lock className="w-3 h-3 text-amber-400" />}
+                  {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'trading_platforms' && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
@@ -471,7 +396,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                   <span>MetaTrader Bridge Hook</span>
-                  {settings.userPlan === 'free' && !settings.lifetimeAccess && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'trading_platforms' && <Lock className="w-3 h-3 text-amber-400" />}
+                  {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'trading_platforms' && <Lock className="w-3 h-3 text-amber-400" />}
                 </label>
                 <input 
                   type="text"
@@ -485,19 +410,20 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 3. قنوات الإشعارات والتواصل */}
+          {/* 2. قنوات الإشعارات والتواصل */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-              <MessageCircle className="w-3.5 h-3.5" /> 3. قنوات الإشعارات والتواصل
+              <MessageCircle className="w-3.5 h-3.5" /> 2. قنوات الإشعارات والتواصل
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               
+              {/* تليجرام (مع حقل Token و Chat ID) */}
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                    تليجرام (Bot Token فقط)
-                    {settings.userPlan === 'free' && !settings.lifetimeAccess && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'telegram' && <Lock className="w-3 h-3 text-amber-400" />}
+                    تليجرام (Telegram Bot & Chat ID)
+                    {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'telegram' && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
@@ -508,21 +434,35 @@ export default function DashboardPage() {
                   </button>
                 </div>
                 
-                <input 
-                  type="text"
-                  value={settings.telegramToken}
-                  onChange={(e) => handleFieldChange('telegramToken', e.target.value, 'telegram')}
-                  placeholder="Telegram Bot Token (e.g., 123456:ABC-DEF...)"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
-                  dir="ltr"
-                />
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-[11px] text-slate-400 mb-1 block">Bot Token</label>
+                    <input 
+                      type="text"
+                      value={settings.telegramToken}
+                      onChange={(e) => handleFieldChange('telegramToken', e.target.value, 'telegram')}
+                      placeholder="123456:ABC-DEF..."
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
+                      dir="ltr"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-slate-400 mb-1 block">Chat ID (معرف القناة أو المستخدم)</label>
+                    <input 
+                      type="text"
+                      value={settings.telegramChatId}
+                      onChange={(e) => handleFieldChange('telegramChatId', e.target.value, 'telegram')}
+                      placeholder="-100xxxxxxxxxx أو @channel_name"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
+                      dir="ltr"
+                    />
+                  </div>
+                </div>
 
                 <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl space-y-1 text-[11px] text-slate-300">
-                  <p className="font-bold text-blue-400">طرق الاستلام المتاحة:</p>
-                  <ul className="list-disc list-inside space-y-0.5 text-slate-400">
-                    <li><strong>مباشر:</strong> تصل الإشارات لمحادثة البوت الخاصة.</li>
-                    <li><strong>قناة/مجموعة:</strong> أضف البوت <strong>مشرفاً (Admin)</strong> في قناتك.</li>
-                  </ul>
+                  <p className="font-bold text-blue-400">إرشادات التليجرام:</p>
+                  <p className="text-slate-400">أدخل توكن البوت ومعرف المحادثة أو القناة (Chat ID) لضمان استلام الإشارات فوراً.</p>
                 </div>
               </div>
 
@@ -530,7 +470,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     ديسكورد (Discord Webhook)
-                    {settings.userPlan === 'free' && !settings.lifetimeAccess && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'discord' && <Lock className="w-3 h-3 text-amber-400" />}
+                    {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'discord' && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
@@ -554,7 +494,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     خدمة واتساب (WhatsApp API)
-                    {settings.userPlan === 'free' && !settings.lifetimeAccess && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'whatsapp' && <Lock className="w-3 h-3 text-amber-400" />}
+                    {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'whatsapp' && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
@@ -578,7 +518,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     البريد الإلكتروني والرسائل
-                    {settings.userPlan === 'free' && !settings.lifetimeAccess && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'email_sms' && <Lock className="w-3 h-3 text-amber-400" />}
+                    {settings.userPlan === 'free' && settings.lockedGlobalChannel.category && settings.lockedGlobalChannel.category !== 'email_sms' && <Lock className="w-3 h-3 text-amber-400" />}
                   </span>
                   <button
                     type="button"
@@ -601,11 +541,11 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 4. باقة الشركات والمؤسسات */}
+          {/* 3. باقة الشركات والمؤسسات */}
           <div className="space-y-4 pt-4 border-t border-slate-800/80">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-                <Building2 className="w-3.5 h-3.5" /> 4. باقة الشركات والمؤسسات الكاملة (Enterprise)
+                <Building2 className="w-3.5 h-3.5" /> 3. باقة الشركات والمؤسسات الكاملة (Enterprise)
               </h3>
               <button
                 type="button"
