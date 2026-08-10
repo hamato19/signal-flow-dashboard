@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import { Pool } from '@neondatabase/serverless';
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import ws from 'ws';
 
+neonConfig.webSocketConstructor = ws;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 export async function POST(
@@ -9,116 +11,86 @@ export async function POST(
 ) {
   let client;
   try {
-    const resolvedParams = await params;
-    const { slug } = resolvedParams;
-
-    // قراءة نص الطلب أولاً لمنع انهيار السيرفر في حال كان الجسم فارغاً أو غير صالح
-    const rawText = await request.text();
-    let body: any = {};
-    
-    if (rawText && rawText.trim() !== '') {
-      try {
-        body = JSON.parse(rawText);
-      } catch (parseError) {
-        // إذا لم يكن النص بصيغة JSON صحيحة، نعتبره رسالة نصية مباشرة
-        body = { message: rawText };
-      }
-    } else {
-      body = { message: "طلب ويب هوك فارغ بدون محتوى" };
-    }
-
+    const { slug } = await params;
     console.log(`[Webhook] Receiving request for slug: ${slug}`);
 
-    // الاتصال بقاعدة البيانات
+    const body = await request.json().catch(() => ({}));
+
     client = await pool.connect();
+    const result = await client.query('SELECT * FROM user_settings WHERE slug = $1', [slug]);
 
-    // جلب إعدادات المستخدم بناءً على الـ slug
-    const res = await client.query(
-      'SELECT * FROM user_settings WHERE slug = $1',
-      [slug]
-    );
-
-    if (res.rows.length === 0) {
-      console.log(`[Webhook Error] User not found for slug: ${slug}`);
-      return NextResponse.json(
-        { success: false, error: `المستخدم غير موجود بالمعرف: ${slug}` }, 
-        { status: 404 }
-      );
+    if (result.rows.length === 0) {
+      return NextResponse.json({ success: false, error: 'User slug not found' }, { status: 404 });
     }
 
-    const settings = res.rows[0];
-    console.log('[Webhook Debug] Settings found:', {
-      hasTelegramToken: !!settings.telegram_token,
-      hasTelegramChatId: !!settings.telegram_chat_id,
-      hasDiscord: !!settings.discord_webhook
-    });
-
-    const messageText = body.message || JSON.stringify(body, null, 2);
-    let sentAny = false;
-    let lastError = '';
-
-    // 1. الإرسال عبر تليجرام
-    if (settings.telegram_token && settings.telegram_chat_id) {
+    const settings = result.rows[0];
+    
+    // استخراج قنوات التليجرام من المصفوفة JSONB أو الحقول التقليدية احتياطياً
+    let channels = [];
+    if (settings.telegram_channels) {
       try {
-        const tgRes = await fetch(`https://api.telegram.org/bot${settings.telegram_token}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: settings.telegram_chat_id,
-            text: `🔔 إشارة تداول جديدة\n\n${messageText}`,
-          }),
-        });
-        const tgData = await tgRes.json();
-        console.log('[Telegram Response]:', tgData);
-        
-        if (tgData.ok) {
-          sentAny = true;
-        } else {
-          lastError = `Telegram Error: ${tgData.description || 'Unknown error'}`;
-        }
-      } catch (tgErr: any) {
-        console.error('[Telegram Exception]:', tgErr.message);
-        lastError = `Telegram Exception: ${tgErr.message}`;
+        channels = typeof settings.telegram_channels === 'string' 
+          ? JSON.parse(settings.telegram_channels) 
+          : settings.telegram_channels;
+      } catch (e) {
+        channels = [];
       }
     }
 
-    // 2. الإرسال عبر ديسكورد
+    // إذا لم توجد في المصفوفة، نتحقق من الحقل المفرد إن وجد
+    if (channels.length === 0 && settings.telegram_token && settings.telegram_chat_id) {
+      channels = [{ token: settings.telegram_token, chatId: settings.telegram_chat_id }];
+    }
+
+    console.log(`[Webhook Debug] Found ${channels.length} Telegram channels for slug: ${slug}`);
+
+    let sentSuccessfully = false;
+
+    // 1. الإرسال لكل قنوات تليجرام المفعلة ديناميكياً
+    for (const channel of channels) {
+      if (channel.token && channel.chatId) {
+        const messageText = typeof body === 'string' ? body : JSON.stringify(body, null, 2);
+        const telegramUrl = `https://api.telegram.org/bot${channel.token}/sendMessage`;
+        
+        const tgRes = await fetch(telegramUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: channel.chatId,
+            text: `🔔 إشعار تداول جديد:\n\`\`\`json\n${messageText}\n\`\`\``,
+            parse_mode: 'Markdown'
+          })
+        });
+
+        if (tgRes.ok) {
+          sentSuccessfully = true;
+        }
+      }
+    }
+
+    // 2. الإرسال عبر ديسكورد إن وجد
     if (settings.discord_webhook) {
-      try {
-        const discordRes = await fetch(settings.discord_webhook, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            content: `🔔 **إشارة تداول جديدة**\n\`\`\`json\n${messageText}\n\`\`\``,
-          }),
-        });
-        
-        if (discordRes.ok) {
-          sentAny = true;
-        } else {
-          lastError = 'Discord Webhook failed to respond with OK';
-        }
-      } catch (discordErr: any) {
-        console.error('[Discord Exception]:', discordErr.message);
-        lastError = `Discord Exception: ${discordErr.message}`;
-      }
+      const dcRes = await fetch(settings.discord_webhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: `🔔 إشعار جديد:\n\`\`\`json\n${JSON.stringify(body, null, 2)}\n\`\`\`` })
+      });
+      if (dcRes.ok) sentSuccessfully = true;
     }
 
-    if (!sentAny) {
+    if (!sentSuccessfully) {
       return NextResponse.json({ 
         success: false, 
-        error: lastError || 'لم يتم العثور على أي وسيلة إرسال نشطة أو فشل الإرسال عبر الوسائط المتاحة' 
+        error: 'لم يتم العثور على أي قناة إرسال نشطة أو فشل الاتصال بالمنصات' 
       }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, message: 'تم معالجة الويب هوك وإرسال الإشارة بنجاح' });
+    return NextResponse.json({ success: true, message: 'Webhook processed and sent successfully' });
 
   } catch (error: any) {
-    console.error('[Webhook Exception]:', error.message);
+    console.error('[Webhook Error]:', error.message);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   } finally {
-    if (client) {
-      client.release(); // تحرير اتصال قاعدة البيانات بأمان لمنع تسريب الاتصالات (Connection Leaks)
-    }
+    if (client) client.release();
   }
 }
