@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import { Webhook, ArrowRight, Loader2, AlertCircle, User, ShieldCheck, Cpu, Network, ArrowLeft } from 'lucide-react';
@@ -44,7 +44,7 @@ export default function LoginPage() {
       if (res.ok && data.success) {
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('user_slug', cleanSlug);
-        router.push('/dashboard');
+        router.replace('/dashboard');
       } else {
         setErrorMsg(data.error || 'فشل التحقق من الحساب، يرجى المحاولة مرة أخرى.');
       }
@@ -57,7 +57,7 @@ export default function LoginPage() {
 
   // دالة العودة للصفحة الرئيسية
   const handleBackToHome = () => {
-    router.push('/'); // أو المسار المخصص للرئيسية إذا كان مختلفاً
+    router.push('/');
   };
 
   return (
@@ -65,14 +65,10 @@ export default function LoginPage() {
       
       {/* خلفية تفاعلية مخصصة لهوية Webhooks والشبكات */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* شبكة هندسية خلفية (Grid Pattern) */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:4rem_4rem]" />
-        
-        {/* توهجات ضوئية ديناميكية ممثلة لنقاط التدفق (Webhooks/Nodes) */}
         <div className="absolute top-1/4 -right-20 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] animate-pulse" />
         <div className="absolute bottom-1/4 -left-20 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] animate-pulse delay-1000" />
         
-        {/* خطوط ربط ديكورية توحي بتدفق البيانات */}
         <div className="absolute top-10 left-1/4 flex items-center gap-2 opacity-20 text-blue-400 font-mono text-xs animate-bounce">
           <Network className="w-4 h-4" /> POST /api/webhook/v1/signal
         </div>
@@ -177,4 +173,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
