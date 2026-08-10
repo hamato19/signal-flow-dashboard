@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Webhook, ArrowRight, Loader2, AlertCircle, User, ShieldCheck } from 'lucide-react';
+import { Webhook, ArrowRight, Loader2, AlertCircle, User, ShieldCheck, Cpu, Network } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -20,7 +20,7 @@ export default function LoginPage() {
       return;
     }
 
-    // 2. التحقق من صيغة الـ Slug (أحرف إنجليزية، أرقام، وشرطة (-) فقط بدون مسافات أو رموز)
+    // 2. التحقق من صيغة الـ Slug
     const slugRegex = /^[a-z0-9-]+$/;
     if (!slugRegex.test(cleanSlug)) {
       setErrorMsg('يسمح فقط بالحروف الإنجليزية، الأرقام، والشرطة (-) بدون مسافات أو رموز خاصة.');
@@ -38,12 +38,10 @@ export default function LoginPage() {
     setErrorMsg('');
 
     try {
-      // إرسال طلب فعلي للـ API للتأكد من الحالة أو تهيئة السجل للمستخدم الجديد بأمان
       const res = await fetch(`/api/settings?slug=${cleanSlug}`);
       const data = await res.json();
 
       if (res.ok && data.success) {
-        // حفظ الـ slug وحالة الجلسة بأمان في المتصفح
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('user_slug', cleanSlug);
         router.push('/dashboard');
@@ -58,33 +56,46 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex items-center justify-center p-4 font-sans selection:bg-blue-500 selection:text-white" dir="rtl">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 font-sans selection:bg-blue-500 selection:text-white relative overflow-hidden" dir="rtl">
       
-      {/* خلفية جمالية تفاعلية */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl animate-pulse delay-1000" />
+      {/* خلفية تفاعلية مخصصة لهوية Webhooks والشبكات */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* شبكة هندسية خلفية (Grid Pattern) */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:4rem_4rem]" />
+        
+        {/* توهجات ضوئية ديناميكية ممثلة لنقاط التدفق (Webhooks/Nodes) */}
+        <div className="absolute top-1/4 -right-20 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-1/4 -left-20 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] animate-pulse delay-1000" />
+        
+        {/* خطوط ربط ديكورية توحي بتدفق البيانات */}
+        <div className="absolute top-10 left-1/4 flex items-center gap-2 opacity-20 text-blue-400 font-mono text-xs animate-bounce">
+          <Network className="w-4 h-4" /> POST /api/webhook/v1/signal
+        </div>
+        <div className="absolute bottom-16 right-1/4 flex items-center gap-2 opacity-20 text-indigo-400 font-mono text-xs animate-pulse">
+          <Cpu className="w-4 h-4" /> 200 OK - Secure Tunnel
+        </div>
       </div>
 
-      <div className="relative w-full max-w-md bg-slate-900/80 border border-slate-800/80 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
+      {/* صندوق تسجيل الدخول الرئيسي */}
+      <div className="relative w-full max-w-md bg-slate-900/70 border border-slate-800/80 rounded-3xl p-8 shadow-2xl backdrop-blur-2xl">
         
-        {/* رأس الصفحة */}
+        {/* رأس الصفحة والأيقونة */}
         <div className="text-center space-y-3 mb-8">
           <div className="inline-flex relative">
             <div className="absolute inset-0 bg-blue-500/30 rounded-2xl blur-xl animate-pulse" />
-            <div className="relative bg-gradient-to-br from-blue-600/20 to-indigo-600/25 border border-blue-500/30 p-3.5 rounded-2xl">
-              <Webhook className="w-8 h-8 text-blue-400" />
+            <div className="relative bg-gradient-to-br from-blue-600/20 to-indigo-600/25 border border-blue-500/30 p-3.5 rounded-2xl shadow-inner">
+              <Webhook className="w-8 h-8 text-blue-400 animate-pulse" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-indigo-300 to-slate-100 bg-clip-text text-transparent">
             بوابة الإدارة المركزية
           </h1>
           <p className="text-xs text-slate-400">
-            أدخل معرف حسابك (Slug) الفريد للوصول الفوري إلى لوحة تحكم الإشارات
+            أدخل معرف حسابك (Slug) للوصول المباشر إلى مسار الـ Webhooks وإعدادات التوجيه
           </p>
         </div>
 
-        {/* رسائل التنبيه والخطأ */}
+        {/* رسائل الخطأ */}
         {errorMsg && (
           <div className="mb-6 bg-rose-500/10 border border-rose-500/20 text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2.5 animate-shake">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -92,12 +103,12 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* نموذج تسجيل الدخول */}
+        {/* نموذج الإدخال */}
         <form onSubmit={handleLogin} className="space-y-5">
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
               <span>معرف الحساب (Slug)</span>
-              <span className="text-[10px] text-slate-500 font-mono">3 أحرف فأكثر</span>
+              <span className="text-[10px] text-blue-400 font-mono">Multi-Tenant Routing</span>
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-500">
@@ -109,12 +120,12 @@ export default function LoginPage() {
                 value={slug}
                 onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, ''))}
                 placeholder="e.g. trading-pro"
-                className="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl px-4 py-3 pr-10 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono"
+                className="w-full bg-slate-950/80 border border-slate-800/80 rounded-xl px-4 py-3 pr-10 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono"
                 dir="ltr"
               />
             </div>
             <span className="text-[10px] text-slate-500 block px-1 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-blue-400 inline" /> نظام متعدد المستخدمين آمن ومعزز بالكامل.
+              <ShieldCheck className="w-3 h-3 text-blue-400 inline" /> نظام معزز ومشفر بمعرفات فريدة.
             </span>
           </div>
 
@@ -125,7 +136,7 @@ export default function LoginPage() {
           >
             {isLoading ? (
               <>
-                جاري التحقق والفتح <Loader2 className="w-4 h-4 animate-spin" />
+                جاري مصادقة المسار <Loader2 className="w-4 h-4 animate-spin" />
               </>
             ) : (
               <>
@@ -136,12 +147,12 @@ export default function LoginPage() {
         </form>
 
         {/* تذييل احترافي */}
-        <div className="mt-8 pt-4 border-t border-slate-800/60 text-center text-[11px] text-slate-500">
-          نظام متكامل لمعالجة Webhooks وتوجيه إشارات التداول بدقة عالية 🚀
+        <div className="mt-8 pt-4 border-t border-slate-800/60 text-center text-[11px] text-slate-500 flex items-center justify-center gap-1.5 font-mono">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+          <span>Webhook Gateway Active & Ready</span>
         </div>
 
       </div>
     </div>
   );
 }
-
